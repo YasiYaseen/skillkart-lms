@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout';
 import { CourseList } from './pages/courses';
-import './styles/main.css';
+import './styles/main.scss';
 
 /**
  * App Component
