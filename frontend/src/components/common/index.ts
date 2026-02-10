@@ -1,5 +1,8 @@
-export { default as Button } from './Button';
-export { default as SearchBar } from './SearchBar';
-export { default as Rating } from './Rating';
-export { default as CourseCard } from './CourseCard';
-export type { Course } from './CourseCard';
+export { default as Button } from '@components/common/Button';
+export { default as SearchBar } from '@components/common/SearchBar';
+export { default as Rating } from '@components/common/Rating';
+export { default as CourseCard } from '@components/common/CourseCard';
+export { default as Modal } from '@components/common/Modal';
+export { default as Input } from '@components/common/Input';
+export { default as Select } from '@components/common/Select';
+export type { Course } from '@components/common/CourseCard';

@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Layout } from './components/layout';
-import { CourseList } from './pages/courses';
-import './styles/main.scss';
+import { Layout } from '@components/layout';
+import { CourseList } from '@pages/courses';
+import Onboarding from '@pages/Onboarding';
+import '@styles/main.scss';
 
 /**
  * App Component
@@ -15,6 +16,7 @@ function App() {
                     {/* Course Routes */}
                     <Route path="/" element={<CourseList />} />
                     <Route path="/courses" element={<CourseList />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
 
                     {/* Placeholder routes for future modules */}
                     {/* Student routes will go under /student/* */}
