@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Modal } from '../../components/common';
+import { Button, Input, Modal } from '@/components/common';
 import { useNavigate } from 'react-router-dom';
 
 interface AuthModalsProps {

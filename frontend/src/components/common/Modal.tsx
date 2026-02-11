@@ -31,7 +31,7 @@ function Modal({ isOpen, onClose, children, title }: ModalProps) {
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div
+            <div 
                 className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up relative"
                 onClick={(e) => e.stopPropagation()}
             >
