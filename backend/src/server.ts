@@ -1,23 +1,24 @@
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
-const connectDB = require("./config/db");
+import express, { json } from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js";
+import authRoutes from "./routes/authRoutes.js";
 
+dotenv.config();
 // Workaround for Windows DNS SRV resolution issues
-const dns = require("node:dns");
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
+import { setServers } from "node:dns";
+setServers(["8.8.8.8", "1.1.1.1"]);
 
 const app = express();
 
 // Global middleware
 app.use(cors());
-app.use(express.json());
+app.use(json());
 
 // Connect to DB
 connectDB();
 
 // Routes
-const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
 // Health check

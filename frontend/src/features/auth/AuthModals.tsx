@@ -3,10 +3,9 @@ import { Button, Input, Modal } from '@/components/common';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { GoogleIcon } from '@/assets/icons';
-import axios from 'axios';
-import { googleLogin } from './auth.api';
 import { toast } from 'react-toastify';
 import { loginWithGoogle } from './auth.service';
+import { useAuth } from './AuthContext';
 
 
 interface AuthModalsProps {
@@ -16,6 +15,8 @@ interface AuthModalsProps {
 }
 
 function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
+    
+    const { login } = useAuth();
     const [mode, setMode] = useState<'login' | 'register'>(initialMode);
     const navigate = useNavigate();
 
@@ -29,10 +30,11 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
     const googleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             try {
-                await loginWithGoogle(tokenResponse.access_token);
+                const { token, user } = await loginWithGoogle(tokenResponse.access_token);
+                login(token, user);
                 onClose();
             } catch {
-                    toast.error('Login failed');
+                toast.error('Login failed');
             }
         },
         onError: () => {
