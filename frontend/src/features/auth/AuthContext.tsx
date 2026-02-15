@@ -21,9 +21,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
+
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
-
     if (storedToken && storedUser) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
@@ -31,6 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = (token: string, user: User) => {
+    console.log('inside login',token, user);
+    
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
 

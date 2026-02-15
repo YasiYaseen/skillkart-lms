@@ -142,23 +142,27 @@ function CourseList() {
     return (
         <div className="container">
             {/* Page Header */}
-            <div className="page-header">
-                <nav className="breadcrumb">
-                    <Link to="/">Home</Link>
-                    <span className="breadcrumb-separator">/</span>
-                    <span>Course List</span>
-                </nav>
-                <h1 className="page-title">Course List</h1>
-            </div>
+            <div className="page-header flex items-start justify-between">
+                <div>
+                    <h1 className="page-title">Course List</h1>
 
-            {/* Search and Filters */}
-            <div className="course-list-header">
+                    <nav className="breadcrumb mt-2">
+                        <Link to="/">Home</Link>
+                        <span className="breadcrumb-separator">/</span>
+                        <span>Course List</span>
+                    </nav>
+                </div>
+
+                {/* Right Side: Search */}
+                <div className="w-80">
                 <SearchBar
                     value={searchQuery}
                     onChange={setSearchQuery}
                     onSubmit={handleSearch}
                     placeholder="Search for courses"
                 />
+                </div>
+
             </div>
 
             {/* Course Grid */}
