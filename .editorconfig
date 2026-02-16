@@ -1,0 +1,9 @@
+# Apply to all files (optional general default)
+[*]
+indent_style = space
+indent_size = 2
+
+# Specifically targeting React and web files
+[*.{js,jsx,ts,tsx,json,css,scss,html}]
+indent_style = space
+indent_size = 2

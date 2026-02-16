@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from '@components/layout';
-import { CourseList } from '@pages/courses';
+import { CourseList, CourseDetailsPage } from '@pages/courses';
 import Onboarding from '@pages/Onboarding';
 
 /**
@@ -15,6 +15,7 @@ function App() {
                     {/* Course Routes */}
                     <Route path="/" element={<CourseList />} />
                     <Route path="/courses" element={<CourseList />} />
+                    <Route path="/courses/:courseId" element={<CourseDetailsPage />} />
                     <Route path="/onboarding" element={<Onboarding />} />
 
                     {/* Placeholder routes for future modules */}
