@@ -30,67 +30,67 @@ function Header() {
 
   return (
     <>
-    <header className="header">
+      <header className="header">
         <div className="container header-inner">
 
-            {/* Logo */}
-            <Link to="/" className="header-logo">
+          {/* Logo */}
+          <Link to="/" className="header-logo">
             <span className="header-logo-icon">
-                <GraduationCapIcon />
+              <GraduationCapIcon />
             </span>
             SkillKart
-            </Link>
+          </Link>
 
 
 
-            {/* Actions */}
-            <div className="header-actions">
-                {/* Navigation */}
-                <nav className="header-nav ml-auto">
-                {user && (
-                    <Link to="/courses/create" className="header-nav-link">
-                    Add Courses
-                    </Link>
-                )}
+          {/* Actions */}
+          <div className="header-actions">
+            {/* Navigation */}
+            <nav className="header-nav ml-auto">
+              {user && (
+                <Link to="/courses/create" className="header-nav-link">
+                  Add Courses
+                </Link>
+              )}
 
-                {!user && (
-                    <a
-                    href="/login"
-                    onClick={handleLoginClick}
-                    className="header-nav-link"
-                    >
-                    Login
-                    </a>
-                )}
-                </nav>
+              {!user && (
+                <a
+                  href="/login"
+                  onClick={handleLoginClick}
+                  className="header-nav-link"
+                >
+                  Login
+                </a>
+              )}
+            </nav>
 
-                {!user ? (
-                    <Button
-                    variant="primary"
-                    size="md"
-                    onClick={handleRegisterClick}
-                    >
-                    Create Account
-                    </Button>
-                ) : (
-                    <>
-                    <span className="mr-4 text-sm font-medium">
-                        {user.name}
-                    </span>
+            {!user ? (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleRegisterClick}
+              >
+                Create Account
+              </Button>
+            ) : (
+              <>
+                <span className="mr-4 text-sm font-medium">
+                  {user.name}
+                </span>
 
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleLogout}
-                    >
-                        Logout
-                    </Button>
-                    </>
-                )}
-            </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </Button>
+              </>
+            )}
+          </div>
 
         </div>
-    </header>
+      </header>
 
 
 

@@ -7,13 +7,21 @@ import Onboarding from '@pages/Onboarding';
  * App Component
  * Main application with routing setup
  */
+import Home from '@pages/Home';
+
+/**
+ * App Component
+ * Main application with routing setup
+ */
 function App() {
     return (
         <BrowserRouter>
             <Layout>
                 <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Home />} />
+
                     {/* Course Routes */}
-                    <Route path="/" element={<CourseList />} />
                     <Route path="/courses" element={<CourseList />} />
                     <Route path="/courses/:courseId" element={<CourseDetailsPage />} />
                     <Route path="/onboarding" element={<Onboarding />} />
