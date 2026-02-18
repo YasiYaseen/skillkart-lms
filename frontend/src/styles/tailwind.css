@@ -97,12 +97,23 @@
 /* Component Layer */
 @layer components {
 
-    /* Container */
     .container {
         width: 100%;
-        max-width: 1200px;
+        max-width: 1280px;
         margin: 0 auto;
         padding: 0 24px;
+    }
+
+    @media (min-width: 768px) {
+        .container {
+            padding: 0 40px;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .container {
+            padding: 0 80px;
+        }
     }
 
     /* Button Base */

@@ -111,10 +111,10 @@ function CourseDetailsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
-            <div className="container mx-auto px-4 py-8">
+            <div className="container py-10">
 
                 {/* Main Grid Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
                     {/* Left Column (Content) */}
                     <div className="lg:col-span-2 space-y-8">
