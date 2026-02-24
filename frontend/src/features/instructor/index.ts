@@ -1,11 +1,5 @@
-/**
- * Instructor Features Module
- * 
- * This directory will contain instructor-specific features:
- * - Course creation and editing
- * - Lesson management
- * - Student enrollments view
- * - Dashboard statistics
- */
-
-export { };
+export { default as InstructorLayout } from './layout/InstructorLayout';
+export { default as Dashboard } from './pages/Dashboard';
+export { default as MyCourses } from './pages/MyCourses';
+export { default as CreateCourse } from './pages/CreateCourse';
+export { default as StudentsEnrolled } from './pages/StudentsEnrolled';

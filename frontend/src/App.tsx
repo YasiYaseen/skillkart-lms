@@ -2,12 +2,14 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from '@components/layout';
 import { CourseList, CourseDetailsPage } from '@pages/courses';
 import Onboarding from '@pages/Onboarding';
-
-/**
- * App Component
- * Main application with routing setup
- */
 import Home from '@pages/Home';
+import {
+    InstructorLayout,
+    Dashboard,
+    MyCourses,
+    CreateCourse,
+    StudentsEnrolled,
+} from '@features/instructor';
 
 /**
  * App Component
@@ -16,22 +18,25 @@ import Home from '@pages/Home';
 function App() {
     return (
         <BrowserRouter>
-            <Layout>
-                <Routes>
-                    {/* Public Routes */}
+            <Routes>
+                {/* Student / Main App Layout */}
+                <Route element={<Layout />}>
                     <Route path="/" element={<Home />} />
-
-                    {/* Course Routes */}
                     <Route path="/courses" element={<CourseList />} />
                     <Route path="/courses/:courseId" element={<CourseDetailsPage />} />
                     <Route path="/onboarding" element={<Onboarding />} />
+                </Route>
 
-                    {/* Placeholder routes for future modules */}
-                    {/* Student routes will go under /student/* */}
-                    {/* Instructor routes will go under /instructor/* */}
-                    {/* Admin routes will go under /admin/* */}
+                {/* Instructor Layout */}
+                <Route element={<InstructorLayout />}>
+                    <Route path="/instructor" element={<Dashboard />} />
+                    <Route path="/instructor/courses" element={<MyCourses />} />
+                    <Route path="/instructor/create-course" element={<CreateCourse />} />
+                    <Route path="/instructor/students" element={<StudentsEnrolled />} />
+                </Route>
+
                 </Routes>
-            </Layout>
+
         </BrowserRouter>
     );
 }

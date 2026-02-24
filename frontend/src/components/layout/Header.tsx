@@ -47,6 +47,10 @@ function Header() {
           <div className="header-actions">
             {/* Navigation */}
             <nav className="header-nav ml-auto">
+              <Link to="/instructor" className="header-nav-link">
+                Instructor Studio
+              </Link>
+
               {user && (
                 <Link to="/courses/create" className="header-nav-link">
                   Add Courses
