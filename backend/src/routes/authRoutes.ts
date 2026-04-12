@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { register, login } from "../controllers/auth/authController.js";
-import { googleLogin } from "../controllers/auth/googleAuthController.js";
+import { register, login } from "../controllers/auth/authController";
+import { googleLogin } from "../controllers/auth/googleAuthController";
 import {
   completeOnboarding,
   getOnboardingStatus,
-} from "../controllers/auth/onboardingController.js";
-import { protect } from "../middleware/authMiddleware.js";
+} from "../controllers/auth/onboardingController";
+import { protect } from "../middleware/authMiddleware";
 
 const router = Router();
 

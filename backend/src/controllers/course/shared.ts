@@ -1,6 +1,6 @@
-import Course from "../../models/Course.js";
-import Section from "../../models/Section.js";
-import Lesson from "../../models/Lesson.js";
+import Course from "../../models/Course";
+import Section from "../../models/Section";
+import Lesson from "../../models/Lesson";
 
 export function isCourseManager(userId: string, role: string, instructorId: string): boolean {
   return role === "admin" || userId === instructorId;

@@ -1,37 +1,54 @@
 import type { Request, Response } from "express";
 import { isValidObjectId } from "mongoose";
-import Course from "../../models/Course.js";
-import Section from "../../models/Section.js";
-import Lesson from "../../models/Lesson.js";
-import LessonItem from "../../models/LessonItem.js";
-import Enrollment from "../../models/Enrollment.js";
-import LessonProgress from "../../models/LessonProgress.js";
-import { getCourseDurationMinutes, isCourseManager } from "./shared.js";
+import Course from "../../models/Course";
+import Section from "../../models/Section";
+import Lesson from "../../models/Lesson";
+import LessonItem from "../../models/LessonItem";
+import Enrollment from "../../models/Enrollment";
+import LessonProgress from "../../models/LessonProgress";
+import { getCourseDurationMinutes, isCourseManager } from "./shared";
+import { createCourseSchema } from "../../validators/course.validator";
 
 export async function createCourse(req: Request, res: Response) {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    const parsed = createCourseSchema.safeParse(req.body);
+    // ddss
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.flatten(),
+      });
+    }
 
-    const { title, description, thumbnailUrl, level, isPaid, price } = req.body;
-    if (!title || !description) {
-      return res.status(400).json({ message: "title and description are required" });
+    const data = parsed.data;
+
+    if (data.isPaid && (!data.price || data.price <= 0)) {
+      return res.status(400).json({
+        message: "Valid price required for paid course",
+      });
     }
 
     const course = await Course.create({
-      title,
-      description,
-      thumbnailUrl,
-      level: level || "beginner",
-      isPaid: Boolean(isPaid),
-      price: isPaid ? Number(price) : null,
+      title: data.title,
+      description: data.description,
+      thumbnailUrl: data.thumbnailUrl || undefined,
+      level: data.level || "beginner",
+      isPaid: data.isPaid,
+      price: data.isPaid ? data.price : null,
       instructor: req.user.id,
       status: "draft",
     });
 
-    return res.status(201).json({ message: "Course created", course });
-  } catch {
+    return res.status(201).json({
+      message: "Course created",
+      course,
+    });
+
+  } catch (e) {
+    console.error(e);
     return res.status(500).json({ message: "Server error" });
   }
 }

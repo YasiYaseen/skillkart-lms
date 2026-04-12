@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { getMyCourses } from "../controllers/course/enrollmentController.js";
-import { getMyCourseProgress } from "../controllers/course/progressController.js";
-import { protect } from "../middleware/authMiddleware.js";
-import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware.js";
+import { getMyCourses } from "../controllers/course/enrollmentController";
+import { getMyCourseProgress } from "../controllers/course/progressController";
+import { protect } from "../middleware/authMiddleware";
+import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
 
 const router = Router();
 

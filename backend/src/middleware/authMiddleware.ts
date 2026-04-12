@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { verify } from "jsonwebtoken";
-import User from "../models/User.js";
-import type { AuthTokenPayload } from "../types/auth.js";
+import User from "../models/User";
+import type { AuthTokenPayload } from "../types/auth";
 
 function getBearerToken(authHeader?: string): string | null {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {

@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import { isValidObjectId } from "mongoose";
-import Quiz from "../../models/Quiz.js";
-import QuizAttempt from "../../models/QuizAttempt.js";
-import Lesson from "../../models/Lesson.js";
+import Quiz from "../../models/Quiz";
+import QuizAttempt from "../../models/QuizAttempt";
+import Lesson from "../../models/Lesson";
 
 function normalizeParam(param: string | string[] | undefined): string | null {
   if (!param) return null;

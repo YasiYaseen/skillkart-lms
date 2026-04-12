@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { protect } from "../middleware/authMiddleware.js";
-import { authorize } from "../middleware/roleMiddleware.js";
-import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware.js";
-import { createOrReplaceQuiz, getQuiz, submitQuiz } from "../controllers/course/quizController.js";
+import { protect } from "../middleware/authMiddleware";
+import { authorize } from "../middleware/roleMiddleware";
+import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
+import { createOrReplaceQuiz, getQuiz, submitQuiz } from "../controllers/course/quizController";
 
 const router = Router();
 

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import User from "../../models/User.js";
+import User from "../../models/User";
 
 function normalizeText(value: unknown, maxLen: number): string {
   return String(value ?? "")

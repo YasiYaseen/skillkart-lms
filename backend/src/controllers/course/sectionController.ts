@@ -1,11 +1,11 @@
 import type { Request, Response } from "express";
 import { isValidObjectId } from "mongoose";
-import Course from "../../models/Course.js";
-import Section from "../../models/Section.js";
-import Lesson from "../../models/Lesson.js";
-import LessonItem from "../../models/LessonItem.js";
-import LessonProgress from "../../models/LessonProgress.js";
-import { isCourseManager } from "./shared.js";
+import Course from "../../models/Course";
+import Section from "../../models/Section";
+import Lesson from "../../models/Lesson";
+import LessonItem from "../../models/LessonItem";
+import LessonProgress from "../../models/LessonProgress";
+import { isCourseManager } from "./shared";
 
 export async function createSection(req: Request, res: Response) {
   try {

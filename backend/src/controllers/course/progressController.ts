@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
 import { isValidObjectId } from "mongoose";
-import Course from "../../models/Course.js";
-import Section from "../../models/Section.js";
-import Lesson from "../../models/Lesson.js";
-import Enrollment from "../../models/Enrollment.js";
-import LessonProgress from "../../models/LessonProgress.js";
-import Quiz from "../../models/Quiz.js";
-import QuizAttempt from "../../models/QuizAttempt.js";
+import Course from "../../models/Course";
+import Section from "../../models/Section";
+import Lesson from "../../models/Lesson";
+import Enrollment from "../../models/Enrollment";
+import LessonProgress from "../../models/LessonProgress";
+import Quiz from "../../models/Quiz";
+import QuizAttempt from "../../models/QuizAttempt";
 
 async function getCourseFromLessonId(lessonId: string) {
   const lesson = await Lesson.findById(lessonId);

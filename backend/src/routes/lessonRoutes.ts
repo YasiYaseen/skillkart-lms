@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { updateLesson } from "../controllers/course/lessonController.js";
-import { createLessonItem } from "../controllers/course/lessonItemController.js";
-import { updateLessonProgress } from "../controllers/course/progressController.js";
-import { protect } from "../middleware/authMiddleware.js";
-import { authorize } from "../middleware/roleMiddleware.js";
-import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware.js";
+import { updateLesson } from "../controllers/course/lessonController";
+import { createLessonItem } from "../controllers/course/lessonItemController";
+import { updateLessonProgress } from "../controllers/course/progressController";
+import { protect } from "../middleware/authMiddleware";
+import { authorize } from "../middleware/roleMiddleware";
+import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
 
 const router = Router();
 

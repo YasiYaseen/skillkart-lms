@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { createLesson } from "../controllers/course/lessonController.js";
-import { updateSection, deleteSection } from "../controllers/course/sectionController.js";
-import { protect } from "../middleware/authMiddleware.js";
-import { authorize } from "../middleware/roleMiddleware.js";
-import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware.js";
+import { createLesson } from "../controllers/course/lessonController";
+import { updateSection, deleteSection } from "../controllers/course/sectionController";
+import { protect } from "../middleware/authMiddleware";
+import { authorize } from "../middleware/roleMiddleware";
+import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
 
 const router = Router();
 

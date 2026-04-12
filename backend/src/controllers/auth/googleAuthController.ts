@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import axios from "axios";
 import jwt from "jsonwebtoken";
-import User from "../../models/User.js";
+import User from "../../models/User";
 
 export async function googleLogin(req: Request, res: Response) {
   const { access_token } = req.body;

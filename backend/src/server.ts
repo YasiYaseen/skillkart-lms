@@ -1,13 +1,13 @@
 import express, { json } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import connectDB from "./config/db.js";
-import authRoutes from "./routes/authRoutes.js";
-import courseRoutes from "./routes/courseRoutes.js";
-import sectionRoutes from "./routes/sectionRoutes.js";
-import lessonRoutes from "./routes/lessonRoutes.js";
-import meRoutes from "./routes/meRoutes.js";
-import quizRoutes from "./routes/quizRoutes.js";
+import connectDB from "./config/db";
+import authRoutes from "./routes/authRoutes";
+import courseRoutes from "./routes/courseRoutes";
+import sectionRoutes from "./routes/sectionRoutes";
+import lessonRoutes from "./routes/lessonRoutes";
+import meRoutes from "./routes/meRoutes";
+import quizRoutes from "./routes/quizRoutes";
 
 dotenv.config();
 // Workaround for Windows DNS SRV resolution issues
