@@ -1,10 +1,20 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { getOnboardingStatusApi } from './auth.api';
 
 interface User {
-  _id: string;
+  id: string;
   name: string;
   email: string;
-  role: string;
+  role: 'student' | 'instructor' | 'admin';
+  onboardingCompleted: boolean;
+  headline?: string;
+  bio?: string;
+  interests?: string[];
+  socialLinks?: {
+    website?: string;
+    linkedin?: string;
+    twitter?: string;
+  };
 }
 
 interface AuthContextType {
@@ -12,6 +22,7 @@ interface AuthContextType {
   token: string | null;
   login: (token: string, user: User) => void;
   logout: () => void;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -21,18 +32,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     if (storedToken && storedUser) {
+      const parsedUser = JSON.parse(storedUser) as User;
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      setUser(parsedUser);
+
+      getOnboardingStatusApi()
+        .then((res) => {
+          const serverUser = res.data?.user as User | undefined;
+          if (!serverUser) return;
+          setUser(serverUser);
+          localStorage.setItem('user', JSON.stringify(serverUser));
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setToken(null);
+          setUser(null);
+        });
     }
   }, []);
 
   const login = (token: string, user: User) => {
-    console.log('inside login',token, user);
-    
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
 
@@ -41,13 +64,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
   };
 
+  const updateUser = (updates: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

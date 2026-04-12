@@ -25,7 +25,7 @@ async function resolveUserFromToken(token: string): Promise<AuthTokenPayload | n
     return null;
   }
 
-  const user = await User.findById(userId).select("_id role");
+  const user = await User.findById(userId).select("_id role onboardingCompleted");
   if (!user) {
     return null;
   }
@@ -33,6 +33,7 @@ async function resolveUserFromToken(token: string): Promise<AuthTokenPayload | n
   return {
     id: user._id.toString(),
     role: user.role,
+    onboardingCompleted: Boolean(user.onboardingCompleted),
   };
 }
 

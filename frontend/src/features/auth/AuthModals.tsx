@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { GoogleIcon } from '@/assets/icons';
 import { toast } from 'react-toastify';
-import { loginWithGoogle, loginWithEmail, registerWithEmail } from './auth.service';
+import { getOnboardingStatus, loginWithGoogle, loginWithEmail, registerWithEmail } from './auth.service';
 import { useAuth } from './AuthContext';
 
 interface AuthModalsProps {
@@ -27,12 +27,30 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
         setMode(initialMode);
     }
 
+    const handleAuthSuccess = async (token: string, user: any) => {
+        login(token, user);
+
+        try {
+            const status = await getOnboardingStatus();
+            if (status?.user) {
+                login(token, status.user);
+                user = status.user;
+            }
+        } catch {
+            // Ignore sync error and fallback to login response payload
+        }
+
+        onClose();
+        if (!user.onboardingCompleted) {
+            navigate('/onboarding');
+        }
+    };
+
     const googleLoginBtn = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             try {
                 const { token, user } = await loginWithGoogle(tokenResponse.access_token);
-                login(token, user);
-                onClose();
+                await handleAuthSuccess(token, user);
             } catch {
                 toast.error('Login failed');
             }
@@ -48,13 +66,10 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
         try {
             if (mode === 'login') {
                 const { token, user } = await loginWithEmail({ email, password });
-                login(token, user);
-                onClose();
+                await handleAuthSuccess(token, user);
             } else {
                 const { token, user } = await registerWithEmail({ name, email, password });
-                login(token, user);
-                onClose();
-                navigate('/onboarding');
+                await handleAuthSuccess(token, user);
             }
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Authentication error');

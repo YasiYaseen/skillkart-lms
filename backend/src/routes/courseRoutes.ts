@@ -17,6 +17,7 @@ import {
 } from "../controllers/course/enrollmentController.js";
 import { protect, optionalProtect } from "../middleware/authMiddleware.js";
 import { authorize } from "../middleware/roleMiddleware.js";
+import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware.js";
 
 const router = Router();
 
@@ -24,16 +25,52 @@ router.get("/", optionalProtect, getCourses);
 router.get("/:courseId", optionalProtect, getCourseById);
 router.get("/:courseId/curriculum", optionalProtect, getCurriculumForCourse);
 
-router.post("/", protect, authorize("instructor", "admin"), createCourse);
-router.patch("/:courseId", protect, authorize("instructor", "admin"), updateCourse);
-router.patch("/:courseId/publish", protect, authorize("instructor", "admin"), publishCourse);
-router.patch("/:courseId/unpublish", protect, authorize("instructor", "admin"), unpublishCourse);
-router.patch("/:courseId/archive", protect, authorize("instructor", "admin"), archiveCourse);
-router.delete("/:courseId", protect, authorize("instructor", "admin"), deleteCourse);
+router.post("/", protect, requireOnboardingCompleted, authorize("instructor", "admin"), createCourse);
+router.patch("/:courseId", protect, requireOnboardingCompleted, authorize("instructor", "admin"), updateCourse);
+router.patch(
+  "/:courseId/publish",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  publishCourse
+);
+router.patch(
+  "/:courseId/unpublish",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  unpublishCourse
+);
+router.patch(
+  "/:courseId/archive",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  archiveCourse
+);
+router.delete("/:courseId", protect, requireOnboardingCompleted, authorize("instructor", "admin"), deleteCourse);
 
-router.post("/:courseId/sections", protect, authorize("instructor", "admin"), createSection);
+router.post(
+  "/:courseId/sections",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  createSection
+);
 
-router.post("/:courseId/enroll", protect, authorize("student", "instructor", "admin"), enrollInCourse);
-router.get("/:courseId/enrollments", protect, authorize("instructor", "admin"), getCourseEnrollments);
+router.post(
+  "/:courseId/enroll",
+  protect,
+  requireOnboardingCompleted,
+  authorize("student", "instructor", "admin"),
+  enrollInCourse
+);
+router.get(
+  "/:courseId/enrollments",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  getCourseEnrollments
+);
 
 export default router;
