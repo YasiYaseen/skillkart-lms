@@ -1,11 +1,12 @@
 import type { Request, Response } from "express";
-import User from "../../models/User";
+import User from "../../models/User.js";
 import { hash, compare } from "bcryptjs";
 import {sign} from "jsonwebtoken";
 
 export async function register(req: Request, res: Response) {
     try {
         const { name, email, password, role } = req.body;
+        const normalizedRole = role === "instructor" ? "instructor" : "student";
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -18,10 +19,18 @@ export async function register(req: Request, res: Response) {
             name,
             email,
             password: hashedPassword,
-            role
+            role: normalizedRole
         });
 
-        res.status(201).json({ message: "User registered successfully" });
+        res.status(201).json({
+            message: "User registered successfully",
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
+        });
     } catch (err) {
         res.status(500).json({ message: "Server error" });
     }
@@ -51,7 +60,15 @@ export async function login(req: Request, res: Response) {
             { expiresIn: "1d" }
         );
 
-        res.json({ token });
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
+        });
     } catch (err) {
         res.status(500).json({ message: "Server error" });
     }

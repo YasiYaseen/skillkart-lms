@@ -3,6 +3,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import courseRoutes from "./routes/courseRoutes.js";
+import sectionRoutes from "./routes/sectionRoutes.js";
+import lessonRoutes from "./routes/lessonRoutes.js";
+import meRoutes from "./routes/meRoutes.js";
 
 dotenv.config();
 // Workaround for Windows DNS SRV resolution issues
@@ -20,6 +24,10 @@ connectDB();
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/courses", courseRoutes);
+app.use("/api/sections", sectionRoutes);
+app.use("/api/lessons", lessonRoutes);
+app.use("/api/me", meRoutes);
 
 // Health check
 app.get("/", (req, res) => {
