@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { LessonQuiz } from '@/components/LessonQuiz';
 
 function LessonViewer() {
     const { courseId, lessonId } = useParams();
@@ -13,6 +14,7 @@ function LessonViewer() {
     const [items, setItems] = useState<any[]>([]);
     const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
     const [progressPercentage, setProgressPercentage] = useState<number>(0);
+    const [quizPassed, setQuizPassed] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -48,6 +50,10 @@ function LessonViewer() {
 
         fetchCourseAndProgress();
     }, [courseId, lessonId, navigate]);
+
+    useEffect(() => {
+        setQuizPassed(false);
+    }, [lessonId]);
 
     const activeLesson = lessons.find(l => l._id === lessonId);
     const activeItems = activeLesson ? items.filter(i => i.lesson === activeLesson._id) : [];
@@ -147,7 +153,11 @@ function LessonViewer() {
                     <div className="max-w-4xl mx-auto border border-gray-200 bg-white shadow-sm rounded-2xl overflow-hidden">
                         <div className="p-6 md:p-8 bg-gray-900 text-white flex justify-between items-center">
                             <h1 className="text-2xl font-bold">{activeLesson.title}</h1>
-                            <button onClick={handleProgress} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                            <button
+                                onClick={handleProgress}
+                                disabled={!quizPassed && activeLesson.type === 'quiz'}
+                                className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
                                 Mark as Complete
                             </button>
                         </div>
@@ -195,6 +205,12 @@ function LessonViewer() {
                                     }
                                 })
                             )}
+
+                            {/* Quiz - renders only if lesson has a quiz */}
+                            <LessonQuiz
+                                lessonId={lessonId!}
+                                onQuizPassed={() => setQuizPassed(true)}
+                            />
 
                             {/* Navigation Buttons */}
                             <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">

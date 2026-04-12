@@ -5,6 +5,8 @@ import Section from "../../models/Section.js";
 import Lesson from "../../models/Lesson.js";
 import Enrollment from "../../models/Enrollment.js";
 import LessonProgress from "../../models/LessonProgress.js";
+import Quiz from "../../models/Quiz.js";
+import QuizAttempt from "../../models/QuizAttempt.js";
 
 async function getCourseFromLessonId(lessonId: string) {
   const lesson = await Lesson.findById(lessonId);
@@ -103,7 +105,25 @@ export async function updateLessonProgress(req: Request, res: Response) {
     } = req.body;
 
     const clampedProgress = Math.max(0, Math.min(100, Number(progressPercentage ?? 0)));
-    const isCompleted = typeof completed === "boolean" ? completed : clampedProgress >= 100;
+    let wantsComplete = typeof completed === "boolean" ? completed : clampedProgress >= 100;
+
+    if (wantsComplete) {
+      const quiz = await Quiz.findOne({ lesson: lesson._id }).lean();
+      if (quiz) {
+        const latestAttempt = await QuizAttempt.findOne(
+          { user: req.user.id, lesson: lesson._id },
+          { passed: 1 },
+          { sort: { createdAt: -1 } }
+        ).lean();
+        if (!latestAttempt?.passed) {
+          return res.status(403).json({
+            message: "You must pass the quiz before marking this lesson complete",
+          });
+        }
+      }
+    }
+
+    const isCompleted = wantsComplete;
 
     const progress = await LessonProgress.findOneAndUpdate(
       { user: req.user.id, lesson: lesson._id },

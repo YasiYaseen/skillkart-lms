@@ -7,6 +7,7 @@ import courseRoutes from "./routes/courseRoutes.js";
 import sectionRoutes from "./routes/sectionRoutes.js";
 import lessonRoutes from "./routes/lessonRoutes.js";
 import meRoutes from "./routes/meRoutes.js";
+import quizRoutes from "./routes/quizRoutes.js";
 
 dotenv.config();
 // Workaround for Windows DNS SRV resolution issues
@@ -28,6 +29,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/sections", sectionRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/me", meRoutes);
+app.use("/api", quizRoutes);
 
 // Health check
 app.get("/", (req, res) => {
