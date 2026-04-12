@@ -45,10 +45,14 @@ function CourseDetailsPage() {
                         title: sec.title,
                         lectureCount: sectionLessons.length,
                         duration: sectionLessons.reduce((acc: number, l: any) => acc + (l.durationMinutes || 0), 0) + ' m',
-                        lectures: sectionLessons.map((l: any) => ({
-                            title: l.title,
-                            duration: (l.durationMinutes || 0) + ' mins'
-                        }))
+                        lectures: sectionLessons.map((l: any) => {
+                            const lessonItems = (c.lessonItems || []).filter((i: any) => i.lesson === l._id);
+                            return {
+                                title: l.title,
+                                duration: (l.durationMinutes || 0) + ' mins',
+                                items: lessonItems
+                            };
+                        })
                     };
                 });
 
@@ -57,14 +61,12 @@ function CourseDetailsPage() {
                     title: c.title,
                     subtitle: c.level === 'beginner' ? 'Beginner friendly starting point.' : 'Advanced level material.',
                     instructor: c.instructor?.name || 'Unknown Instructor',
-                    rating: 0,
-                    ratingCount: 0,
-                    studentCount: 0,
+                    rating: null,
+                    ratingCount: null,
+                    studentCount: null,
                     thumbnail: c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop',
                     price: c.price || 0,
                     oldPrice: c.price ? (c.price * 1.5).toFixed(2) : 0,
-                    discount: 33,
-                    daysLeft: 5,
                     totalHours: Math.round((c.durationMinutes || 0) / 60),
                     totalLessons: c.lessons.length,
                     lastUpdated: c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : '',
@@ -95,8 +97,7 @@ function CourseDetailsPage() {
         try {
             await api.post(`/courses/${courseId}/enroll`);
             toast.success('Successfully enrolled!');
-            // After enrollment we would navigate to the student's dashboard course view
-            navigate('/'); // Navigate to student dashboard (My Courses) once it's created. For now home.
+            navigate(`/learn/${courseId}`);
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Enrollment failed');
         } finally {
@@ -132,17 +133,21 @@ function CourseDetailsPage() {
                             </p>
 
                             <div className="flex items-center flex-wrap gap-4 text-sm mb-4">
-                                <div className="flex items-center gap-1">
-                                    <span className="font-bold text-orange-500 flex items-center gap-0.5">
-                                        {course.rating} <StarIcon />
-                                    </span>
-                                    <span className="text-blue-600 underline cursor-pointer">
-                                        ({course.ratingCount} ratings)
-                                    </span>
-                                </div>
-                                <div className="text-gray-600">
-                                    {course.studentCount} students
-                                </div>
+                                {course.rating && (
+                                    <div className="flex items-center gap-1">
+                                        <span className="font-bold text-orange-500 flex items-center gap-0.5">
+                                            {course.rating} <StarIcon />
+                                        </span>
+                                        <span className="text-blue-600 underline cursor-pointer">
+                                            ({course.ratingCount} ratings)
+                                        </span>
+                                    </div>
+                                )}
+                                {course.studentCount > 0 && (
+                                    <div className="text-gray-600">
+                                        {course.studentCount} students
+                                    </div>
+                                )}
                             </div>
 
                             <div className="text-sm text-gray-700">
@@ -187,25 +192,17 @@ function CourseDetailsPage() {
                                 </div>
 
                                 <div className="p-6">
-                                    {/* Discount Badge */}
-                                    <div className="mb-4">
-                                        <span className="inline-block text-orange-600 font-medium text-sm animate-pulse">
-                                            🔥 {course.daysLeft} days left at this price!
-                                        </span>
-                                    </div>
-
                                     {/* Price */}
                                     <div className="flex items-center gap-3 mb-6">
                                         <span className="text-3xl font-bold text-gray-900">${course.price}</span>
                                         <span className="text-lg text-gray-400 line-through">${course.oldPrice}</span>
-                                        <span className="text-lg font-medium text-orange-600">{course.discount}% off</span>
                                     </div>
 
                                     {/* Stats Summary */}
                                     <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
                                         <div className="flex items-center gap-1.5">
                                             <StarIcon />
-                                            <span>{course.rating}</span>
+                                            <span>{course.rating || 'N/A'}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <ClockIcon />

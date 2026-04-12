@@ -57,7 +57,7 @@ function CreateCourse() {
         e.preventDefault();
         if (!courseId) return;
         try {
-            const res = await api.post(`/courses/${courseId}/sections`, { title: newSectionTitle, order: sections.length });
+            const res = await api.post(`/courses/${courseId}/sections`, { title: newSectionTitle, order: sections.length + 1 });
             setSections([...sections, { ...res.data.section, lessons: [] }]);
             setNewSectionTitle('');
             toast.success('Section added');
@@ -73,7 +73,7 @@ function CreateCourse() {
             const res = await api.post(`/sections/${sectionId}/lessons`, {
                 title: newLessonTitle,
                 durationMinutes: Number(newLessonDuration),
-                order: sec.lessons.length
+                order: sec.lessons.length + 1
             });
             const updatedSection = { ...sec, lessons: [...sec.lessons, { ...res.data.lesson, items: [] }] };
             setSections(sections.map(s => s._id === sectionId ? updatedSection : s));
@@ -92,8 +92,10 @@ function CreateCourse() {
             const lesson = sec.lessons.find((l: any) => l._id === lessonId);
             const res = await api.post(`/lessons/${lessonId}/items`, {
                 type: newItemType,
-                content: newItemContent,
-                order: lesson.items?.length || 0
+                content: newItemType === 'video'
+                    ? { url: newItemContent }
+                    : { text: newItemContent },
+                order: (lesson.items?.length || 0) + 1
             });
             
             // update items locally
@@ -198,9 +200,9 @@ function CreateCourse() {
                                             {/* Render Items */}
                                             {les.items?.length > 0 && (
                                                 <div className="pl-6 space-y-2 mt-2 border-t border-gray-200 pt-2 text-xs">
-                                                    {les.items.map((it: any, iIdx: number) => (
+                                                    {les.items.map((it: any) => (
                                                         <div key={it._id} className="text-gray-500 bg-white p-2 rounded border border-gray-200 flex justify-between">
-                                                            <span>[{it.type.toUpperCase()}] {it.content}</span>
+                                                            <span>[{it.type.toUpperCase()}] {it.content?.url || it.content?.text}</span>
                                                         </div>
                                                     ))}
                                                 </div>

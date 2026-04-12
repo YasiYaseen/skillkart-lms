@@ -14,26 +14,33 @@ function Dashboard() {
                 const courses = res.data.courses;
                 let tEnr = 0, tEarn = 0, tAct = 0, tDft = 0;
                 let allEnrollments: any[] = [];
-                
-                for (const c of courses) {
-                    if (c.status === 'published') tAct++;
+
+                const enrollmentPromises = courses.map((c: any) =>
+                    api.get(`/courses/${c._id}/enrollments`)
+                );
+
+                const enrollmentResults = await Promise.all(enrollmentPromises);
+
+                enrollmentResults.forEach((res, idx) => {
+                    const enrollments = res.data.enrollments;
+                    const course = courses[idx];
+
+                    if (course.status === 'published') tAct++;
                     else tDft++;
-                    
-                    const eRes = await api.get(`/courses/${c._id}/enrollments`);
-                    const enrollments = eRes.data.enrollments;
+
                     tEnr += enrollments.length;
-                    tEarn += (enrollments.length * (c.price || 0));
-                    
+                    tEarn += enrollments.length * (course.price || 0);
+
                     enrollments.forEach((e: any) => {
                         allEnrollments.push({
                             name: e.student.name,
-                            course: c.title,
+                            course: course.title,
                             date: new Date(e.createdAt).toLocaleDateString()
                         });
                     });
-                }
-                
-                allEnrollments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                });
+
+                allEnrollments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                 setRecent(allEnrollments.slice(0, 5));
                 setStats({ enrollments: tEnr, earnings: tEarn, active: tAct, draft: tDft });
             } catch (err) {

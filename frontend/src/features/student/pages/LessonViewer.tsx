@@ -40,6 +40,10 @@ function LessonViewer() {
     const activeLesson = lessons.find(l => l._id === lessonId);
     const activeItems = activeLesson ? items.filter(i => i.lesson === activeLesson._id) : [];
 
+    const lessonIndex = lessons.findIndex(l => l._id === lessonId);
+    const nextLesson = lessons[lessonIndex + 1];
+    const prevLesson = lessons[lessonIndex - 1];
+
     const handleProgress = async () => {
         try {
             await api.post(`/lessons/${lessonId}/progress`, { completed: true });
@@ -121,36 +125,64 @@ function LessonViewer() {
                                     <p className="text-gray-500">No content available for this lesson yet.</p>
                                 </div>
                             ) : (
-                                activeItems.map((item, idx) => (
-                                    <div key={item._id} className="item-content">
-                                        {item.type === 'video' ? (
-                                            <div className="aspect-video bg-black rounded-xl overflow-hidden mb-4 relative drop-shadow-md">
-                                                {/* Simulated video player wrapper */}
-                                                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                                                    {item.content.includes('youtube.com') || item.content.includes('youtu.be') ? (
-                                                        <iframe 
-                                                            className="w-full h-full" 
-                                                            src={item.content.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')} 
-                                                            title="Video player" 
-                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                                            allowFullScreen>
-                                                        </iframe>
-                                                    ) : (
-                                                        <div className="text-center text-gray-300">
-                                                            <svg className="w-16 h-16 mx-auto text-white/50 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                                            <p className="text-sm font-mono break-all px-4">{item.content}</p>
-                                                        </div>
-                                                    )}
+                                activeItems.map((item) => {
+                                    const content = item.content || {};
+
+                                    if (item.type === 'video') {
+                                        const url = content.url || '';
+                                        return (
+                                            <div key={item._id} className="item-content">
+                                                <div className="aspect-video bg-black rounded-xl overflow-hidden mb-4 relative drop-shadow-md">
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                                                        {url.includes('youtube.com') || url.includes('youtu.be') ? (
+                                                            <iframe
+                                                                className="w-full h-full"
+                                                                src={url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                                                                title="Video player"
+                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                allowFullScreen>
+                                                            </iframe>
+                                                        ) : (
+                                                            <video controls className="w-full h-full">
+                                                                <source src={url} />
+                                                            </video>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        ) : (
-                                            <div className="prose max-w-none text-gray-700 bg-gray-50 p-6 rounded-xl border border-gray-100">
-                                                {item.content}
+                                        );
+                                    } else {
+                                        return (
+                                            <div key={item._id} className="item-content">
+                                                <div className="prose max-w-none text-gray-700 bg-gray-50 p-6 rounded-xl border border-gray-100">
+                                                    {content.text}
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                ))
+                                        );
+                                    }
+                                })
                             )}
+
+                            {/* Navigation Buttons */}
+                            <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">
+                                {prevLesson ? (
+                                    <button
+                                        onClick={() => navigate(`/learn/${courseId}/${prevLesson._id}`)}
+                                        className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors"
+                                    >
+                                        ← Previous Lesson
+                                    </button>
+                                ) : <div />}
+
+                                {nextLesson && (
+                                    <button
+                                        onClick={() => navigate(`/learn/${courseId}/${nextLesson._id}`)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all"
+                                    >
+                                        Next Lesson →
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
