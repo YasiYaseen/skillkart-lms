@@ -4,9 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { GoogleIcon } from '@/assets/icons';
 import { toast } from 'react-toastify';
-import { loginWithGoogle } from './auth.service';
+import { loginWithGoogle, loginWithEmail, registerWithEmail } from './auth.service';
 import { useAuth } from './AuthContext';
-
 
 interface AuthModalsProps {
     isOpen: boolean;
@@ -15,9 +14,12 @@ interface AuthModalsProps {
 }
 
 function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
-    
     const { login } = useAuth();
     const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     // Reset mode when reopening
@@ -25,9 +27,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
         setMode(initialMode);
     }
 
-
-
-    const googleLogin = useGoogleLogin({
+    const googleLoginBtn = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             try {
                 const { token, user } = await loginWithGoogle(tokenResponse.access_token);
@@ -42,16 +42,24 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
         }
     });
 
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Mock Auth
-        console.log(`Submitting ${mode} form`);
-        onClose();
-
-        // If registering, go to onboarding (mock flow)
-        if (mode === 'register') {
-            navigate('/onboarding');
+        setLoading(true);
+        try {
+            if (mode === 'login') {
+                const { token, user } = await loginWithEmail({ email, password });
+                login(token, user);
+                onClose();
+            } else {
+                const { token, user } = await registerWithEmail({ name, email, password });
+                login(token, user);
+                onClose();
+                navigate('/onboarding');
+            }
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Authentication error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -75,7 +83,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                 <Button
                     variant="secondary"
                     className="w-full justify-center"
-                    onClick={() => googleLogin()}
+                    onClick={() => googleLoginBtn()}
                     type="button"
                 >
                     <GoogleIcon className="w-5 h-5 mr-3" />
@@ -95,10 +103,22 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                    <Input
+                        type="text"
+                        placeholder="Enter your full name"
+                        label="Full name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                    />
+                )}
                 <Input
                     type="email"
                     placeholder="Enter your email address"
                     label="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                 />
 
@@ -106,11 +126,13 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                     type="password"
                     placeholder="Enter your password"
                     label="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                 />
 
-                <Button type="submit" className="w-full justify-center mt-2" size="lg">
-                    {isLogin ? 'Continue' : 'Continue'}
+                <Button type="submit" disabled={loading} className="w-full justify-center mt-2" size="lg">
+                    {loading ? 'Processing...' : (isLogin ? 'Continue' : 'Continue')}
                 </Button>
             </form>
 
@@ -121,6 +143,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                         Don't have an account?{' '}
                         <button
                             onClick={() => setMode('register')}
+                            type="button"
                             className="font-semibold text-gray-900 hover:underline hover:text-blue-600"
                         >
                             Sign up
@@ -131,6 +154,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                         Already have an account?{' '}
                         <button
                             onClick={() => setMode('login')}
+                            type="button"
                             className="font-semibold text-gray-900 hover:underline hover:text-blue-600"
                         >
                             Sign in

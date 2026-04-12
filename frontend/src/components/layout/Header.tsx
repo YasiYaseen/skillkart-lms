@@ -47,12 +47,20 @@ function Header() {
           <div className="header-actions">
             {/* Navigation */}
             <nav className="header-nav ml-auto">
-              <Link to="/instructor" className="header-nav-link">
-                Instructor Studio
-              </Link>
+              {user && user.role === 'instructor' && (
+                <Link to="/instructor" className="header-nav-link">
+                  Instructor Studio
+                </Link>
+              )}
+
+              {user && user.role === 'student' && (
+                <Link to="/my-courses" className="header-nav-link">
+                  My Courses
+                </Link>
+              )}
 
               {user && (
-                <Link to="/courses/create" className="header-nav-link">
+                <Link to="/courses/create" className="header-nav-link hidden">
                   Add Courses
                 </Link>
               )}

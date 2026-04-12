@@ -1,6 +1,52 @@
-// Instructor Dashboard Page (static UI)
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import { toast } from 'react-toastify';
 
 function Dashboard() {
+    const [stats, setStats] = useState({ enrollments: 0, earnings: 0, active: 0, draft: 0 });
+    const [recent, setRecent] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    
+    useEffect(() => {
+        const fetchDashboard = async () => {
+            try {
+                const res = await api.get('/courses?mine=true');
+                const courses = res.data.courses;
+                let tEnr = 0, tEarn = 0, tAct = 0, tDft = 0;
+                let allEnrollments: any[] = [];
+                
+                for (const c of courses) {
+                    if (c.status === 'published') tAct++;
+                    else tDft++;
+                    
+                    const eRes = await api.get(`/courses/${c._id}/enrollments`);
+                    const enrollments = eRes.data.enrollments;
+                    tEnr += enrollments.length;
+                    tEarn += (enrollments.length * (c.price || 0));
+                    
+                    enrollments.forEach((e: any) => {
+                        allEnrollments.push({
+                            name: e.student.name,
+                            course: c.title,
+                            date: new Date(e.createdAt).toLocaleDateString()
+                        });
+                    });
+                }
+                
+                allEnrollments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                setRecent(allEnrollments.slice(0, 5));
+                setStats({ enrollments: tEnr, earnings: tEarn, active: tAct, draft: tDft });
+            } catch (err) {
+                toast.error('Failed to load dashboard data');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDashboard();
+    }, []);
+
+    if (loading) return <div className="py-10 text-gray-500">Loading dashboard...</div>;
+
     return (
         <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-8">Dashboard</h1>
@@ -9,18 +55,16 @@ function Dashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
                     <p className="text-sm text-gray-500 mb-1">Total Enrollments</p>
-                    <p className="text-3xl font-bold text-gray-900">124</p>
-                    <p className="text-xs text-green-600 mt-2">+12% from last month</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.enrollments}</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
                     <p className="text-sm text-gray-500 mb-1">Total Earnings</p>
-                    <p className="text-3xl font-bold text-gray-900">$4,250</p>
-                    <p className="text-xs text-green-600 mt-2">+8% from last month</p>
+                    <p className="text-3xl font-bold text-gray-900">${stats.earnings.toFixed(2)}</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
                     <p className="text-sm text-gray-500 mb-1">Active Courses</p>
-                    <p className="text-3xl font-bold text-gray-900">5</p>
-                    <p className="text-xs text-gray-400 mt-2">1 in draft</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.active}</p>
+                    <p className="text-xs text-gray-400 mt-2">{stats.draft} in draft</p>
                 </div>
             </div>
 
@@ -39,20 +83,14 @@ function Dashboard() {
                         </tr>
                     </thead>
                     <tbody>
-                        {[
-                            { name: 'Richard Gartton', course: 'Build Text to Image SaaS App in React JS', date: '22 Aug 2024' },
-                            { name: 'Evelynn Murphy', course: 'Build AI BG Removal SaaS App in React JS', date: '22 Aug 2024' },
-                            { name: 'Alison Powell', course: 'React Router Complete Course in One Video', date: '23 Sep 2024' },
-                        ].map((row, i) => (
+                        {recent.map((row, i) => (
                             <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                                 <td className="py-4 px-6 text-gray-400">{i + 1}</td>
                                 <td className="py-4 px-6">
                                     <div className="flex items-center gap-3">
-                                        <img
-                                            src={`https://randomuser.me/api/portraits/${i % 2 === 0 ? 'men' : 'women'}/${i + 30}.jpg`}
-                                            alt={row.name}
-                                            className="w-8 h-8 rounded-full object-cover"
-                                        />
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs uppercase">
+                                            {row.name.substring(0,2)}
+                                        </div>
                                         <span className="text-gray-800">{row.name}</span>
                                     </div>
                                 </td>
@@ -60,6 +98,11 @@ function Dashboard() {
                                 <td className="py-4 px-6 text-gray-400">{row.date}</td>
                             </tr>
                         ))}
+                        {recent.length === 0 && (
+                            <tr>
+                                <td colSpan={4} className="py-10 text-center text-gray-500">No recent enrollments.</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>

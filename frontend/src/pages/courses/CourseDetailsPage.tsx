@@ -1,85 +1,14 @@
 import CourseStructure from '@/components/course/CourseStructure';
-import { useParams } from 'react-router-dom';
-
-// --- Mock Data ---
-
-const COURSE_DATA = {
-    id: 1,
-    title: "Build Text to image SaaS App in React JS",
-    subtitle: "Master MERN Stack by building a Full Stack AI Text to Image SaaS App using React js, Mongodb, Node js, Express js and Stripe Payment",
-    instructor: "Richard James",
-    rating: 4.5,
-    ratingCount: 122,
-    studentCount: 21,
-    thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop",
-    price: 10.99,
-    oldPrice: 19.99,
-    discount: 50,
-    daysLeft: 5,
-    totalHours: 30,
-    totalLessons: 54,
-    lastUpdated: "08/2023",
-    language: "English",
-    captions: "English",
-    description: [
-        "This is the most comprehensive and in-depth JavaScript course with 30 JavaScript projects.",
-        "JavaScript is currently the most popular programming language in the world. If you are an aspiring web developer or full stack developer, JavaScript is a must to learn. It also helps you to get high-paying jobs all over the world.",
-        "In this course, you will learn modern JavaScript from the very beginning, step-by-step. We will cover all the core concepts, modern ES6+ features, asynchronous programming, and much more."
-    ],
-    whatYouWillLearn: [
-        "Lifetime access with free updates.",
-        "Step-by-step, hands-on project guidance.",
-        "Downloadable resources and source code.",
-        "Quizzes to test your knowledge.",
-        "Certificate of completion."
-    ],
-    structure: {
-        totalSections: 22,
-        totalLectures: 54,
-        totalDuration: "27h 25m",
-        sections: [
-            {
-                id: 1,
-                title: "Project Introduction",
-                lectureCount: 3,
-                duration: "45 m",
-                lectures: [
-                    { title: "App Overview - Build Text-to-Image SaaS", duration: "10 mins" },
-                    { title: "Tech Stack - React, Node.js, MongoDB", duration: "15 mins" },
-                    { title: "Core Features - Authentication, payment, deployment", duration: "20 mins" }
-                ]
-            },
-            {
-                id: 2,
-                title: "Project Setup and configuration",
-                lectureCount: 4,
-                duration: "45 m",
-                lectures: [
-                    { title: "Environment Setup - Install Node.js, VS Code", duration: "10 mins" },
-                    { title: "Repository Setup - Clone project repository", duration: "10 mins" },
-                    { title: "Install Dependencies - Set up npm packages", duration: "10 mins" },
-                    { title: "Initial Configuration - Set up basic files and folders", duration: "15 mins" }
-                ]
-            },
-            { id: 3, title: "Tailwind Setup", lectureCount: 4, duration: "45 m", lectures: [] },
-            { id: 4, title: "Frontend Project", lectureCount: 4, duration: "45 m", lectures: [] },
-            { id: 5, title: "Backend Project", lectureCount: 4, duration: "45 m", lectures: [] },
-            { id: 6, title: "Payment Integration", lectureCount: 4, duration: "45 m", lectures: [] },
-            { id: 7, title: "Project Deployment", lectureCount: 4, duration: "45 m", lectures: [] },
-        ]
-    }
-};
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import { toast } from 'react-toastify';
+import { useAuth } from '@/features/auth/AuthContext';
 
 // --- Icons ---
 const StarIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-orange-500">
         <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
-    </svg>
-);
-
-const PlayIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-400">
-        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm14.024-.983a1.125 1.125 0 010 1.966l-5.603 3.113A1.125 1.125 0 019 15.113V8.887c0-.857.921-1.4 1.671-.983l5.603 3.113z" clipRule="evenodd" />
     </svg>
 );
 
@@ -95,19 +24,93 @@ const BookIcon = () => (
     </svg>
 );
 
-const ChevronDownIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-    </svg>
-);
-
-
 // --- Components ---
 
 function CourseDetailsPage() {
     const { courseId } = useParams();
-    // In a real app, fetch data based on courseId
-    const course = COURSE_DATA;
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const [course, setCourse] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [enrolling, setEnrolling] = useState(false);
+
+    useEffect(() => {
+        api.get(`/courses/${courseId}`)
+            .then(res => {
+                const c = res.data.course;
+                const mappedSections = c.sections.map((sec: any) => {
+                    const sectionLessons = c.lessons.filter((l: any) => l.section === sec._id);
+                    return {
+                        id: sec._id,
+                        title: sec.title,
+                        lectureCount: sectionLessons.length,
+                        duration: sectionLessons.reduce((acc: number, l: any) => acc + (l.durationMinutes || 0), 0) + ' m',
+                        lectures: sectionLessons.map((l: any) => ({
+                            title: l.title,
+                            duration: (l.durationMinutes || 0) + ' mins'
+                        }))
+                    };
+                });
+
+                setCourse({
+                    id: c._id,
+                    title: c.title,
+                    subtitle: c.level === 'beginner' ? 'Beginner friendly starting point.' : 'Advanced level material.',
+                    instructor: c.instructor?.name || 'Unknown Instructor',
+                    rating: 0,
+                    ratingCount: 0,
+                    studentCount: 0,
+                    thumbnail: c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop',
+                    price: c.price || 0,
+                    oldPrice: c.price ? (c.price * 1.5).toFixed(2) : 0,
+                    discount: 33,
+                    daysLeft: 5,
+                    totalHours: Math.round((c.durationMinutes || 0) / 60),
+                    totalLessons: c.lessons.length,
+                    lastUpdated: c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : '',
+                    description: c.description ? [c.description] : [],
+                    whatYouWillLearn: ['Lifetime access with updates', 'Hands-on project guidance', 'Detailed instruction'],
+                    structure: {
+                        totalSections: c.sections.length,
+                        totalLectures: c.lessons.length,
+                        totalDuration: (c.durationMinutes || 0) + "m",
+                        sections: mappedSections
+                    }
+                });
+            })
+            .catch(err => {
+                toast.error(err.response?.data?.message || 'Failed to fetch course details');
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    }, [courseId]);
+
+    const handleEnroll = async () => {
+        if (!user) {
+            toast.info('Please log in to enroll');
+            return;
+        }
+        setEnrolling(true);
+        try {
+            await api.post(`/courses/${courseId}/enroll`);
+            toast.success('Successfully enrolled!');
+            // After enrollment we would navigate to the student's dashboard course view
+            navigate('/'); // Navigate to student dashboard (My Courses) once it's created. For now home.
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Enrollment failed');
+        } finally {
+            setEnrolling(false);
+        }
+    };
+
+    if (loading) {
+        return <div className="text-center py-20 text-gray-500">Loading course details...</div>;
+    }
+
+    if (!course) {
+        return <div className="text-center py-20 text-red-500">Course not found</div>;
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
@@ -158,9 +161,9 @@ function CourseDetailsPage() {
                         {/* 3. Course Description */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Course Description</h2>
-                            <div className="space-y-4 text-gray-700 leading-relaxed">
-                                {course.description.map((video, idx) => (
-                                    <p key={idx}>{video}</p>
+                            <div className="space-y-4 text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                {course.description.map((paragraph: string, idx: number) => (
+                                    <p key={idx}>{paragraph}</p>
                                 ))}
                             </div>
                         </div>
@@ -215,15 +218,18 @@ function CourseDetailsPage() {
                                     </div>
 
                                     {/* Button */}
-                                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 mb-6">
-                                        Enroll Now
+                                    <button 
+                                        onClick={handleEnroll}
+                                        disabled={enrolling}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 mb-6 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        {enrolling ? 'Enrolling...' : 'Enroll Now'}
                                     </button>
 
                                     {/* What's Included */}
                                     <div>
                                         <h3 className="font-semibold text-gray-900 mb-3">What's in the course?</h3>
                                         <ul className="space-y-2.5">
-                                            {course.whatYouWillLearn.map((item, idx) => (
+                                            {course.whatYouWillLearn.map((item: string, idx: number) => (
                                                 <li key={idx} className="flex items-start gap-2.5 text-sm text-gray-600">
                                                     <span className="text-green-500 mt-0.5">•</span>
                                                     <span>{item}</span>

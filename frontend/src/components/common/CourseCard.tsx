@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import Rating from './Rating';
 
 export interface Course {
-    id: number;
+    id: string | number;
     title: string;
     instructor: string;
     thumbnail: string;

@@ -1,118 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SearchBar, CourseCard, Button, Course } from '../../components/common';
-
-// Mock course data (replace with API call later)
-const MOCK_COURSES: Course[] = [
-    {
-        id: 1,
-        title: 'Build Text to Image SaaS App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 2,
-        title: 'Build AI BG Removal SaaS App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 3,
-        title: 'React Router Complete Course in One Video',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 4,
-        title: 'Build Full Stack E-Commerce MERN App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 5,
-        title: 'Build Text to Image SaaS App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 6,
-        title: 'Build AI BG Removal SaaS App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 7,
-        title: 'React Router Complete Course in One Video',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 8,
-        title: 'Build Full Stack E-Commerce MERN App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 9,
-        title: 'Build Text to Image SaaS App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop',
-        rating: 4.2,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 10,
-        title: 'Build AI BG Removal SaaS App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 11,
-        title: 'React Router Complete Course in One Video',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 12,
-        title: 'Build Full Stack E-Commerce MERN App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    }
-];
+import { api } from '@/lib/api';
 
 /**
  * CourseList Page
@@ -120,15 +9,37 @@ const MOCK_COURSES: Course[] = [
  */
 function CourseList() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(8);
 
-    const filteredCourses = MOCK_COURSES.filter(course =>
-        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.instructor.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    useEffect(() => {
+        fetchCourses();
+    }, [searchQuery]);
 
-    const displayedCourses = filteredCourses.slice(0, visibleCount);
-    const hasMore = visibleCount < filteredCourses.length;
+    const fetchCourses = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get(`/courses?q=${searchQuery}`);
+            const mappedCourses = res.data.courses.map((c: any) => ({
+                id: c._id,
+                title: c.title,
+                instructor: c.instructor?.name || 'Unknown Instructor',
+                thumbnail: c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop',
+                rating: 0,
+                reviewCount: 0,
+                price: c.price || 0
+            }));
+            setCourses(mappedCourses);
+        } catch (err) {
+            console.error('Failed to fetch courses:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const displayedCourses = courses.slice(0, visibleCount);
+    const hasMore = visibleCount < courses.length;
 
     const handleLoadMore = () => {
         setVisibleCount(prev => prev + 4);
@@ -165,27 +76,33 @@ function CourseList() {
 
             </div>
 
-            {/* Course Grid */}
-            <div className="course-grid">
-                {displayedCourses.map(course => (
-                    <CourseCard key={course.id} course={course} />
-                ))}
-            </div>
+            {loading ? (
+                <div className="text-center py-12 text-gray-500">Loading courses...</div>
+            ) : (
+                <>
+                    {/* Course Grid */}
+                    <div className="course-grid">
+                        {displayedCourses.map(course => (
+                            <CourseCard key={course.id} course={course} />
+                        ))}
+                    </div>
 
-            {/* Empty State */}
-            {displayedCourses.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                    <p>No courses found matching "{searchQuery}"</p>
-                </div>
-            )}
+                    {/* Empty State */}
+                    {displayedCourses.length === 0 && (
+                        <div className="text-center py-12 text-gray-500">
+                            <p>No courses found matching "{searchQuery}"</p>
+                        </div>
+                    )}
 
-            {/* Load More */}
-            {hasMore && (
-                <div className="load-more-wrapper">
-                    <Button variant="secondary" size="md" onClick={handleLoadMore}>
-                        Load more
-                    </Button>
-                </div>
+                    {/* Load More */}
+                    {hasMore && (
+                        <div className="load-more-wrapper">
+                            <Button variant="secondary" size="md" onClick={handleLoadMore}>
+                                Load more
+                            </Button>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );

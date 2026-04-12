@@ -8,4 +8,5 @@
  * - Lesson viewer
  */
 
-export { };
+export { default as MyCourses } from './pages/MyCourses';
+export { default as LessonViewer } from './pages/LessonViewer';
