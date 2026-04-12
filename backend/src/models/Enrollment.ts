@@ -3,6 +3,7 @@ import { Schema, model, type Document, type Types } from "mongoose";
 export interface IEnrollment extends Document {
   student: Types.ObjectId;
   course: Types.ObjectId;
+  last_lesson_id?: Types.ObjectId;
   enrolledAt: Date;
   status: "active" | "completed" | "dropped";
   createdAt: Date;
@@ -22,6 +23,10 @@ const EnrollmentSchema = new Schema<IEnrollment>(
       ref: "Course",
       required: true,
       index: true,
+    },
+    last_lesson_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Lesson",
     },
     enrolledAt: {
       type: Date,

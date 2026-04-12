@@ -11,21 +11,33 @@ function LessonViewer() {
     const [sections, setSections] = useState<any[]>([]);
     const [lessons, setLessons] = useState<any[]>([]);
     const [items, setItems] = useState<any[]>([]);
+    const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
+    const [progressPercentage, setProgressPercentage] = useState<number>(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchCourse = async () => {
+        const fetchCourseAndProgress = async () => {
             try {
-                const res = await api.get(`/courses/${courseId}`);
-                const c = res.data.course;
+                const [courseRes, progRes] = await Promise.all([
+                    api.get(`/courses/${courseId}`),
+                    api.get(`/me/courses/${courseId}/progress`)
+                ]);
+                const c = courseRes.data.course;
+                const p = progRes.data;
+
                 setCourse(c);
                 setSections(c.sections || []);
                 setLessons(c.lessons || []);
                 setItems(c.lessonItems || []);
+                setCompletedLessonIds(p.completedLessonIds || []);
+                setProgressPercentage(p.progressPercentage || 0);
 
-                // If no lessonId provided, redirect to the very first lesson
-                if (!lessonId && c.lessons && c.lessons.length > 0) {
-                    navigate(`/learn/${courseId}/${c.lessons[0]._id}`, { replace: true });
+                if (!lessonId) {
+                    if (p.lastLessonId) {
+                        navigate(`/learn/${courseId}/${p.lastLessonId}`, { replace: true });
+                    } else if (c.lessons && c.lessons.length > 0) {
+                        navigate(`/learn/${courseId}/${c.lessons[0]._id}`, { replace: true });
+                    }
                 }
             } catch (err) {
                 toast.error('Failed to load course content');
@@ -34,7 +46,7 @@ function LessonViewer() {
             }
         };
 
-        fetchCourse();
+        fetchCourseAndProgress();
     }, [courseId, lessonId, navigate]);
 
     const activeLesson = lessons.find(l => l._id === lessonId);
@@ -48,6 +60,12 @@ function LessonViewer() {
         try {
             await api.post(`/lessons/${lessonId}/progress`, { completed: true });
             toast.success('Progress saved!');
+            
+            // Refetch progress silently to update UI
+            const progRes = await api.get(`/me/courses/${courseId}/progress`);
+            const p = progRes.data;
+            setCompletedLessonIds(p.completedLessonIds || []);
+            setProgressPercentage(p.progressPercentage || 0);
         } catch(err) {
             toast.error('Failed to save progress');
         }
@@ -64,7 +82,16 @@ function LessonViewer() {
                     <Link to={`/courses/${courseId}`} className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 mb-2">
                         ← Back to Course Info
                     </Link>
-                    <h2 className="text-lg font-bold text-gray-900 leading-tight">{course.title}</h2>
+                    <h2 className="text-lg font-bold text-gray-900 leading-tight mb-4">{course.title}</h2>
+                    
+                    {/* Progress Bar UI */}
+                    <div className="text-sm text-gray-600 mb-1 flex justify-between">
+                        <span>Course Progress</span>
+                        <span className="font-bold">{progressPercentage}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
+                    </div>
                 </div>
                 
                 <div className="flex flex-col">
@@ -78,15 +105,21 @@ function LessonViewer() {
                                 <div className="flex flex-col">
                                     {secLessons.map((les, lIdx) => {
                                         const isActive = les._id === lessonId;
+                                        const isCompleted = completedLessonIds.includes(les._id);
                                         return (
                                             <Link 
                                                 key={les._id} 
                                                 to={`/learn/${courseId}/${les._id}`}
                                                 className={`px-6 py-3 text-sm transition-colors border-l-4 ${isActive ? 'bg-blue-50 border-blue-600 text-blue-700 font-medium' : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                                             >
-                                                <div className="flex items-start gap-2">
-                                                    <span className="text-gray-400 font-mono mt-0.5">{lIdx + 1}.</span>
-                                                    <span>{les.title}</span>
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-gray-400 font-mono mt-0.5">{lIdx + 1}.</span>
+                                                        <span>{les.title}</span>
+                                                    </div>
+                                                    {isCompleted && (
+                                                        <span className="text-green-500 font-bold shrink-0">✓</span>
+                                                    )}
                                                 </div>
                                             </Link>
                                         );

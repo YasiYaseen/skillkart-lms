@@ -89,6 +89,9 @@ export async function updateLessonProgress(req: Request, res: Response) {
       return res.status(403).json({ message: "Enroll in this course first" });
     }
 
+    enrollment.last_lesson_id = lesson._id as any;
+    await enrollment.save();
+
     const {
       completed,
       progressPercentage,
@@ -159,24 +162,18 @@ export async function getMyCourseProgress(req: Request, res: Response) {
       ? await LessonProgress.find({ user: req.user.id, lesson: { $in: lessonIds } }).lean()
       : [];
 
-    const progressMap = new Map(progressDocs.map((doc) => [doc.lesson.toString(), doc]));
-    const lessonProgress = lessons.map((lesson) => {
-      const progress = progressMap.get(lesson._id.toString());
-      return {
-        lessonId: lesson._id,
-        title: lesson.title,
-        type: lesson.type,
-        isMandatory: lesson.isMandatory,
-        order: lesson.order,
-        progressPercentage: progress?.progressPercentage || 0,
-        completed: progress?.completed || false,
-        completedAt: progress?.completedAt || null,
-      };
+    const completedLessonIds = progressDocs.filter((p) => p.completed).map((p) => p.lesson.toString());
+    const totalLessons = lessons.length;
+    const completedCount = completedLessonIds.length;
+    const progressPercentage = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
+
+    return res.json({
+      completedLessonIds,
+      totalLessons,
+      completedCount,
+      progressPercentage,
+      lastLessonId: enrollment.last_lesson_id,
     });
-
-    const courseProgress = await getCourseProgressSnapshot(req.user.id, courseId);
-
-    return res.json({ lessonProgress, courseProgress });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }
