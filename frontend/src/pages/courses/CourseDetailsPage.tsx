@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
-import { useAuth } from '@/features/auth/AuthContext';
+import { EnrollButton } from '@/features/enrollment/components/EnrollButton';
 
 // --- Icons ---
 const StarIcon = () => (
@@ -29,10 +29,8 @@ const BookIcon = () => (
 function CourseDetailsPage() {
     const { courseId } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
     const [course, setCourse] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [enrolling, setEnrolling] = useState(false);
 
     useEffect(() => {
         api.get(`/courses/${courseId}`)
@@ -88,22 +86,7 @@ function CourseDetailsPage() {
             });
     }, [courseId]);
 
-    const handleEnroll = async () => {
-        if (!user) {
-            toast.info('Please log in to enroll');
-            return;
-        }
-        setEnrolling(true);
-        try {
-            await api.post(`/courses/${courseId}/enroll`);
-            toast.success('Successfully enrolled!');
-            navigate(`/learn/${courseId}`);
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Enrollment failed');
-        } finally {
-            setEnrolling(false);
-        }
-    };
+    // Enrollment is handled via the new EnrollButton component
 
     if (loading) {
         return <div className="text-center py-20 text-gray-500">Loading course details...</div>;
@@ -215,12 +198,9 @@ function CourseDetailsPage() {
                                     </div>
 
                                     {/* Button */}
-                                    <button 
-                                        onClick={handleEnroll}
-                                        disabled={enrolling}
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 mb-6 disabled:opacity-50 disabled:cursor-not-allowed">
-                                        {enrolling ? 'Enrolling...' : 'Enroll Now'}
-                                    </button>
+                                    {courseId && (
+                                        <EnrollButton courseId={courseId} onEnrolled={() => navigate(`/learn/${courseId}`)} />
+                                    )}
 
                                     {/* What's Included */}
                                     <div>

@@ -3,7 +3,7 @@ import { isValidObjectId } from "mongoose";
 import Course from "../../models/Course";
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
-import { isCourseManager } from "./shared";
+import { isCourseManager, syncEnrollmentLessonCount } from "./shared";
 
 export async function createLesson(req: Request, res: Response) {
   try {
@@ -50,6 +50,8 @@ export async function createLesson(req: Request, res: Response) {
       isPreview: Boolean(isPreview),
       isMandatory: isMandatory !== false,
     });
+
+    await syncEnrollmentLessonCount(course._id.toString());
 
     return res.status(201).json({ message: "Lesson created", lesson });
   } catch {

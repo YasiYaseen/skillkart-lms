@@ -1,6 +1,7 @@
 import Course from "../../models/Course";
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
+import Enrollment from "../../models/Enrollment";
 
 export function isCourseManager(userId: string, role: string, instructorId: string): boolean {
   return role === "admin" || userId === instructorId;
@@ -19,4 +20,18 @@ export async function getCourseDurationMinutes(courseId: string): Promise<number
 
 export async function getCourseOrNull(courseId: string) {
   return Course.findById(courseId);
+}
+
+/**
+ * Syncs totalLessonsCount on all enrollments for a course.
+ * Call this after any lesson is created or deleted for the course.
+ */
+export async function syncEnrollmentLessonCount(courseId: string): Promise<void> {
+  const sections = await Section.find({ course: courseId }).select("_id").lean();
+  const sectionIds = sections.map((s) => s._id);
+  const totalLessons = sectionIds.length
+    ? await Lesson.countDocuments({ section: { $in: sectionIds } })
+    : 0;
+
+  await Enrollment.updateMany({ course: courseId }, { $set: { totalLessonsCount: totalLessons } });
 }
