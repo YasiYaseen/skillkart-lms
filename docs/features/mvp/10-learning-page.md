@@ -1,6 +1,6 @@
 # Learning Page
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -29,11 +29,12 @@ Provide the actual lesson-taking experience for enrolled students.
 
 ## Acceptance Checklist
 - [x] Enrolled student can view lessons
-- [ ] Non-enrolled student cannot view private content
+- [x] Non-enrolled student cannot view private content
 - [x] Previous and next navigation works
 - [x] Completed lessons show visual state
 
 ## Current Implementation Notes
 - Learning page exists at `frontend/src/features/student/pages/LessonViewer.tsx`.
 - Lesson sidebar, content rendering, previous/next navigation, quiz rendering, and progress action exist.
-- Important gap: `GET /api/courses/:courseId` returns sections, lessons, and lesson items for published courses, so private lesson content may be visible before enrollment.
+- Fixed: `getCourseById` now checks enrollment or instructor status before returning `lessonItems`, so private content is protected.
+- Feature is fully complete.

@@ -4,6 +4,8 @@ import { ProgressBar } from "./ProgressBar";
 export interface EnrollmentCardProps {
   enrollment: {
     _id: string;
+    status?: string;
+    lastAccessedLessonId?: string;
     course: {
       _id: string;
       title: string;
@@ -16,11 +18,16 @@ export interface EnrollmentCardProps {
     totalLessonsCount?: number;
   };
   onUnenroll?: (enrollmentId: string) => void;
+  completed?: boolean;
 }
 
-export function EnrollmentCard({ enrollment, onUnenroll }: EnrollmentCardProps) {
+export function EnrollmentCard({ enrollment, onUnenroll, completed }: EnrollmentCardProps) {
   const c = enrollment.course;
   const thumbnailUrl = c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop';
+
+  const learnHref = enrollment.lastAccessedLessonId
+    ? `/learn/${c._id}/${enrollment.lastAccessedLessonId}`
+    : `/learn/${c._id}`;
 
   const handleUnenrollClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -31,7 +38,19 @@ export function EnrollmentCard({ enrollment, onUnenroll }: EnrollmentCardProps) 
   };
 
   return (
-    <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 flex flex-col">
+    <div className={`group relative bg-white rounded-2xl shadow-sm hover:shadow-lg border overflow-hidden transition-all duration-300 flex flex-col ${completed ? 'border-green-200 ring-1 ring-green-100' : 'border-gray-100'}`}>
+
+      {/* Completed badge */}
+      {completed && (
+        <div className="absolute top-2 left-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Completed
+        </div>
+      )}
+
+      {/* Unenroll button */}
       {onUnenroll && (
         <button
           onClick={handleUnenrollClick}
@@ -44,17 +63,17 @@ export function EnrollmentCard({ enrollment, onUnenroll }: EnrollmentCardProps) 
         </button>
       )}
 
-      <Link to={`/learn/${c._id}`} className="flex flex-col flex-grow">
+      <Link to={learnHref} className="flex flex-col flex-grow">
         {/* Thumbnail with hover overlay inside */}
         <div className="relative aspect-video overflow-hidden">
           <img
             src={thumbnailUrl}
             alt={c.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${completed ? 'opacity-80' : ''}`}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white font-bold bg-blue-600 px-5 py-2 rounded-full text-sm shadow-lg">
-              Continue Learning
+              {completed ? 'Review Course' : 'Continue Learning'}
             </span>
           </div>
         </div>
@@ -68,11 +87,15 @@ export function EnrollmentCard({ enrollment, onUnenroll }: EnrollmentCardProps) 
             {c.instructor?.name || 'Instructor'}
           </p>
           <div className="mt-auto">
-            <ProgressBar percentage={enrollment.progressPercentage} size="sm" />
+            <ProgressBar
+              percentage={enrollment.progressPercentage}
+              size="sm"
+              color={completed ? 'green' : 'blue'}
+            />
             {enrollment.totalLessonsCount !== undefined && (
               <p className="text-xs text-gray-400 mt-1.5 flex justify-between">
                 <span>{enrollment.completedLessonsCount ?? 0} / {enrollment.totalLessonsCount} lessons</span>
-                <span>{enrollment.progressPercentage}%</span>
+                <span className={completed ? 'text-green-600 font-semibold' : ''}>{enrollment.progressPercentage}%</span>
               </p>
             )}
           </div>

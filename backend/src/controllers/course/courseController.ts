@@ -159,7 +159,21 @@ export async function getCourseById(req: Request, res: Response) {
       ? await Lesson.find({ section: { $in: sectionIds } }).sort({ order: 1 }).lean()
       : [];
     const lessonIds = lessons.map((lesson) => lesson._id);
-    const lessonItems = lessonIds.length
+    let isEnrolledOrManager = false;
+    if (req.user) {
+      if (isCourseManager(req.user.id, req.user.role, course.instructor._id.toString())) {
+        isEnrolledOrManager = true;
+      } else {
+        const enrollment = await Enrollment.findOne({
+          student: req.user.id,
+          course: course._id,
+          status: { $in: ["active", "completed"] },
+        });
+        if (enrollment) isEnrolledOrManager = true;
+      }
+    }
+
+    const lessonItems = (lessonIds.length && isEnrolledOrManager)
       ? await LessonItem.find({ lesson: { $in: lessonIds } }).sort({ order: 1 }).lean()
       : [];
 

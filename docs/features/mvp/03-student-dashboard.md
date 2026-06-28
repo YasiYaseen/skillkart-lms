@@ -1,6 +1,6 @@
 # Student Dashboard
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -27,10 +27,12 @@ Give students a central place to continue courses and track learning.
 ## Acceptance Checklist
 - [x] Student sees enrolled courses
 - [x] Student sees progress per course
-- [ ] Continue button opens last lesson
-- [ ] Completed courses are clearly marked
+- [x] Continue button opens last lesson
+- [x] Completed courses are clearly marked
 
 ## Current Implementation Notes
 - Student enrolled courses page exists at `frontend/src/features/student/pages/MyCourses.tsx`.
 - Enrollment cards and progress UI exist under `frontend/src/features/enrollment/components/`.
-- Missing or unclear: full dashboard summary, recommendations/latest courses, and polished completed-course grouping.
+- MyCourses page now splits In Progress vs Completed courses into labelled sections.
+- EnrollmentCard resumes from `lastAccessedLessonId` when clicking Continue Learning.
+- Completed courses display a green badge, green progress bar, and a "Review Course" CTA.
