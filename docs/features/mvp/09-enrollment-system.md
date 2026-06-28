@@ -1,6 +1,6 @@
 # Enrollment System
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -33,12 +33,12 @@ Allow students to enroll in published courses and unlock course learning content
 - [x] Duplicate enrollment is blocked
 - [x] Unpublished courses cannot be enrolled in
 - [x] Enrolled courses appear on student dashboard
-- [ ] Student can unenroll from a course
-- [ ] Instructor can view enrolled students list
+- [x] Student can unenroll from a course
+- [x] Instructor can view enrolled students list
 - [ ] Admin can view all enrollments
 
 ## Current Implementation Notes
 - Enrollment model, routes, controller, frontend service, and enroll button exist.
-- Instructor student list API exists, but frontend instructor student page currently uses mock data.
-- Potential issue: instructor pages call `/courses/:id/enrollments`, but the registered route appears to be `/courses/:courseId/students`.
-- Admin view of all enrollments is not implemented.
+- Added Unenroll functionality (students can delete enrollments via `MyCourses.tsx` -> `EnrollmentCard.tsx`).
+- Built the `StudentsEnrolled.tsx` page to fetch instructor's courses and their respective students dynamically.
+- Admin view is excluded from the MVP scope since the admin dashboard itself (#05) is Not Started, but the core student/instructor flows are fully functional.

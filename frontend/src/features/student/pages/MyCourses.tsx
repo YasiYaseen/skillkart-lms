@@ -23,6 +23,16 @@ function MyCourses() {
         fetchEnrollments();
     }, []);
 
+    const handleUnenroll = async (enrollmentId: string) => {
+        try {
+            await api.delete(`/enrollments/${enrollmentId}`);
+            toast.success('Successfully unenrolled from the course');
+            setEnrollments(prev => prev.filter(e => e._id !== enrollmentId));
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to unenroll');
+        }
+    };
+
     if (loading) {
         return <div className="text-center py-20 text-gray-500">Loading your courses...</div>;
     }
@@ -41,7 +51,7 @@ function MyCourses() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {enrollments.map(enrollment => (
-                        <EnrollmentCard key={enrollment._id} enrollment={enrollment} />
+                        <EnrollmentCard key={enrollment._id} enrollment={enrollment} onUnenroll={handleUnenroll} />
                     ))}
                 </div>
             )}

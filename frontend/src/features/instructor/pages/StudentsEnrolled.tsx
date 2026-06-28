@@ -1,16 +1,55 @@
-// Instructor - Students Enrolled Page (static UI)
-
-const MOCK_STUDENTS = [
-    { id: 1, name: 'Richard Gartton', course: 'Build Text to Image SaaS App in React JS', date: '22 Aug 2024', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
-    { id: 2, name: 'Evelynn Murphy', course: 'Build AI BG Removal SaaS App in React JS', date: '22 Aug 2024', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
-    { id: 3, name: 'Alison Powell', course: 'React Router Complete Course in One Video', date: '23 Sep 2024', avatar: 'https://randomuser.me/api/portraits/women/65.jpg' },
-    { id: 4, name: 'Richard Gartton', course: 'Build Full Stack E-Commerce App in React JS', date: '10 Oct 2024', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
-    { id: 5, name: 'Evelynn Murphy', course: 'Build AI BG Removal SaaS App in React JS', date: '22 Aug 2024', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
-    { id: 6, name: 'Alison Powell', course: 'React Router Complete Course in One Video', date: '23 Sep 2024', avatar: 'https://randomuser.me/api/portraits/women/65.jpg' },
-    { id: 7, name: 'Richard Gartton', course: 'Build Full Stack E-Commerce App in React JS', date: '10 Oct 2024', avatar: 'https://randomuser.me/api/portraits/men/45.jpg' },
-];
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import { toast } from 'react-toastify';
 
 function StudentsEnrolled() {
+    const [students, setStudents] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStudents = async () => {
+            try {
+                // 1. Get instructor's courses
+                const coursesRes = await api.get('/courses?mine=true');
+                const courses = coursesRes.data.courses;
+
+                if (courses.length === 0) {
+                    setStudents([]);
+                    setLoading(false);
+                    return;
+                }
+
+                // 2. For each course, fetch students
+                const studentsPromises = courses.map((c: any) =>
+                    api.get(`/courses/${c._id}/students`).then(res => {
+                        return res.data.data.map((enrollment: any) => ({
+                            id: enrollment._id,
+                            name: enrollment.student?.name || 'Unknown Student',
+                            course: c.title,
+                            date: new Date(enrollment.enrolledAt).toLocaleDateString(),
+                            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(enrollment.student?.name || 'User')}&background=random`
+                        }));
+                    }).catch(() => [])
+                );
+
+                const results = await Promise.all(studentsPromises);
+                const allStudents = results.flat();
+
+                setStudents(allStudents);
+            } catch (err: any) {
+                toast.error('Failed to load students list');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStudents();
+    }, []);
+
+    if (loading) {
+        return <div className="text-gray-500 py-10">Loading students...</div>;
+    }
+
     return (
         <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-8">Students Enrolled</h1>
@@ -18,17 +57,22 @@ function StudentsEnrolled() {
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="border-b border-gray-100">
-                            <th className="text-left py-4 px-6 text-gray-500 font-medium">#</th>
+                        <tr className="border-b border-gray-100 bg-gray-50">
                             <th className="text-left py-4 px-6 text-gray-500 font-medium">Student name</th>
                             <th className="text-left py-4 px-6 text-gray-500 font-medium">Course Title</th>
-                            <th className="text-left py-4 px-6 text-gray-500 font-medium">Date</th>
+                            <th className="text-left py-4 px-6 text-gray-500 font-medium">Enrolled Date</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {MOCK_STUDENTS.map((student) => (
+                        {students.length === 0 && (
+                            <tr>
+                                <td colSpan={3} className="py-10 text-center text-gray-500">
+                                    No students enrolled yet.
+                                </td>
+                            </tr>
+                        )}
+                        {students.map((student) => (
                             <tr key={student.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                                <td className="py-4 px-6 text-gray-400">{student.id}</td>
                                 <td className="py-4 px-6">
                                     <div className="flex items-center gap-3">
                                         <img
@@ -36,7 +80,7 @@ function StudentsEnrolled() {
                                             alt={student.name}
                                             className="w-8 h-8 rounded-full object-cover"
                                         />
-                                        <span className="text-gray-800">{student.name}</span>
+                                        <span className="text-gray-800 font-medium">{student.name}</span>
                                     </div>
                                 </td>
                                 <td className="py-4 px-6 text-gray-600">{student.course}</td>
