@@ -92,11 +92,22 @@ function CreateCourse() {
         try {
             const sec = sections.find(s => s._id === sectionId);
             const lesson = sec.lessons.find((l: any) => l._id === lessonId);
+
+            // Build content object by type
+            let content: Record<string, string>;
+            if (newItemType === 'video') {
+                content = { url: newItemContent };
+            } else if (newItemType === 'link') {
+                content = { url: newItemContent };
+            } else if (newItemType === 'pdf') {
+                content = { url: newItemContent };
+            } else {
+                content = { text: newItemContent };
+            }
+
             const res = await api.post(`/lessons/${lessonId}/items`, {
                 type: newItemType,
-                content: newItemType === 'video'
-                    ? { url: newItemContent }
-                    : { text: newItemContent },
+                content,
                 order: (lesson.items?.length || 0) + 1
             });
             
@@ -206,22 +217,41 @@ function CreateCourse() {
                                             {les.items?.length > 0 && (
                                                 <div className="pl-6 space-y-2 mt-2 border-t border-gray-200 pt-2 text-xs">
                                                     {les.items.map((it: any) => (
-                                                        <div key={it._id} className="text-gray-500 bg-white p-2 rounded border border-gray-200 flex justify-between">
-                                                            <span>[{it.type.toUpperCase()}] {it.content?.url || it.content?.text}</span>
+                                                        <div key={it._id} className="text-gray-500 bg-white p-2 rounded border border-gray-200 flex justify-between items-center gap-2">
+                                                            <span className="font-semibold uppercase text-gray-400 shrink-0">[{it.type}]</span>
+                                                            <span className="truncate text-gray-600">{it.content?.url || it.content?.text || '—'}</span>
                                                         </div>
                                                     ))}
                                                 </div>
                                             )}
 
-                                            {/* Add Item form */}
                                             {activeLessonId === les._id && (
-                                                <form onSubmit={(e) => handleAddItem(e, sec._id, les._id)} className="flex gap-2 items-center mt-3 bg-white p-2 border border-gray-200 rounded">
-                                                    <select required className="border border-gray-300 rounded p-2 text-sm" value={newItemType} onChange={e => setNewItemType(e.target.value)}>
-                                                        <option value="video">Video URL</option>
-                                                        <option value="text">Text Content</option>
-                                                    </select>
-                                                    <input required type={newItemType === 'video' ? 'url' : 'text'} placeholder={newItemType === 'video' ? "https://youtube.com/..." : "Text description..."} value={newItemContent} onChange={e => setNewItemContent(e.target.value)} className="flex-1 border border-gray-300 p-2 text-sm rounded" />
-                                                    <button type="submit" className="bg-blue-600 text-white text-sm px-4 py-2 rounded">Add</button>
+                                                <form onSubmit={(e) => handleAddItem(e, sec._id, les._id)} className="mt-3 bg-white p-3 border border-gray-200 rounded space-y-2">
+                                                    <div className="flex gap-2">
+                                                        <select required className="border border-gray-300 rounded p-2 text-sm" value={newItemType} onChange={e => { setNewItemType(e.target.value); setNewItemContent(''); }}>
+                                                            <option value="video">🎬 Video URL</option>
+                                                            <option value="text">📝 Text / Notes</option>
+                                                            <option value="link">🔗 External Link</option>
+                                                            <option value="pdf">📄 PDF URL</option>
+                                                        </select>
+                                                        <input
+                                                            required
+                                                            type={['video','link','pdf'].includes(newItemType) ? 'url' : 'text'}
+                                                            placeholder={
+                                                                newItemType === 'video' ? 'YouTube / video URL...' :
+                                                                newItemType === 'link'  ? 'https://...' :
+                                                                newItemType === 'pdf'   ? 'PDF file URL...' :
+                                                                'Write lesson notes or description...'
+                                                            }
+                                                            value={newItemContent}
+                                                            onChange={e => setNewItemContent(e.target.value)}
+                                                            className="flex-1 border border-gray-300 p-2 text-sm rounded"
+                                                        />
+                                                    </div>
+                                                    <div className="flex justify-end gap-2">
+                                                        <button type="button" onClick={() => setActiveLessonId(null)} className="text-gray-500 text-sm px-3 py-1.5 hover:text-gray-700">Cancel</button>
+                                                        <button type="submit" className="bg-blue-600 text-white text-sm px-4 py-1.5 rounded font-medium">Add Item</button>
+                                                    </div>
                                                 </form>
                                             )}
                                         </div>

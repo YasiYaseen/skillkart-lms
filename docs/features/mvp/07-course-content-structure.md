@@ -1,6 +1,6 @@
 # Course Content Structure
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -30,10 +30,11 @@ Organize courses into sections and lessons that students can follow in order.
 - [x] Instructor can add sections
 - [x] Instructor can add lessons inside sections
 - [x] Lessons display in correct order
-- [ ] Lessons support text, video link, PDF, and resource URL end to end
+- [x] Lessons support text, video link, PDF, and resource URL end to end
 
 ## Current Implementation Notes
 - Section, lesson, and lesson item models/controllers exist.
 - Backend `LessonItem` supports `video`, `text`, `pdf`, `link`, `code`, and `quiz_block`.
-- Instructor create course flow currently exposes video URL and text items only.
-- Learner UI currently renders video and text items only.
+- Instructor lesson content editor now exposes 🎬 Video URL, 📝 Text/Notes, 🔗 External Link, and 📄 PDF URL item types.
+- Learner `LessonViewer` now renders all four types: video/YouTube embeds, text notes, external link cards, and embedded PDF iframes.
+- Feature is fully implemented.

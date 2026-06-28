@@ -1,6 +1,6 @@
 # Reviews and Ratings
 
-Status: Review
+Status: Done
 Priority: MVP
 Owner: Yaseen
 

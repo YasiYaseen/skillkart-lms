@@ -194,10 +194,45 @@ function LessonViewer() {
                                                 </div>
                                             </div>
                                         );
+                                    } else if (item.type === 'pdf') {
+                                        const url = content.url || '';
+                                        return (
+                                            <div key={item._id} className="item-content">
+                                                <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                                                    <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-200 bg-white">
+                                                        <span className="text-red-500 text-xl">📄</span>
+                                                        <span className="font-semibold text-gray-700 text-sm">PDF Resource</span>
+                                                        <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-sm text-blue-600 hover:underline font-medium">Open in new tab ↗</a>
+                                                    </div>
+                                                    <iframe src={url} className="w-full" style={{ height: '600px' }} title="PDF viewer" />
+                                                </div>
+                                            </div>
+                                        );
+                                    } else if (item.type === 'link') {
+                                        const url = content.url || '';
+                                        return (
+                                            <div key={item._id} className="item-content">
+                                                <a
+                                                    href={url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-xl p-5 hover:bg-blue-100 transition-colors group"
+                                                >
+                                                    <div className="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center shrink-0 text-lg group-hover:bg-blue-700 transition-colors">
+                                                        🔗
+                                                    </div>
+                                                    <div className="overflow-hidden">
+                                                        <p className="font-semibold text-blue-700 text-sm">External Resource</p>
+                                                        <p className="text-blue-500 text-xs truncate">{url}</p>
+                                                    </div>
+                                                    <span className="ml-auto text-blue-400 text-lg shrink-0">↗</span>
+                                                </a>
+                                            </div>
+                                        );
                                     } else {
                                         return (
                                             <div key={item._id} className="item-content">
-                                                <div className="prose max-w-none text-gray-700 bg-gray-50 p-6 rounded-xl border border-gray-100">
+                                                <div className="prose max-w-none text-gray-700 bg-gray-50 p-6 rounded-xl border border-gray-100 whitespace-pre-wrap">
                                                     {content.text}
                                                 </div>
                                             </div>
