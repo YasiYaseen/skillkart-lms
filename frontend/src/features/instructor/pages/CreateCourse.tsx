@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { QuizEditorModal } from '../components/QuizEditorModal';
 
 function CreateCourse() {
     const navigate = useNavigate();
@@ -30,6 +31,7 @@ function CreateCourse() {
     const [newItemType, setNewItemType] = useState('video');
     const [newItemContent, setNewItemContent] = useState('');
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+    const [quizLessonId, setQuizLessonId] = useState<string | null>(null);
 
     const handleCreateCourse = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -194,7 +196,10 @@ function CreateCourse() {
                                         <div key={les._id} className="border border-gray-100 rounded-lg p-3 bg-gray-50 flex flex-col gap-2">
                                             <div className="flex justify-between items-center">
                                                 <div className="font-medium text-gray-700 text-sm flex gap-2"><span className="text-gray-400">{lIdx + 1}.</span> {les.title} ({les.durationMinutes} min)</div>
-                                                <button onClick={() => setActiveLessonId(activeLessonId === les._id ? null : les._id)} className="text-xs font-semibold text-blue-600">Add Content</button>
+                                                <div className="flex gap-3 items-center">
+                                                    <button onClick={() => setQuizLessonId(les._id)} className="text-xs font-semibold text-purple-600">Manage Quiz</button>
+                                                    <button onClick={() => setActiveLessonId(activeLessonId === les._id ? null : les._id)} className="text-xs font-semibold text-blue-600">Add Content</button>
+                                                </div>
                                             </div>
 
                                             {/* Render Items */}
@@ -243,6 +248,12 @@ function CreateCourse() {
                     </form>
                 </div>
             )}
+
+            <QuizEditorModal 
+                isOpen={!!quizLessonId} 
+                onClose={() => setQuizLessonId(null)} 
+                lessonId={quizLessonId} 
+            />
         </div>
     );
 }

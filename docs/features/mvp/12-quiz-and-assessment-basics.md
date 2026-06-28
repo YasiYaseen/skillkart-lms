@@ -1,6 +1,6 @@
 # Quiz and Assessment Basics
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -26,15 +26,16 @@ Add basic assessments so courses can test student understanding.
 - Show quiz results
 
 ## Acceptance Checklist
-- [ ] Instructor can create quiz
+- [x] Instructor can create quiz
 - [x] Student can submit quiz
 - [x] Score is calculated correctly
 - [x] Attempt is stored
-- [ ] Pass or fail status is shown to student after submission
+- [x] Pass or fail status is shown to student after submission
 
 ## Current Implementation Notes
 - Quiz and quiz attempt models exist.
 - Quiz routes and controller exist in `backend/src/routes/quizRoutes.ts` and `backend/src/controllers/course/quizController.ts`.
 - Frontend quiz component exists at `frontend/src/components/LessonQuiz.tsx`.
-- Missing or unclear: instructor quiz creation UI inside the course builder.
-- Not defined: whether students can retake a quiz and how multiple attempts are handled.
+- Instructor Quiz Creation UI added via `QuizEditorModal.tsx` in the course builder (`CreateCourse.tsx`).
+- Pass/Fail status is correctly shown to students after submitting their quiz.
+- Feature is complete.
