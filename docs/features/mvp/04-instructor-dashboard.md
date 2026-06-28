@@ -1,6 +1,6 @@
 # Instructor Dashboard
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -26,11 +26,12 @@ Give instructors a workspace to manage courses and view basic performance.
 
 ## Acceptance Checklist
 - [x] Instructor sees only their courses
-- [ ] Enrollment count appears per course
+- [x] Enrollment count appears per course
 - [x] Published and draft states are visible
 - [x] Course actions are available from dashboard
 
 ## Current Implementation Notes
 - Instructor dashboard and course list pages exist in `frontend/src/features/instructor/pages/`.
 - Backend supports `GET /api/courses?mine=true`.
-- Potential issue: frontend calls `/courses/:id/enrollments`, but the backend route appears to expose `/courses/:courseId/students`.
+- Fixed the API route in `Dashboard.tsx` to correctly use `/courses/:courseId/students` instead of `/enrollments` so stats display correctly.
+- Feature is fully implemented.

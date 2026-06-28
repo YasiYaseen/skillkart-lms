@@ -16,13 +16,13 @@ function Dashboard() {
                 let allEnrollments: any[] = [];
 
                 const enrollmentPromises = courses.map((c: any) =>
-                    api.get(`/courses/${c._id}/enrollments`)
+                    api.get(`/courses/${c._id}/students`).catch(() => ({ data: { data: [] } }))
                 );
 
                 const enrollmentResults = await Promise.all(enrollmentPromises);
 
                 enrollmentResults.forEach((res, idx) => {
-                    const enrollments = res.data.enrollments;
+                    const enrollments = res.data?.data || [];
                     const course = courses[idx];
 
                     if (course.status === 'published') tAct++;
