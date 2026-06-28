@@ -2,10 +2,18 @@ import type { Request, Response } from "express";
 import User from "../../models/User";
 import { hash, compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
+import { registerSchema, loginSchema } from "../../validators/content.validator";
 
 export async function register(req: Request, res: Response) {
   try {
-    const { name, email, password, role } = req.body;
+    const parsed = registerSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
+    const { name, email, password, role } = parsed.data;
     const normalizedRole = role === "instructor" ? "instructor" : "student";
 
     const existingUser = await User.findOne({ email });
@@ -45,7 +53,14 @@ export async function register(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
   try {
-    const { email, password } = req.body;
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
+    const { email, password } = parsed.data;
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -77,3 +92,4 @@ export async function login(req: Request, res: Response) {
     res.status(500).json({ message: "Server error" });
   }
 }
+

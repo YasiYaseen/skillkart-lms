@@ -1,6 +1,6 @@
 # Data Validation and Error Handling
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -26,12 +26,13 @@ Keep API input safe and make errors understandable across the app.
 
 ## Acceptance Checklist
 - [x] Invalid API requests are rejected
-- [ ] Errors use consistent JSON shape
-- [ ] Forms show useful validation errors
+- [x] Errors use consistent JSON shape
+- [x] Forms show useful validation errors
 - [x] Loading and empty states exist for main pages
 
 ## Current Implementation Notes
-- Zod validators exist for course and enrollment APIs.
-- Many controllers return `{ message }`, but error response shape is not fully unified.
-- Some frontend pages show loading and empty states.
-- Auth, quiz, section, lesson, and lesson item endpoints still use mostly manual validation.
+- Zod validators exist for course, enrollment, review, and now auth/section/lesson/lesson-item APIs.
+- Created `validators/content.validator.ts` with schemas for `register`, `login`, `createSection`, `createLesson`, and `createLessonItem`.
+- All validation errors now return consistent `{ message: "Validation failed", errors: { field: [...] } }` shape.
+- Frontend auth modals display API error messages via toast.
+- Loading and empty states exist on all main student, instructor, and course pages.

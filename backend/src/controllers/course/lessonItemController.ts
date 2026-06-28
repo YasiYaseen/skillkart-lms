@@ -5,6 +5,7 @@ import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
 import LessonItem from "../../models/LessonItem";
 import { isCourseManager } from "./shared";
+import { createLessonItemSchema } from "../../validators/content.validator";
 
 export async function createLessonItem(req: Request, res: Response) {
   try {
@@ -36,10 +37,14 @@ export async function createLessonItem(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const { type, content, order } = req.body;
-    if (!type || !content || typeof content !== "object") {
-      return res.status(400).json({ message: "type and object content are required" });
+    const parsed = createLessonItemSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors,
+      });
     }
+    const { type, content, order } = parsed.data;
 
     let resolvedOrder = Number(order);
     if (!resolvedOrder || resolvedOrder < 1) {

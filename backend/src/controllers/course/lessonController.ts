@@ -4,6 +4,7 @@ import Course from "../../models/Course";
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
 import { isCourseManager, syncEnrollmentLessonCount } from "./shared";
+import { createLessonSchema } from "../../validators/content.validator";
 
 export async function createLesson(req: Request, res: Response) {
   try {
@@ -30,10 +31,14 @@ export async function createLesson(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const { title, type, order, durationMinutes, isPreview, isMandatory } = req.body;
-    if (!title) {
-      return res.status(400).json({ message: "title is required" });
+    const parsed = createLessonSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors,
+      });
     }
+    const { title, type, order, durationMinutes, isPreview, isMandatory } = parsed.data;
 
     let resolvedOrder = Number(order);
     if (!resolvedOrder || resolvedOrder < 1) {

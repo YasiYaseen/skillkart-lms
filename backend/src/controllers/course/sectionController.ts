@@ -6,6 +6,7 @@ import Lesson from "../../models/Lesson";
 import LessonItem from "../../models/LessonItem";
 import LessonProgress from "../../models/LessonProgress";
 import { isCourseManager } from "./shared";
+import { createSectionSchema } from "../../validators/content.validator";
 
 export async function createSection(req: Request, res: Response) {
   try {
@@ -27,10 +28,14 @@ export async function createSection(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const { title, order, isLocked, prerequisiteSectionId } = req.body;
-    if (!title) {
-      return res.status(400).json({ message: "title is required" });
+    const parsed = createSectionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors,
+      });
     }
+    const { title, order, isLocked, prerequisiteSectionId } = parsed.data;
 
     let resolvedOrder = Number(order);
     if (!resolvedOrder || resolvedOrder < 1) {
