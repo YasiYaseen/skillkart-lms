@@ -5,7 +5,8 @@ SkillKart is a MERN-based Learning Management System (LMS) for a college project
 ## Status Values
 
 - `Not Started` - feature is planned but no implementation exists yet
-- `Pending` - implementation has started
+- `Pending` - Planning phase is done, ready for implementation
+- `In Progress` - implementation is in progress
 - `Blocked` - waiting on another feature, decision, or fix
 - `Review` - implementation is done and needs review/testing
 - `Done` - implemented, tested, and accepted
