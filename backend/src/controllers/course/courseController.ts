@@ -1,13 +1,32 @@
 import type { Request, Response } from "express";
-import { isValidObjectId } from "mongoose";
+import { Types, isValidObjectId } from "mongoose";
 import Course from "../../models/Course";
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
 import LessonItem from "../../models/LessonItem";
 import Enrollment from "../../models/Enrollment";
 import LessonProgress from "../../models/LessonProgress";
+import Review from "../../models/Review";
 import { getCourseDurationMinutes, isCourseManager } from "./shared";
 import { createCourseSchema } from "../../validators/course.validator";
+
+async function getCourseRatingSummary(courseId: string) {
+  const [summary] = await Review.aggregate<{ averageRating: number; reviewCount: number }>([
+    { $match: { course: new Types.ObjectId(courseId) } },
+    {
+      $group: {
+        _id: "$course",
+        averageRating: { $avg: "$rating" },
+        reviewCount: { $sum: 1 },
+      },
+    },
+  ]);
+
+  return {
+    averageRating: summary ? Math.round(summary.averageRating * 10) / 10 : 0,
+    reviewCount: summary?.reviewCount || 0,
+  };
+}
 
 export async function createCourse(req: Request, res: Response) {
   try {
@@ -84,8 +103,12 @@ export async function getCourses(req: Request, res: Response) {
 
     const enriched = await Promise.all(
       courses.map(async (course) => {
-        const durationMinutes = await getCourseDurationMinutes(course._id.toString());
-        return { ...course, durationMinutes };
+        const courseId = course._id.toString();
+        const [durationMinutes, ratingSummary] = await Promise.all([
+          getCourseDurationMinutes(courseId),
+          getCourseRatingSummary(courseId),
+        ]);
+        return { ...course, durationMinutes, ...ratingSummary };
       })
     );
 
@@ -127,11 +150,13 @@ export async function getCourseById(req: Request, res: Response) {
       : [];
 
     const durationMinutes = lessons.reduce((sum, lesson) => sum + (lesson.durationMinutes || 0), 0);
+    const ratingSummary = await getCourseRatingSummary(course._id.toString());
 
     return res.json({
       course: {
         ...course,
         durationMinutes,
+        ...ratingSummary,
         sections,
         lessons,
         lessonItems,
@@ -307,6 +332,7 @@ export async function deleteCourse(req: Request, res: Response) {
     await Lesson.deleteMany({ section: { $in: sectionIds } });
     await Section.deleteMany({ course: course._id });
     await Enrollment.deleteMany({ course: course._id });
+    await Review.deleteMany({ course: course._id });
     await Course.deleteOne({ _id: course._id });
 
     return res.json({ message: "Course deleted" });

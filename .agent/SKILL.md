@@ -52,3 +52,11 @@ This guide describes the core architectural patterns and coding standards for th
 2. Add necessary types in `backend/src/types/`.
 3. Implement the controller logic in `backend/src/controllers/course/`.
 4. Register the route in `backend/src/routes/courseRoutes.ts`.
+
+### Adding Course Feedback Features
+1. Put course-scoped backend controllers in `backend/src/controllers/course/`.
+2. Register nested course endpoints in `backend/src/routes/courseRoutes.ts`.
+3. Use Zod validators in `backend/src/validators/` for request bodies.
+4. Store course/student unique records with compound indexes in `backend/src/models/`.
+5. Surface aggregate values such as rating counts directly on course list/detail API responses.
+6. Keep student-facing UI on the existing course detail page when the workflow belongs to a course.

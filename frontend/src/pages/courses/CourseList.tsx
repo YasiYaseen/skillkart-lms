@@ -26,8 +26,8 @@ function CourseList() {
                 title: c.title,
                 instructor: c.instructor?.name || 'Unknown Instructor',
                 thumbnail: c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop',
-                rating: 0,
-                reviewCount: 0,
+                rating: c.averageRating || 0,
+                reviewCount: c.reviewCount || 0,
                 price: c.price || 0
             }));
             setCourses(mappedCourses);

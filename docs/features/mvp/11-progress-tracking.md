@@ -2,7 +2,7 @@
 
 Status: Done
 Priority: MVP
-Owner: Unassigned
+Owner: Yaseen
 
 ## Goal
 Track how much of a course each student has completed.

@@ -1,9 +1,20 @@
 import CourseStructure from '@/components/course/CourseStructure';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { EnrollButton } from '@/features/enrollment/components/EnrollButton';
+
+type CourseReview = {
+    _id: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+    student?: {
+        name?: string;
+    };
+};
 
 // --- Icons ---
 const StarIcon = () => (
@@ -30,11 +41,19 @@ function CourseDetailsPage() {
     const { courseId } = useParams();
     const navigate = useNavigate();
     const [course, setCourse] = useState<any>(null);
+    const [reviews, setReviews] = useState<CourseReview[]>([]);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState('');
+    const [submittingReview, setSubmittingReview] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.get(`/courses/${courseId}`)
-            .then(res => {
+        Promise.all([
+            api.get(`/courses/${courseId}`),
+            api.get(`/courses/${courseId}/reviews`)
+        ])
+            .then(([courseRes, reviewRes]) => {
+                const res = courseRes;
                 const c = res.data.course;
                 const mappedSections = c.sections.map((sec: any) => {
                     const sectionLessons = c.lessons.filter((l: any) => l.section === sec._id);
@@ -59,8 +78,8 @@ function CourseDetailsPage() {
                     title: c.title,
                     subtitle: c.level === 'beginner' ? 'Beginner friendly starting point.' : 'Advanced level material.',
                     instructor: c.instructor?.name || 'Unknown Instructor',
-                    rating: null,
-                    ratingCount: null,
+                    rating: c.averageRating || 0,
+                    ratingCount: c.reviewCount || 0,
                     studentCount: null,
                     thumbnail: c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop',
                     price: c.price || 0,
@@ -77,6 +96,7 @@ function CourseDetailsPage() {
                         sections: mappedSections
                     }
                 });
+                setReviews(reviewRes.data.reviews || []);
             })
             .catch(err => {
                 toast.error(err.response?.data?.message || 'Failed to fetch course details');
@@ -87,6 +107,33 @@ function CourseDetailsPage() {
     }, [courseId]);
 
     // Enrollment is handled via the new EnrollButton component
+
+    const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!courseId) return;
+
+        setSubmittingReview(true);
+        try {
+            const res = await api.post(`/courses/${courseId}/reviews`, {
+                rating: reviewRating,
+                comment: reviewComment,
+            });
+            const reviewsRes = await api.get(`/courses/${courseId}/reviews`);
+            setReviews(reviewsRes.data.reviews || []);
+            setCourse((current: any) => current ? {
+                ...current,
+                rating: res.data.summary.averageRating,
+                ratingCount: res.data.summary.reviewCount,
+            } : current);
+            setReviewComment('');
+            setReviewRating(5);
+            toast.success('Review added');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to submit review');
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
 
     if (loading) {
         return <div className="text-center py-20 text-gray-500">Loading course details...</div>;
@@ -116,7 +163,7 @@ function CourseDetailsPage() {
                             </p>
 
                             <div className="flex items-center flex-wrap gap-4 text-sm mb-4">
-                                {course.rating && (
+                                {course.rating > 0 && (
                                     <div className="flex items-center gap-1">
                                         <span className="font-bold text-orange-500 flex items-center gap-0.5">
                                             {course.rating} <StarIcon />
@@ -152,6 +199,84 @@ function CourseDetailsPage() {
                             <div className="space-y-4 text-gray-700 leading-relaxed whitespace-pre-wrap">
                                 {course.description.map((paragraph: string, idx: number) => (
                                     <p key={idx}>{paragraph}</p>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+                            <div className="flex items-center justify-between gap-4 mb-6">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Student Reviews</h2>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        {course.ratingCount > 0 ? `${course.rating} average from ${course.ratingCount} reviews` : 'No reviews yet'}
+                                    </p>
+                                </div>
+                                {course.rating > 0 && (
+                                    <div className="flex items-center gap-1 text-orange-500 font-bold">
+                                        <span>{course.rating}</span>
+                                        <StarIcon />
+                                    </div>
+                                )}
+                            </div>
+
+                            <form onSubmit={handleReviewSubmit} className="border border-gray-100 rounded-lg p-4 mb-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="review-rating">
+                                        Your rating
+                                    </label>
+                                    <select
+                                        id="review-rating"
+                                        value={reviewRating}
+                                        onChange={(event) => setReviewRating(Number(event.target.value))}
+                                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        {[5, 4, 3, 2, 1].map((rating) => (
+                                            <option key={rating} value={rating}>{rating} stars</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="review-comment">
+                                        Your review
+                                    </label>
+                                    <textarea
+                                        id="review-comment"
+                                        value={reviewComment}
+                                        onChange={(event) => setReviewComment(event.target.value)}
+                                        rows={4}
+                                        minLength={5}
+                                        maxLength={1000}
+                                        required
+                                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Share what helped you most."
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={submittingReview}
+                                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {submittingReview ? 'Submitting...' : 'Submit review'}
+                                </button>
+                            </form>
+
+                            <div className="space-y-4">
+                                {reviews.length === 0 && (
+                                    <p className="text-sm text-gray-500">Students who enroll can leave the first review.</p>
+                                )}
+                                {reviews.map((review) => (
+                                    <div key={review._id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                                        <div className="flex items-center justify-between gap-3 mb-2">
+                                            <span className="font-medium text-gray-900">{review.student?.name || 'Student'}</span>
+                                            <span className="flex items-center gap-1 text-sm font-semibold text-orange-500">
+                                                {review.rating} <StarIcon />
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-700 leading-relaxed">{review.comment}</p>
+                                        <p className="text-xs text-gray-400 mt-2">
+                                            {new Date(review.createdAt).toLocaleDateString()}
+                                        </p>
+                                    </div>
                                 ))}
                             </div>
                         </div>

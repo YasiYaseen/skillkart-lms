@@ -29,7 +29,7 @@ These should be built first because they make SkillKart work like a real LMS.
 | 10 | Learning Page | Pending | [docs/features/mvp/10-learning-page.md](features/mvp/10-learning-page.md) |
 | 11 | Progress Tracking | Done | [docs/features/mvp/11-progress-tracking.md](features/mvp/11-progress-tracking.md) |
 | 12 | Quiz and Assessment Basics | Pending | [docs/features/mvp/12-quiz-and-assessment-basics.md](features/mvp/12-quiz-and-assessment-basics.md) |
-| 13 | Reviews and Ratings | Not Started | [docs/features/mvp/13-reviews-and-ratings.md](features/mvp/13-reviews-and-ratings.md) |
+| 13 | Reviews and Ratings | Review | [docs/features/mvp/13-reviews-and-ratings.md](features/mvp/13-reviews-and-ratings.md) |
 | 14 | Certificates | Not Started | [docs/features/mvp/14-certificates.md](features/mvp/14-certificates.md) |
 | 15 | Notifications | Not Started | [docs/features/mvp/15-notifications.md](features/mvp/15-notifications.md) |
 | 16 | Basic File Handling | Not Started | [docs/features/mvp/16-basic-file-handling.md](features/mvp/16-basic-file-handling.md) |

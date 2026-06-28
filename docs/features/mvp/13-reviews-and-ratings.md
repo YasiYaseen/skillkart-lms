@@ -1,8 +1,8 @@
 # Reviews and Ratings
 
-Status: Not Started
+Status: Review
 Priority: MVP
-Owner: Unassigned
+Owner: Yaseen
 
 ## Goal
 Let enrolled students give feedback on courses.
@@ -25,11 +25,15 @@ Let enrolled students give feedback on courses.
 - Show review list on course detail page
 
 ## Acceptance Checklist
-- [ ] Enrolled student can review course
-- [ ] Non-enrolled student cannot review course
-- [ ] Duplicate review is blocked
-- [ ] Average rating updates correctly
+- [x] Enrolled student can review course
+- [x] Non-enrolled student cannot review course
+- [x] Duplicate review is blocked
+- [x] Average rating updates correctly
 
 ## Current Implementation Notes
-- No review model, routes, controller, or real frontend review flow was found.
-- Course cards currently show placeholder rating data.
+- Implemented `Review` model with unique course/student reviews.
+- Added `GET /api/courses/:courseId/reviews`, `POST /api/courses/:courseId/reviews`, and `PATCH /api/courses/:courseId/reviews/me`.
+- Review creation is limited to onboarded students with active or completed enrollment.
+- Course list and course detail responses include `averageRating` and `reviewCount`.
+- Course cards and course detail pages now show real rating data.
+- Course detail page includes review submission and review list UI.
