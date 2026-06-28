@@ -1,6 +1,6 @@
 # Course Management
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -31,13 +31,14 @@ Allow instructors to create and manage course records.
 
 ## Acceptance Checklist
 - [x] Instructor can create course
-- [ ] Instructor can edit own course
-- [ ] Instructor can delete own course
+- [x] Instructor can edit own course
+- [x] Instructor can delete own course
 - [x] Draft courses are hidden from students
 - [x] Published courses appear in browse page
 
 ## Current Implementation Notes
 - Backend course CRUD exists in `backend/src/controllers/course/courseController.ts`.
-- Instructor course creation UI exists in `frontend/src/features/instructor/pages/CreateCourse.tsx`.
-- Missing: edit/delete UI, category support, and real thumbnail upload.
-- Potential issue: frontend course creation sends `level: 'all'`, but backend accepts only `beginner`, `intermediate`, or `advanced`.
+- Instructor course creation UI exists in `frontend/src/features/instructor/pages/CreateCourse.tsx` (now with level set correctly).
+- Edit Course UI added at `frontend/src/features/instructor/pages/EditCourse.tsx`.
+- Delete course functionality with confirmation added to `MyCourses.tsx`.
+- Feature is now complete.

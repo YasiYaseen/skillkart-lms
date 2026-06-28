@@ -39,7 +39,7 @@ function CreateCourse() {
                 title,
                 description,
                 price: Number(price),
-                level: 'all',
+                level: 'beginner',
                 thumbnailUrl: thumbnail || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop'
             };
             const res = await api.post('/courses', payload);

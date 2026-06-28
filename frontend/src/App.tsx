@@ -11,6 +11,7 @@ import {
     Dashboard,
     MyCourses,
     CreateCourse,
+    EditCourse,
     StudentsEnrolled,
 } from '@features/instructor';
 
@@ -43,6 +44,7 @@ function App() {
                             <Route path="/instructor" element={<Dashboard />} />
                             <Route path="/instructor/courses" element={<MyCourses />} />
                             <Route path="/instructor/create-course" element={<CreateCourse />} />
+                            <Route path="/instructor/courses/:courseId/edit" element={<EditCourse />} />
                             <Route path="/instructor/students" element={<StudentsEnrolled />} />
                         </Route>
                     </Route>
