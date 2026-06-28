@@ -5,7 +5,7 @@ SkillKart is a MERN-based Learning Management System (LMS) for a college project
 ## Status Values
 
 - `Not Started` - feature is planned but no implementation exists yet
-- `In Progress` - implementation has started
+- `Pending` - implementation has started
 - `Blocked` - waiting on another feature, decision, or fix
 - `Review` - implementation is done and needs review/testing
 - `Done` - implemented, tested, and accepted
@@ -16,24 +16,24 @@ These should be built first because they make SkillKart work like a real LMS.
 
 | Order | Feature | Status | Doc |
 | --- | --- | --- | --- |
-| 1 | User Authentication | In Progress | [docs/features/mvp/01-user-authentication.md](features/mvp/01-user-authentication.md) |
-| 2 | Role-Based Access Control | In Progress | [docs/features/mvp/02-role-based-access-control.md](features/mvp/02-role-based-access-control.md) |
-| 3 | Student Dashboard | In Progress | [docs/features/mvp/03-student-dashboard.md](features/mvp/03-student-dashboard.md) |
-| 4 | Instructor Dashboard | In Progress | [docs/features/mvp/04-instructor-dashboard.md](features/mvp/04-instructor-dashboard.md) |
+| 1 | User Authentication | Pending | [docs/features/mvp/01-user-authentication.md](features/mvp/01-user-authentication.md) |
+| 2 | Role-Based Access Control | Pending | [docs/features/mvp/02-role-based-access-control.md](features/mvp/02-role-based-access-control.md) |
+| 3 | Student Dashboard | Pending | [docs/features/mvp/03-student-dashboard.md](features/mvp/03-student-dashboard.md) |
+| 4 | Instructor Dashboard | Pending | [docs/features/mvp/04-instructor-dashboard.md](features/mvp/04-instructor-dashboard.md) |
 | 5 | Admin Dashboard | Not Started | [docs/features/mvp/05-admin-dashboard.md](features/mvp/05-admin-dashboard.md) |
-| 6 | Course Management | In Progress | [docs/features/mvp/06-course-management.md](features/mvp/06-course-management.md) |
-| 7 | Course Content Structure | In Progress | [docs/features/mvp/07-course-content-structure.md](features/mvp/07-course-content-structure.md) |
-| 8 | Course Browsing | In Progress | [docs/features/mvp/08-course-browsing.md](features/mvp/08-course-browsing.md) |
-| 9 | Enrollment System | In Progress | [docs/features/mvp/09-enrollment-system.md](features/mvp/09-enrollment-system.md) |
-| 10 | Learning Page | In Progress | [docs/features/mvp/10-learning-page.md](features/mvp/10-learning-page.md) |
+| 6 | Course Management | Pending | [docs/features/mvp/06-course-management.md](features/mvp/06-course-management.md) |
+| 7 | Course Content Structure | Pending | [docs/features/mvp/07-course-content-structure.md](features/mvp/07-course-content-structure.md) |
+| 8 | Course Browsing | Pending | [docs/features/mvp/08-course-browsing.md](features/mvp/08-course-browsing.md) |
+| 9 | Enrollment System | Pending | [docs/features/mvp/09-enrollment-system.md](features/mvp/09-enrollment-system.md) |
+| 10 | Learning Page | Pending | [docs/features/mvp/10-learning-page.md](features/mvp/10-learning-page.md) |
 | 11 | Progress Tracking | Done | [docs/features/mvp/11-progress-tracking.md](features/mvp/11-progress-tracking.md) |
-| 12 | Quiz and Assessment Basics | In Progress | [docs/features/mvp/12-quiz-and-assessment-basics.md](features/mvp/12-quiz-and-assessment-basics.md) |
+| 12 | Quiz and Assessment Basics | Pending | [docs/features/mvp/12-quiz-and-assessment-basics.md](features/mvp/12-quiz-and-assessment-basics.md) |
 | 13 | Reviews and Ratings | Not Started | [docs/features/mvp/13-reviews-and-ratings.md](features/mvp/13-reviews-and-ratings.md) |
 | 14 | Certificates | Not Started | [docs/features/mvp/14-certificates.md](features/mvp/14-certificates.md) |
 | 15 | Notifications | Not Started | [docs/features/mvp/15-notifications.md](features/mvp/15-notifications.md) |
 | 16 | Basic File Handling | Not Started | [docs/features/mvp/16-basic-file-handling.md](features/mvp/16-basic-file-handling.md) |
-| 17 | Data Validation and Error Handling | In Progress | [docs/features/mvp/17-data-validation-error-handling.md](features/mvp/17-data-validation-error-handling.md) |
-| 18 | Security Essentials | In Progress | [docs/features/mvp/18-security-essentials.md](features/mvp/18-security-essentials.md) |
+| 17 | Data Validation and Error Handling | Pending | [docs/features/mvp/17-data-validation-error-handling.md](features/mvp/17-data-validation-error-handling.md) |
+| 18 | Security Essentials | Pending | [docs/features/mvp/18-security-essentials.md](features/mvp/18-security-essentials.md) |
 
 ## Later Features
 

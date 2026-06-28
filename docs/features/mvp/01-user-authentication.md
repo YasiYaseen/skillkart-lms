@@ -1,6 +1,6 @@
 # User Authentication
 
-Status: In Progress
+Status: Pending
 Priority: MVP
 Owner: Unassigned
 

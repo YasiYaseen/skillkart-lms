@@ -1,6 +1,6 @@
 # Data Validation and Error Handling
 
-Status: In Progress
+Status: Pending
 Priority: MVP
 Owner: Unassigned
 
