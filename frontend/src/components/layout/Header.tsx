@@ -86,9 +86,9 @@ function Header() {
               </Button>
             ) : (
               <>
-                <span className="mr-4 text-sm font-medium">
+                <Link to="/profile" className="mr-4 text-sm font-medium hover:text-blue-600 transition-colors">
                   {user.name}
-                </span>
+                </Link>
 
                 <Button
                   variant="secondary"

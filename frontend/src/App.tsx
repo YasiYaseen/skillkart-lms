@@ -5,6 +5,7 @@ import { CourseList, CourseDetailsPage } from '@pages/courses';
 import { MyCourses as StudentMyCourses, LessonViewer } from '@features/student';
 import OnboardingPage from '@pages/OnboardingPage';
 import Home from '@pages/Home';
+import Profile from '@pages/Profile';
 import { OnboardingGuard } from '@/components/OnboardingGuard';
 import {
     InstructorLayout,
@@ -35,6 +36,7 @@ function App() {
                             <Route path="/my-courses" element={<StudentMyCourses />} />
                             <Route path="/learn/:courseId" element={<LessonViewer />} />
                             <Route path="/learn/:courseId/:lessonId" element={<LessonViewer />} />
+                            <Route path="/profile" element={<Profile />} />
                         </Route>
                     </Route>
 
