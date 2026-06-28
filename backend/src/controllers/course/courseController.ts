@@ -74,7 +74,12 @@ export async function createCourse(req: Request, res: Response) {
 
 export async function getCourses(req: Request, res: Response) {
   try {
-    const { q, level, mine } = req.query as { q?: string; level?: string; mine?: string };
+    const { q, level, mine, sort } = req.query as {
+      q?: string;
+      level?: string;
+      mine?: string;
+      sort?: string;
+    };
     const filter: Record<string, unknown> = {};
 
     if (mine === "true") {
@@ -104,13 +109,22 @@ export async function getCourses(req: Request, res: Response) {
     const enriched = await Promise.all(
       courses.map(async (course) => {
         const courseId = course._id.toString();
-        const [durationMinutes, ratingSummary] = await Promise.all([
+        const [durationMinutes, ratingSummary, enrollmentCount] = await Promise.all([
           getCourseDurationMinutes(courseId),
           getCourseRatingSummary(courseId),
+          Enrollment.countDocuments({ course: course._id }),
         ]);
-        return { ...course, durationMinutes, ...ratingSummary };
+        return { ...course, durationMinutes, ...ratingSummary, enrollmentCount };
       })
     );
+
+    // Sort after enrichment so we can sort by computed fields
+    if (sort === "popular") {
+      enriched.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
+    } else if (sort === "free") {
+      enriched.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+    }
+    // default: already sorted by createdAt desc from DB
 
     return res.json({ courses: enriched });
   } catch {

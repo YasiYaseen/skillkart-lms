@@ -1,6 +1,6 @@
 # Course Browsing
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -29,10 +29,13 @@ Let students discover available published courses.
 ## Acceptance Checklist
 - [x] Students can browse published courses
 - [x] Search returns matching courses
-- [ ] Filters work correctly
+- [x] Filters work correctly
 - [x] Course detail page shows key information
 
 ## Current Implementation Notes
 - Course listing and detail pages exist in `frontend/src/pages/courses/`.
 - Backend supports public published course listing and text search.
-- Missing or unclear: category filter, level filter UI, popular sorting, real ratings, and enrollment count display.
+- Level filter (`?level=beginner|intermediate|advanced`) wired to filter pill UI.
+- Sort (`?sort=popular|free`, default=latest) implemented on both backend and frontend.
+- CourseCard now shows a level badge overlay, enrollment count, and "Free" label for free courses.
+- Backend `getCourses` now returns `enrollmentCount` per course.

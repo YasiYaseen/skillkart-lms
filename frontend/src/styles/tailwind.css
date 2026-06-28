@@ -607,4 +607,134 @@
     .main-content {
         flex: 1;
     }
+
+    /* ─── Course Filters Bar ─── */
+    .course-filters {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 16px 0 24px;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 32px;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .filter-label {
+        font-size: 0.813rem;
+        font-weight: 600;
+        color: #6b7280;
+        white-space: nowrap;
+    }
+
+    .filter-pills {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .filter-pill {
+        padding: 6px 14px;
+        font-size: 0.813rem;
+        font-weight: 500;
+        color: #4b5563;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: all 150ms ease;
+        white-space: nowrap;
+    }
+
+    .filter-pill:hover {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+    }
+
+    .filter-pill.active {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: white;
+        box-shadow: 0 1px 4px rgba(37, 99, 235, 0.35);
+    }
+
+    .filter-results-count {
+        margin-left: auto;
+        font-size: 0.813rem;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .clear-filters-btn {
+        font-size: 0.813rem;
+        font-weight: 500;
+        color: #2563eb;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+        text-decoration: underline;
+        transition: color 150ms ease;
+    }
+
+    .clear-filters-btn:hover {
+        color: #1d4ed8;
+    }
+
+    /* ─── CourseCard Level Badge ─── */
+    .course-card-level-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        padding: 3px 10px;
+        font-size: 0.688rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        border-radius: 999px;
+        text-transform: capitalize;
+        backdrop-filter: blur(4px);
+    }
+
+    .course-card-level-badge.beginner {
+        background: rgba(16, 185, 129, 0.9);
+        color: white;
+    }
+
+    .course-card-level-badge.intermediate {
+        background: rgba(245, 158, 11, 0.9);
+        color: white;
+    }
+
+    .course-card-level-badge.advanced {
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+    }
+
+    /* ─── CourseCard Enrollment Count ─── */
+    .course-card-enrollment {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin-bottom: 2px;
+    }
+
+    @media (max-width: 768px) {
+        .course-filters {
+            gap: 14px;
+        }
+
+        .filter-results-count {
+            width: 100%;
+            margin-left: 0;
+        }
+    }
 }
