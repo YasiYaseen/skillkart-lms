@@ -91,9 +91,6 @@ export async function updateLessonProgress(req: Request, res: Response) {
       return res.status(403).json({ message: "Enroll in this course first" });
     }
 
-    enrollment.last_lesson_id = lesson._id as any;
-    await enrollment.save();
-
     const {
       completed,
       progressPercentage,
@@ -138,13 +135,41 @@ export async function updateLessonProgress(req: Request, res: Response) {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    // Sync with Enrollment model
+    enrollment.lastAccessedLessonId = lesson._id as any;
+    if (isCompleted) {
+      if (!enrollment.completedLessonIds.some((id) => id.toString() === lesson._id.toString())) {
+        enrollment.completedLessonIds.push(lesson._id as any);
+      }
+    } else {
+      enrollment.completedLessonIds = enrollment.completedLessonIds.filter(
+        (id) => id.toString() !== lesson._id.toString()
+      );
+    }
+
+    // Auto-complete course status transitions
+    const isFullyComplete =
+      enrollment.totalLessonsCount > 0 &&
+      enrollment.completedLessonIds.length >= enrollment.totalLessonsCount;
+
+    if (isFullyComplete && enrollment.status !== "completed") {
+      enrollment.status = "completed";
+      enrollment.completedAt = new Date();
+    } else if (!isFullyComplete && enrollment.status === "completed") {
+      enrollment.status = "active";
+      enrollment.completedAt = undefined;
+    }
+
+    await enrollment.save();
+
     const snapshot = await getCourseProgressSnapshot(req.user.id, course._id.toString());
     return res.json({
       message: "Progress updated",
       progress,
       courseProgress: snapshot,
     });
-  } catch {
+  } catch (error) {
+    console.error("Error in updateLessonProgress:", error);
     return res.status(500).json({ message: "Server error" });
   }
 }
@@ -192,9 +217,10 @@ export async function getMyCourseProgress(req: Request, res: Response) {
       totalLessons,
       completedCount,
       progressPercentage,
-      lastLessonId: enrollment.last_lesson_id,
+      lastLessonId: enrollment.lastAccessedLessonId,
     });
-  } catch {
+  } catch (error) {
+    console.error("Error in getMyCourseProgress:", error);
     return res.status(500).json({ message: "Server error" });
   }
 }

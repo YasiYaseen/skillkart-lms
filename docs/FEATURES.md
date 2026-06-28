@@ -26,7 +26,7 @@ These should be built first because they make SkillKart work like a real LMS.
 | 8 | Course Browsing | In Progress | [docs/features/mvp/08-course-browsing.md](features/mvp/08-course-browsing.md) |
 | 9 | Enrollment System | In Progress | [docs/features/mvp/09-enrollment-system.md](features/mvp/09-enrollment-system.md) |
 | 10 | Learning Page | In Progress | [docs/features/mvp/10-learning-page.md](features/mvp/10-learning-page.md) |
-| 11 | Progress Tracking | In Progress | [docs/features/mvp/11-progress-tracking.md](features/mvp/11-progress-tracking.md) |
+| 11 | Progress Tracking | Done | [docs/features/mvp/11-progress-tracking.md](features/mvp/11-progress-tracking.md) |
 | 12 | Quiz and Assessment Basics | In Progress | [docs/features/mvp/12-quiz-and-assessment-basics.md](features/mvp/12-quiz-and-assessment-basics.md) |
 | 13 | Reviews and Ratings | Not Started | [docs/features/mvp/13-reviews-and-ratings.md](features/mvp/13-reviews-and-ratings.md) |
 | 14 | Certificates | Not Started | [docs/features/mvp/14-certificates.md](features/mvp/14-certificates.md) |

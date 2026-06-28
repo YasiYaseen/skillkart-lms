@@ -4,6 +4,7 @@ import Course from "../../models/Course";
 import Enrollment from "../../models/Enrollment";
 import Lesson from "../../models/Lesson";
 import Section from "../../models/Section";
+import LessonProgress from "../../models/LessonProgress";
 import {
   enrollSchema,
   enrollmentListQuerySchema,
@@ -219,6 +220,20 @@ export async function updateProgress(req: Request, res: Response) {
     }
 
     if (!updated) return res.status(500).json({ message: "Update failed" });
+
+    // Keep LessonProgress collection in sync
+    await LessonProgress.findOneAndUpdate(
+      { user: req.user.id, lesson: lessonId },
+      {
+        user: req.user.id,
+        lesson: lessonId,
+        completed: completed,
+        progressPercentage: completed ? 100 : 0,
+        lastWatchedAt: new Date(),
+        completedAt: completed ? new Date() : undefined,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     // Guard against impossible state (should never happen due to $addToSet, but safety net)
     if (updated.completedLessonIds.length > updated.totalLessonsCount) {

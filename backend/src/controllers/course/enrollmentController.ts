@@ -106,8 +106,8 @@ export async function updateEnrollmentStatus(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid enrollment id" });
     }
 
-    const { status } = req.body as { status?: "active" | "completed" | "dropped" };
-    if (!status || !["active", "completed", "dropped"].includes(status)) {
+    const { status } = req.body as { status?: "active" | "completed" | "cancelled" };
+    if (!status || !["active", "completed", "cancelled"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
