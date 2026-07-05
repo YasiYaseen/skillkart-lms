@@ -10,6 +10,8 @@ import meRoutes from "./routes/meRoutes";
 import quizRoutes from "./routes/quizRoutes";
 import enrollmentRoutes from "./routes/enrollmentRoutes";
 import userRoutes from "./routes/userRoutes";
+import certificateRoutes from "./routes/certificateRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
 
 dotenv.config();
 // Workaround for Windows DNS SRV resolution issues
@@ -34,6 +36,8 @@ app.use("/api/me", meRoutes);
 app.use("/api", quizRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/certificates", certificateRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Health check
 app.get("/", (req, res) => {

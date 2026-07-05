@@ -7,6 +7,8 @@ import Enrollment from "../../models/Enrollment";
 import LessonProgress from "../../models/LessonProgress";
 import Quiz from "../../models/Quiz";
 import QuizAttempt from "../../models/QuizAttempt";
+import Certificate from "../../models/Certificate";
+import Notification from "../../models/Notification";
 
 async function getCourseFromLessonId(lessonId: string) {
   const lesson = await Lesson.findById(lessonId);
@@ -155,12 +157,37 @@ export async function updateLessonProgress(req: Request, res: Response) {
     if (isFullyComplete && enrollment.status !== "completed") {
       enrollment.status = "completed";
       enrollment.completedAt = new Date();
+      await enrollment.save();
+
+      // Auto-issue certificate on first completion
+      await Certificate.findOneAndUpdate(
+        { student: req.user.id, course: course._id },
+        {
+          $setOnInsert: {
+            student: req.user.id,
+            course: course._id,
+            enrollment: enrollment._id,
+            issuedAt: enrollment.completedAt,
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+
+      // Notify student of course completion
+      await Notification.create({
+        recipient: req.user.id,
+        title: "Course Completed! 🎉",
+        message: `Congratulations on completing "${course.title}"! Your certificate is ready.`,
+        type: "success",
+        link: `/my-certificates`,
+      });
     } else if (!isFullyComplete && enrollment.status === "completed") {
       enrollment.status = "active";
       enrollment.completedAt = undefined;
+      await enrollment.save();
+    } else {
+      await enrollment.save();
     }
-
-    await enrollment.save();
 
     const snapshot = await getCourseProgressSnapshot(req.user.id, course._id.toString());
     return res.json({

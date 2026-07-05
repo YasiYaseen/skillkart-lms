@@ -3,6 +3,7 @@ import { Types, isValidObjectId } from "mongoose";
 import Course from "../../models/Course";
 import Enrollment from "../../models/Enrollment";
 import Review from "../../models/Review";
+import Notification from "../../models/Notification";
 import { reviewSchema } from "../../validators/review.validator";
 
 async function getReviewSummary(courseId: string) {
@@ -104,6 +105,18 @@ export async function createCourseReview(req: Request, res: Response) {
       rating: parsed.data.rating,
       comment: parsed.data.comment,
     });
+
+    // Determine course instructor to notify
+    const courseObj = await Course.findById(courseId).select("title instructor");
+    if (courseObj) {
+      await Notification.create({
+        recipient: courseObj.instructor,
+        title: "New Course Review",
+        message: `A student left a ${parsed.data.rating}-star review on "${courseObj.title}".`,
+        type: "info",
+        link: `/courses/${courseId}`,
+      });
+    }
 
     return res.status(201).json({
       message: "Review created",

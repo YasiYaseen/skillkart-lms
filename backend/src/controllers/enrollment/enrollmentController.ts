@@ -5,6 +5,7 @@ import Enrollment from "../../models/Enrollment";
 import Lesson from "../../models/Lesson";
 import Section from "../../models/Section";
 import LessonProgress from "../../models/LessonProgress";
+import Notification from "../../models/Notification";
 import {
   enrollSchema,
   enrollmentListQuerySchema,
@@ -54,6 +55,25 @@ export async function enrollInCourse(req: Request, res: Response) {
         existing.totalLessonsCount = totalLessons;
 
         await existing.save();
+
+        // Notify student and instructor on reactivation
+        await Notification.create([
+          {
+            recipient: req.user.id,
+            title: "Enrollment Reactivated",
+            message: `You have successfully reactivated your enrollment for "${course.title}".`,
+            type: "success",
+            link: `/my-courses`,
+          },
+          {
+            recipient: course.instructor,
+            title: "Student Reactivated Enrollment",
+            message: `A student has reactivated their enrollment in your course "${course.title}".`,
+            type: "info",
+            link: `/instructor/courses/${course._id}/students`,
+          }
+        ]);
+
         return res.status(200).json({ message: "Enrollment reactivated", enrollment: existing });
       }
     }
@@ -72,6 +92,24 @@ export async function enrollInCourse(req: Request, res: Response) {
       completedLessonIds: [],
       enrolledAt: new Date(),
     });
+
+    // Notify student and instructor on new enrollment
+    await Notification.create([
+      {
+        recipient: req.user.id,
+        title: "Course Enrolled",
+        message: `You have successfully enrolled in "${course.title}". Happy learning!`,
+        type: "success",
+        link: `/my-courses`,
+      },
+      {
+        recipient: course.instructor,
+        title: "New Student Enrolled",
+        message: `A new student has enrolled in your course "${course.title}".`,
+        type: "info",
+        link: `/instructor/courses/${course._id}/students`,
+      }
+    ]);
 
     return res.status(201).json({ message: "Enrollment created", enrollment });
   } catch (error) {

@@ -6,6 +6,8 @@ import { MyCourses as StudentMyCourses, LessonViewer } from '@features/student';
 import OnboardingPage from '@pages/OnboardingPage';
 import Home from '@pages/Home';
 import Profile from '@pages/Profile';
+import MyCertificatesPage from '@pages/MyCertificatesPage';
+import VerifyCertificatePage from '@pages/VerifyCertificatePage';
 import { OnboardingGuard } from '@/components/OnboardingGuard';
 import {
     InstructorLayout,
@@ -31,12 +33,14 @@ function App() {
                         <Route path="/courses" element={<CourseList />} />
                         <Route path="/courses/:courseId" element={<CourseDetailsPage />} />
                         <Route path="/onboarding" element={<OnboardingPage />} />
+                        <Route path="/certificates/verify/:certificateId" element={<VerifyCertificatePage />} />
 
                         <Route element={<ProtectedRoute allowedRoles={['student', 'admin', 'instructor']} />}>
                             <Route path="/my-courses" element={<StudentMyCourses />} />
                             <Route path="/learn/:courseId" element={<LessonViewer />} />
                             <Route path="/learn/:courseId/:lessonId" element={<LessonViewer />} />
                             <Route path="/profile" element={<Profile />} />
+                            <Route path="/my-certificates" element={<MyCertificatesPage />} />
                         </Route>
                     </Route>
 

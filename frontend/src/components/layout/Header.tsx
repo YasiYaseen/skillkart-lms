@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GraduationCapIcon } from '@assets/icons';
 import Button from '@components/common/Button';
+import NotificationBell from '@components/common/NotificationBell';
 import { AuthModals } from '@features/auth';
 import { useAuth } from '@features/auth/AuthContext';
 
@@ -54,9 +55,14 @@ function Header() {
               )}
 
               {user && user.role === 'student' && (
-                <Link to="/my-courses" className="header-nav-link">
-                  My Courses
-                </Link>
+                <>
+                  <Link to="/my-courses" className="header-nav-link">
+                    My Courses
+                  </Link>
+                  <Link to="/my-certificates" className="header-nav-link">
+                    My Certificates
+                  </Link>
+                </>
               )}
 
               {user && (
@@ -85,10 +91,12 @@ function Header() {
                 Create Account
               </Button>
             ) : (
-              <>
-                <Link to="/profile" className="mr-4 text-sm font-medium hover:text-blue-600 transition-colors">
-                  {user.name}
-                </Link>
+                <div className="flex items-center gap-4 mr-4">
+                  <NotificationBell />
+                  <Link to="/profile" className="text-sm font-medium hover:text-blue-600 transition-colors">
+                    {user.name}
+                  </Link>
+                </div>
 
                 <Button
                   variant="secondary"

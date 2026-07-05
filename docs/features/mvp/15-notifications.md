@@ -1,6 +1,6 @@
 # Notifications
 
-Status: Not Started
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -25,11 +25,15 @@ Show important platform events to users inside the app.
 - Add mark as read action
 
 ## Acceptance Checklist
-- [ ] Enrollment creates notification
-- [ ] Course completion creates notification
-- [ ] Review creates instructor notification
-- [ ] Unread notification count badge is visible
-- [ ] User can mark notification as read
+- [x] Enrollment creates notification
+- [x] Course completion creates notification
+- [x] Review creates instructor notification
+- [x] Unread notification count badge is visible
+- [x] User can mark notification as read
 
 ## Current Implementation Notes
-- No notification model, routes, controller, or frontend notification UI was found.
+- Created `Notification` model with fields like recipient, title, message, type, and read status.
+- Implemented `/api/notifications` for fetching notifications, marking them as read, or marking all as read.
+- Hooked up `enrollmentController`, `progressController`, and `reviewController` to dispatch notifications on key events.
+- Created `NotificationBell` React component with a dropdown to view and manage notifications.
+- Polling implemented every minute to fetch new notifications.
