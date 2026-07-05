@@ -12,6 +12,9 @@ import enrollmentRoutes from "./routes/enrollmentRoutes";
 import userRoutes from "./routes/userRoutes";
 import certificateRoutes from "./routes/certificateRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
+import uploadRoutes from "./routes/uploadRoutes";
+
+import path from "path";
 
 dotenv.config();
 // Workaround for Windows DNS SRV resolution issues
@@ -21,11 +24,14 @@ setServers(["8.8.8.8", "1.1.1.1"]);
 const app = express();
 
 // Global middleware
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
 app.use(json());
 
 // Connect to DB
 connectDB();
+
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -38,6 +44,7 @@ app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // Health check
 app.get("/", (req, res) => {

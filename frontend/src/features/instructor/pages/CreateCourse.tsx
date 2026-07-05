@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { QuizEditorModal } from '../components/QuizEditorModal';
+import { FileUpload } from '@components/common';
 
 function CreateCourse() {
     const navigate = useNavigate();
@@ -174,8 +175,13 @@ function CreateCourse() {
                                 <input type="number" required min="0" value={price} onChange={e => setPrice(Number(e.target.value))} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
                             </div>
                             <div className="flex-1 min-w-[200px]">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Thumbnail URL (optional)</label>
-                                <input type="url" value={thumbnail || ''} onChange={e => setThumbnail(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" placeholder="https://..." />
+                                <FileUpload 
+                                    label="Course Thumbnail" 
+                                    accept="image/jpeg, image/png, image/webp" 
+                                    maxSizeMB={5}
+                                    onUploadSuccess={(url) => setThumbnail(import.meta.env.VITE_API_BASE_URL + url)} 
+                                />
+                                {thumbnail && <img src={thumbnail} alt="Preview" className="mt-2 h-20 w-32 object-cover rounded border border-gray-200" />}
                             </div>
                         </div>
                         <div className="pt-4 flex justify-end">
@@ -234,19 +240,30 @@ function CreateCourse() {
                                                             <option value="link">🔗 External Link</option>
                                                             <option value="pdf">📄 PDF URL</option>
                                                         </select>
-                                                        <input
-                                                            required
-                                                            type={['video','link','pdf'].includes(newItemType) ? 'url' : 'text'}
-                                                            placeholder={
-                                                                newItemType === 'video' ? 'YouTube / video URL...' :
-                                                                newItemType === 'link'  ? 'https://...' :
-                                                                newItemType === 'pdf'   ? 'PDF file URL...' :
-                                                                'Write lesson notes or description...'
-                                                            }
-                                                            value={newItemContent}
-                                                            onChange={e => setNewItemContent(e.target.value)}
-                                                            className="flex-1 border border-gray-300 p-2 text-sm rounded"
-                                                        />
+                                                        {newItemType === 'pdf' ? (
+                                                            <div className="flex-1">
+                                                                <FileUpload 
+                                                                    label="Upload PDF"
+                                                                    accept="application/pdf"
+                                                                    maxSizeMB={15}
+                                                                    onUploadSuccess={(url) => setNewItemContent(import.meta.env.VITE_API_BASE_URL + url)}
+                                                                />
+                                                                {newItemContent && <p className="text-xs text-green-600 mt-1">File uploaded successfully.</p>}
+                                                            </div>
+                                                        ) : (
+                                                            <input
+                                                                required
+                                                                type={['video','link'].includes(newItemType) ? 'url' : 'text'}
+                                                                placeholder={
+                                                                    newItemType === 'video' ? 'YouTube / video URL...' :
+                                                                    newItemType === 'link'  ? 'https://...' :
+                                                                    'Write lesson notes or description...'
+                                                                }
+                                                                value={newItemContent}
+                                                                onChange={e => setNewItemContent(e.target.value)}
+                                                                className="flex-1 border border-gray-300 p-2 text-sm rounded"
+                                                            />
+                                                        )}
                                                     </div>
                                                     <div className="flex justify-end gap-2">
                                                         <button type="button" onClick={() => setActiveLessonId(null)} className="text-gray-500 text-sm px-3 py-1.5 hover:text-gray-700">Cancel</button>

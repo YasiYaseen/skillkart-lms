@@ -34,7 +34,7 @@ export const createLessonSchema = z.object({
 // ── Lesson Item ───────────────────────────────────────────────────────────────
 export const createLessonItemSchema = z.object({
   type: z.enum(["video", "text", "pdf", "link", "code", "quiz_block"]),
-  content: z.record(z.unknown()).refine(
+  content: z.record(z.string(), z.unknown()).refine(
     (c) => Object.keys(c).length > 0,
     "content must not be empty"
   ),

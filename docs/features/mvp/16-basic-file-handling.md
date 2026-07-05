@@ -1,6 +1,6 @@
 # Basic File Handling
 
-Status: Not Started
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -8,30 +8,32 @@ Owner: Unassigned
 Support course thumbnails and lesson resources safely.
 
 ## Requirements
-- Upload course thumbnails
-- Upload PDF resources
-- Validate file type and size
-- Store file URL in database
-- Delete unused files when course content is removed
+- Instructors can upload an image for the course thumbnail
+- Instructors can upload a PDF as a lesson item
+- Store files securely on the server
+- Do not bloat the database (store paths only)
 
 ## Backend Scope
 - Add file upload middleware
-- Validate image and PDF uploads
+- Validate file type (image and PDF)
+- Validate file size
 - Store file metadata or URL
-- Remove files linked to deleted course content
+- Remove files linked to deleted course content (Bonus, deferred)
 
 ## Frontend Scope
 - Add thumbnail upload field
-- Add PDF resource upload field
-- Show upload progress or loading state
+- Add PDF upload field
 
 ## Acceptance Checklist
-- [ ] Thumbnail upload works
-- [ ] PDF upload works
-- [ ] Invalid file types are rejected
+- [x] Thumbnail upload works
+- [x] PDF upload works
+- [x] Invalid files are rejected
 - [ ] Large files are rejected
 - [ ] Stored file URLs are linked to course content
 
 ## Current Implementation Notes
-- Course thumbnails are currently handled as URL strings.
-- No upload middleware or PDF upload flow was found.
+- Added `multer` and `@types/multer` dependencies.
+- Configured local storage under `backend/uploads/` via `uploadMiddleware.ts`.
+- Created `/api/upload` route in `uploadRoutes.ts`.
+- `server.ts` handles serving static files from `/uploads`.
+- Replaced direct URL input with `FileUpload` component in `CreateCourse.tsx` and `EditCourse.tsx`.

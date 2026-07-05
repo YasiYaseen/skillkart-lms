@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { FileUpload } from '@components/common';
 
 const LEVEL_OPTIONS = [
     { label: 'Beginner', value: 'beginner' },
@@ -193,13 +194,11 @@ function EditCourse() {
                     <label htmlFor="edit-thumbnail" className="block text-sm font-medium text-gray-700 mb-2">
                         Thumbnail URL <span className="text-gray-400 font-normal">(optional)</span>
                     </label>
-                    <input
-                        id="edit-thumbnail"
-                        type="url"
-                        value={thumbnailUrl}
-                        onChange={e => setThumbnailUrl(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="https://example.com/thumbnail.jpg"
+                    <FileUpload 
+                        label="" 
+                        accept="image/jpeg, image/png, image/webp" 
+                        maxSizeMB={5}
+                        onUploadSuccess={(url) => setThumbnailUrl(import.meta.env.VITE_API_BASE_URL + url)} 
                     />
                     {thumbnailUrl && (
                         <div className="mt-3 rounded-lg overflow-hidden border border-gray-200 aspect-video max-w-xs">
