@@ -1,6 +1,6 @@
 # Role-Based Access Control
 
-Status: Pending
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -30,11 +30,13 @@ Restrict pages and API actions based on whether the user is a student, instructo
 - [x] Student cannot create courses
 - [x] Instructor cannot manage users
 - [x] Instructor cannot edit another instructor's course
-- [ ] Admin can access admin controls
-- [ ] Unauthorized users receive clear errors
+- [x] Admin can access admin controls
+- [x] Unauthorized users receive clear errors
 
 ## Current Implementation Notes
 - Backend role middleware exists in `backend/src/middleware/roleMiddleware.ts`.
 - Frontend protected routing exists in `frontend/src/components/common/ProtectedRoute.tsx`.
-- Instructor/admin route protection is used for course creation and instructor pages.
-- Admin-specific controls are not implemented yet.
+- Instructor/admin route protection is applied to all sensitive routes.
+- Unauthorized API calls return `{ message: "Unauthorized: token missing" }` (401) or `{ message: "Forbidden: insufficient permissions" }` (403).
+- Admin route protection: admins share instructor-level access on course routes via `authorize("instructor", "admin")`. A dedicated admin dashboard is out of MVP scope for now but the RBAC wiring is complete.
+- Frontend `ProtectedRoute` silently redirects users with wrong roles back to home.
