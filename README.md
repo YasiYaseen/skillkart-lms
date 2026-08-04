@@ -92,6 +92,8 @@ npm run dev
 
 ---
 
-## Documentation for AI Agents
+## Development Documentation
 
-For detailed architectural patterns and coding standards, refer to [.agent/SKILL.md](file:///c:/Users/user/projects/skillkart/.agent/SKILL.md).
+For a comprehensive guide on developer setup, architectural patterns, feature implementation workflow, special systems, and commit standards, refer to [docs/DEVELOPMENT_WORKFLOW.md](file:///c:/Users/user/projects/skillkart/docs/DEVELOPMENT_WORKFLOW.md).
+
+For AI agent specific architectural patterns and coding standards, refer to [.agent/SKILL.md](file:///c:/Users/user/projects/skillkart/.agent/SKILL.md).

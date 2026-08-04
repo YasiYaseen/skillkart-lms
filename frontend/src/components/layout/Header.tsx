@@ -91,6 +91,7 @@ function Header() {
                 Create Account
               </Button>
             ) : (
+              <>
                 <div className="flex items-center gap-4 mr-4">
                   <NotificationBell />
                   <Link to="/profile" className="text-sm font-medium hover:text-blue-600 transition-colors">

@@ -5,5 +5,6 @@ export { default as CourseCard } from '@components/common/CourseCard';
 export { default as Modal } from '@components/common/Modal';
 export { default as Input } from '@components/common/Input';
 export { default as Select } from '@components/common/Select';
+export { default as FileUpload } from '@components/common/FileUpload';
 export { default as ProtectedRoute } from '@components/common/ProtectedRoute';
 export type { Course } from '@components/common/CourseCard';
