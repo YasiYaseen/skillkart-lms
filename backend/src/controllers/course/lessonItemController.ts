@@ -59,7 +59,7 @@ export async function createLessonItem(req: Request, res: Response) {
       order: resolvedOrder,
     });
 
-    return res.status(201).json({ message: "Lesson item created", lessonItem });
+    return res.status(201).json({ message: "Lesson item created", lessonItem, item: lessonItem });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }

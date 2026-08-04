@@ -113,7 +113,10 @@ function CreateCourse() {
             });
             
             // update items locally
-            const updatedItems = [...(lesson.items || []), res.data.item];
+            const createdItem = res.data.lessonItem || res.data.item;
+            const updatedItems = createdItem
+                ? [...(lesson.items || []), createdItem]
+                : [...(lesson.items || [])];
             const updatedLesson = { ...lesson, items: updatedItems };
             const updatedSection = { ...sec, lessons: sec.lessons.map((l: any) => l._id === lessonId ? updatedLesson : l) };
 
@@ -222,7 +225,7 @@ function CreateCourse() {
                                             {/* Render Items */}
                                             {les.items?.length > 0 && (
                                                 <div className="pl-6 space-y-2 mt-2 border-t border-gray-200 pt-2 text-xs">
-                                                    {les.items.map((it: any) => (
+                                                    {les.items.filter(Boolean).map((it: any) => (
                                                         <div key={it._id} className="text-gray-500 bg-white p-2 rounded border border-gray-200 flex justify-between items-center gap-2">
                                                             <span className="font-semibold uppercase text-gray-400 shrink-0">[{it.type}]</span>
                                                             <span className="truncate text-gray-600">{it.content?.url || it.content?.text || '—'}</span>
