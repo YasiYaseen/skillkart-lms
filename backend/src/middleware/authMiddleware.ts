@@ -25,9 +25,13 @@ async function resolveUserFromToken(token: string): Promise<AuthTokenPayload | n
     return null;
   }
 
-  const user = await User.findById(userId).select("_id role onboardingCompleted");
+  const user = await User.findById(userId).select("_id role onboardingCompleted isActive");
   if (!user) {
     return null;
+  }
+
+  if (user.isActive === false) {
+    return null; // or we could throw an error, but null forces unauthorized
   }
 
   return {

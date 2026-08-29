@@ -1,6 +1,6 @@
 # Admin Dashboard
 
-Status: Not Started
+Status: Done
 Priority: MVP
 Owner: Unassigned
 
@@ -26,10 +26,10 @@ Give admins a control panel for platform-wide user and course management.
 - Build course moderation table
 
 ## Acceptance Checklist
-- [ ] Admin sees platform stats
-- [ ] Admin can enable or disable users
-- [ ] Admin can enable, disable, approve, or reject courses
-- [ ] Non-admin users cannot access admin APIs
+- [x] Admin sees platform stats
+- [x] Admin can enable or disable users
+- [x] Admin can enable, disable, approve, or reject courses
+- [x] Non-admin users cannot access admin APIs
 
 ## Current Implementation Notes
 - Only `frontend/src/features/admin/index.ts` exists.

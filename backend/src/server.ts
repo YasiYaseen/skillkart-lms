@@ -13,6 +13,7 @@ import userRoutes from "./routes/userRoutes";
 import certificateRoutes from "./routes/certificateRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 import path from "path";
 
@@ -45,6 +46,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Health check
 app.get("/", (req, res) => {

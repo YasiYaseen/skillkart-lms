@@ -17,6 +17,13 @@ import {
     EditCourse,
     StudentsEnrolled,
 } from '@features/instructor';
+import {
+    AdminLayout,
+    AdminDashboard,
+    UserManagement,
+    CourseModeration,
+    EnrollmentList,
+} from '@features/admin';
 
 /**
  * App Component
@@ -52,6 +59,16 @@ function App() {
                             <Route path="/instructor/create-course" element={<CreateCourse />} />
                             <Route path="/instructor/courses/:courseId/edit" element={<EditCourse />} />
                             <Route path="/instructor/students" element={<StudentsEnrolled />} />
+                        </Route>
+                    </Route>
+
+                    {/* Admin Layout */}
+                    <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+                        <Route element={<AdminLayout />}>
+                            <Route path="/admin" element={<AdminDashboard />} />
+                            <Route path="/admin/users" element={<UserManagement />} />
+                            <Route path="/admin/courses" element={<CourseModeration />} />
+                            <Route path="/admin/enrollments" element={<EnrollmentList />} />
                         </Route>
                     </Route>
                 </Routes>

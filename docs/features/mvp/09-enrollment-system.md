@@ -35,7 +35,7 @@ Allow students to enroll in published courses and unlock course learning content
 - [x] Enrolled courses appear on student dashboard
 - [x] Student can unenroll from a course
 - [x] Instructor can view enrolled students list
-- [ ] Admin can view all enrollments
+- [x] Admin can view all enrollments
 
 ## Current Implementation Notes
 - Enrollment model, routes, controller, frontend service, and enroll button exist.

@@ -91,6 +91,8 @@ export async function getCourses(req: Request, res: Response) {
       }
     } else {
       filter.status = "published";
+      filter.isActive = true;
+      filter.isApproved = true;
     }
 
     if (level) {

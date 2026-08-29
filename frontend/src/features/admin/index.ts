@@ -1,11 +1,5 @@
-/**
- * Admin Features Module
- * 
- * This directory will contain admin-specific features:
- * - User management
- * - Course moderation
- * - System settings
- * - Analytics dashboard
- */
-
-export { };
+export { AdminDashboard } from "./pages/AdminDashboard";
+export { UserManagement } from "./pages/UserManagement";
+export { CourseModeration } from "./pages/CourseModeration";
+export { EnrollmentList } from "./pages/EnrollmentList";
+export { AdminLayout } from "./layout/AdminLayout";

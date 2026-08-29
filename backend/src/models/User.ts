@@ -16,6 +16,7 @@ export interface IUser extends Document {
     linkedin?: string;
     twitter?: string;
   };
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,7 @@ const UserSchema = new Schema<IUser>(
       linkedin: String,
       twitter: String,
     },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

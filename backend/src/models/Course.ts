@@ -13,6 +13,8 @@ export interface ICourse extends Document {
   status: CourseStatus;
   publishedAt?: Date;
   instructor: Types.ObjectId;
+  isActive: boolean;
+  isApproved: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -66,6 +68,8 @@ const CourseSchema = new Schema<ICourse>(
       required: true,
       index: true,
     },
+    isActive: { type: Boolean, default: true },
+    isApproved: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
