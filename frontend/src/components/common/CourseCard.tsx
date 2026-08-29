@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import Rating from './Rating';
+import { WishlistButton } from '@/features/wishlist';
 
 export interface Course {
     id: string | number;
@@ -16,6 +17,7 @@ export interface Course {
 interface CourseCardProps {
     course: Course;
     className?: string;
+    showWishlist?: boolean;
 }
 
 const LEVEL_BADGE_STYLES: Record<string, string> = {
@@ -28,7 +30,7 @@ const LEVEL_BADGE_STYLES: Record<string, string> = {
  * CourseCard Component
  * Displays individual course information in a card format
  */
-function CourseCard({ course, className = '' }: CourseCardProps) {
+function CourseCard({ course, className = '', showWishlist = true }: CourseCardProps) {
     const {
         id,
         title,
@@ -42,13 +44,18 @@ function CourseCard({ course, className = '' }: CourseCardProps) {
     } = course;
 
     return (
-        <Link to={`/courses/${id}`} className={`course-card ${className}`}>
-            <div className="course-card-thumbnail">
+        <Link to={`/courses/${id}`} className={`course-card relative group ${className}`}>
+            <div className="course-card-thumbnail relative">
                 <img src={thumbnail} alt={title} loading="lazy" />
                 {level && (
                     <span className={LEVEL_BADGE_STYLES[level] || 'course-card-level-badge'}>
                         {level.charAt(0).toUpperCase() + level.slice(1)}
                     </span>
+                )}
+                {showWishlist && id && (
+                    <div className="absolute top-2 right-2 z-10">
+                        <WishlistButton courseId={String(id)} variant="icon" />
+                    </div>
                 )}
             </div>
 

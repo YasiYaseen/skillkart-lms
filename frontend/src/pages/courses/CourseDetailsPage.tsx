@@ -5,6 +5,7 @@ import type { FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { EnrollButton } from '@/features/enrollment/components/EnrollButton';
+import { WishlistButton } from '@/features/wishlist';
 
 type CourseReview = {
     _id: string;
@@ -105,8 +106,6 @@ function CourseDetailsPage() {
                 setLoading(false);
             });
     }, [courseId]);
-
-    // Enrollment is handled via the new EnrollButton component
 
     const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -231,7 +230,7 @@ function CourseDetailsPage() {
                                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     >
                                         {[5, 4, 3, 2, 1].map((rating) => (
-                                            <option key={rating} value={rating}>{rating} stars</option>
+                                             <option key={rating} value={rating}>{rating} stars</option>
                                         ))}
                                     </select>
                                 </div>
@@ -322,10 +321,15 @@ function CourseDetailsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Button */}
-                                    {courseId && (
-                                        <EnrollButton courseId={courseId} onEnrolled={() => navigate(`/learn/${courseId}`)} />
-                                    )}
+                                    {/* Action Buttons */}
+                                    <div className="space-y-3 mb-6">
+                                        {courseId && (
+                                            <EnrollButton courseId={courseId} onEnrolled={() => navigate(`/learn/${courseId}`)} />
+                                        )}
+                                        {courseId && (
+                                            <WishlistButton courseId={courseId} variant="button" />
+                                        )}
+                                    </div>
 
                                     {/* What's Included */}
                                     <div>

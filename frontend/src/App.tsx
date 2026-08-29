@@ -8,6 +8,7 @@ import Home from '@pages/Home';
 import Profile from '@pages/Profile';
 import MyCertificatesPage from '@pages/MyCertificatesPage';
 import VerifyCertificatePage from '@pages/VerifyCertificatePage';
+import { WishlistPage } from '@features/wishlist';
 import { OnboardingGuard } from '@/components/OnboardingGuard';
 import {
     InstructorLayout,
@@ -44,6 +45,7 @@ function App() {
 
                         <Route element={<ProtectedRoute allowedRoles={['student', 'admin', 'instructor']} />}>
                             <Route path="/my-courses" element={<StudentMyCourses />} />
+                            <Route path="/wishlist" element={<WishlistPage />} />
                             <Route path="/learn/:courseId" element={<LessonViewer />} />
                             <Route path="/learn/:courseId/:lessonId" element={<LessonViewer />} />
                             <Route path="/profile" element={<Profile />} />

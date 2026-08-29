@@ -14,6 +14,7 @@ import certificateRoutes from "./routes/certificateRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
 import adminRoutes from "./routes/adminRoutes";
+import wishlistRoutes from "./routes/wishlistRoutes";
 
 import path from "path";
 
@@ -47,6 +48,7 @@ app.use("/api/certificates", certificateRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 
 // Health check
 app.get("/", (req, res) => {
