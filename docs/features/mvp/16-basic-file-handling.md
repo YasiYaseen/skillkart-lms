@@ -28,8 +28,8 @@ Support course thumbnails and lesson resources safely.
 - [x] Thumbnail upload works
 - [x] PDF upload works
 - [x] Invalid files are rejected
-- [ ] Large files are rejected
-- [ ] Stored file URLs are linked to course content
+- [x] Large files are rejected
+- [x] Stored file URLs are linked to course content
 
 ## Current Implementation Notes
 - Added `multer` and `@types/multer` dependencies.
