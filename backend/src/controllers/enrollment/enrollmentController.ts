@@ -5,6 +5,7 @@ import Enrollment from "../../models/Enrollment";
 import Lesson from "../../models/Lesson";
 import Section from "../../models/Section";
 import LessonProgress from "../../models/LessonProgress";
+import Certificate from "../../models/Certificate";
 import Notification from "../../models/Notification";
 import {
   enrollSchema,
@@ -287,6 +288,30 @@ export async function updateProgress(req: Request, res: Response) {
       updated.status = "completed";
       updated.completedAt = new Date();
       await updated.save();
+
+      // Auto-issue certificate on first completion
+      await Certificate.findOneAndUpdate(
+        { student: req.user.id, course: enrollment.course },
+        {
+          $setOnInsert: {
+            student: req.user.id,
+            course: enrollment.course,
+            enrollment: updated._id,
+            issuedAt: updated.completedAt,
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+
+      // Notify student of course completion
+      const courseObj = await Course.findById(enrollment.course).select("title");
+      await Notification.create({
+        recipient: req.user.id,
+        title: "Course Completed! 🎉",
+        message: `Congratulations on completing "${courseObj?.title || "your course"}"! Your certificate is ready.`,
+        type: "success",
+        link: `/my-certificates`,
+      });
     } else if (!isFullyComplete && updated.status === "completed") {
       // User un-marked a lesson after course was auto-completed — revert to active
       updated.status = "active";

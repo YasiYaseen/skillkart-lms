@@ -42,12 +42,16 @@ function Header() {
             SkillKart
           </Link>
 
-
-
           {/* Actions */}
           <div className="header-actions">
             {/* Navigation */}
             <nav className="header-nav ml-auto">
+              {user && user.role === 'admin' && (
+                <Link to="/admin" className="header-nav-link">
+                  Admin Panel
+                </Link>
+              )}
+
               {user && user.role === 'instructor' && (
                 <Link to="/instructor" className="header-nav-link">
                   Instructor Studio
@@ -112,9 +116,6 @@ function Header() {
 
         </div>
       </header>
-
-
-
 
       <AuthModals
         isOpen={!!authMode}

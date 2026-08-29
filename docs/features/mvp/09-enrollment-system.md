@@ -41,4 +41,4 @@ Allow students to enroll in published courses and unlock course learning content
 - Enrollment model, routes, controller, frontend service, and enroll button exist.
 - Added Unenroll functionality (students can delete enrollments via `MyCourses.tsx` -> `EnrollmentCard.tsx`).
 - Built the `StudentsEnrolled.tsx` page to fetch instructor's courses and their respective students dynamically.
-- Admin view is excluded from the MVP scope since the admin dashboard itself (#05) is Not Started, but the core student/instructor flows are fully functional.
+- Admin view is fully implemented via `/admin/enrollments` and `GET /api/admin/enrollments`, allowing platform administrators to inspect all student enrollments and statuses.

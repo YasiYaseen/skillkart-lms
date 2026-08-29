@@ -149,7 +149,7 @@ export async function getCurriculumForCourse(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    if (course.status !== "published") {
+    if (course.status !== "published" || course.isActive === false || course.isApproved === false) {
       if (!req.user || !isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
         return res.status(403).json({ message: "Forbidden" });
       }

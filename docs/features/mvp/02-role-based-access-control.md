@@ -38,5 +38,5 @@ Restrict pages and API actions based on whether the user is a student, instructo
 - Frontend protected routing exists in `frontend/src/components/common/ProtectedRoute.tsx`.
 - Instructor/admin route protection is applied to all sensitive routes.
 - Unauthorized API calls return `{ message: "Unauthorized: token missing" }` (401) or `{ message: "Forbidden: insufficient permissions" }` (403).
-- Admin route protection: admins share instructor-level access on course routes via `authorize("instructor", "admin")`. A dedicated admin dashboard is out of MVP scope for now but the RBAC wiring is complete.
+- Admin route protection: admins share instructor-level access on course routes via `authorize("instructor", "admin")` and have dedicated platform administration routes under `/api/admin` via `authorize("admin")`. A full admin dashboard is implemented at `/admin`.
 - Frontend `ProtectedRoute` silently redirects users with wrong roles back to home.

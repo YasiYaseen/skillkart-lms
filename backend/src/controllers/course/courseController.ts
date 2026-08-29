@@ -91,8 +91,8 @@ export async function getCourses(req: Request, res: Response) {
       }
     } else {
       filter.status = "published";
-      filter.isActive = true;
-      filter.isApproved = true;
+      filter.isActive = { $ne: false };
+      filter.isApproved = { $ne: false };
     }
 
     if (level) {
@@ -146,7 +146,7 @@ export async function getCourseById(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    if (course.status !== "published") {
+    if (course.status !== "published" || course.isActive === false || course.isApproved === false) {
       if (!req.user) {
         return res.status(403).json({ message: "Forbidden" });
       }

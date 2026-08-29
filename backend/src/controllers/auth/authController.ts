@@ -67,6 +67,10 @@ export async function login(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({ message: "Account is disabled. Please contact support." });
+    }
+
     const isMatch = await compare(password, user.password || "");
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
