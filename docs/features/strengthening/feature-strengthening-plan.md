@@ -310,7 +310,7 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 | 11.2 | Add search input to Users Management table (filter by name/email/role) | High | Done |
 | 11.3 | Add pagination to all admin tables (Users, Courses, Enrollments) | High | Done |
 | 11.4 | Add "View Course" link in Course Moderation table so admin can preview before approving | High | Done |
-| 11.5 | Add rejection reason text field when rejecting a course (shown to instructor) | High | Not Started |
+| 11.5 | Add rejection reason text field when rejecting a course (shown to instructor) | High | Done |
 | 11.6 | Add trend badges to admin stat cards ("+12 this week") | Medium | Not Started |
 | 11.7 | Add enrollment/revenue chart (past 7 or 30 days) to Admin Dashboard | Medium | Not Started |
 | 11.8 | Add search/filter to Course Moderation table | Medium | Done |
@@ -416,7 +416,7 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 | 17.1 | Add dark mode support to AdminDashboard stat cards | High | Done |
 | 17.2 | Add search/filter to EnrollmentList table (by student name, course name, or status) | High | Done |
 | 17.3 | Add pagination to all admin tables (Users, Courses, Enrollments) | High | Done |
-| 17.4 | Add rejection reason modal when admin rejects a course (text input, sent to instructor via notification) | High | Not Started |
+| 17.4 | Add rejection reason modal when admin rejects a course (text input, sent to instructor via notification) | High | Done |
 | 17.5 | Add trend indicator badges to admin stat cards (e.g. "+12 this week") | Medium | Not Started |
 | 17.6 | Add enrollment/revenue chart (past 7 or 30 days) to Admin Dashboard | Medium | Not Started |
 | 17.7 | Add "View Course" quick-link in EnrollmentList rows | Low | Done |

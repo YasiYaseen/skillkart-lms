@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { toast } from "react-toastify";
-import { Pagination } from "@/components/common";
+import { Pagination, Modal, Button } from "@/components/common";
 
 export interface ModerationCourse {
   _id: string;
@@ -11,6 +11,7 @@ export interface ModerationCourse {
   status: string;
   isApproved?: boolean;
   isActive?: boolean;
+  rejectionReason?: string;
   level?: string;
   instructor?: {
     _id?: string;
@@ -26,6 +27,11 @@ export function CourseModeration() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Rejection Modal State
+  const [rejectingCourse, setRejectingCourse] = useState<ModerationCourse | null>(null);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState("");
+  const [submittingRejection, setSubmittingRejection] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -47,11 +53,40 @@ export function CourseModeration() {
   const handleUpdateStatus = async (courseId: string, updates: { isActive?: boolean; isApproved?: boolean }) => {
     try {
       await api.patch(`/admin/courses/${courseId}/status`, updates);
-      toast.success("Course status updated");
-      setCourses(courses.map(c => c._id === courseId ? { ...c, ...updates } : c));
+      toast.success(updates.isApproved ? "Course approved and published" : "Course status updated");
+      setCourses(courses.map(c => c._id === courseId ? { ...c, ...updates, rejectionReason: updates.isApproved ? undefined : c.rejectionReason } : c));
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to update course status";
       toast.error(msg);
+    }
+  };
+
+  const handleOpenRejectModal = (course: ModerationCourse) => {
+    setRejectingCourse(course);
+    setRejectionReasonInput(course.rejectionReason || "");
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectingCourse) return;
+    setSubmittingRejection(true);
+    try {
+      await api.patch(`/admin/courses/${rejectingCourse._id}/status`, {
+        isApproved: false,
+        rejectionReason: rejectionReasonInput.trim(),
+      });
+      toast.success(`Course "${rejectingCourse.title}" rejected and instructor notified`);
+      setCourses(courses.map(c => c._id === rejectingCourse._id ? {
+        ...c,
+        isApproved: false,
+        rejectionReason: rejectionReasonInput.trim()
+      } : c));
+      setRejectingCourse(null);
+      setRejectionReasonInput("");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to reject course";
+      toast.error(msg);
+    } finally {
+      setSubmittingRejection(false);
     }
   };
 
@@ -175,6 +210,11 @@ export function CourseModeration() {
                             Preview ↗
                           </Link>
                         </div>
+                        {course.rejectionReason && (
+                          <div className="mt-1.5 p-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/30 text-xs text-red-700 dark:text-red-300">
+                            <strong>Feedback:</strong> {course.rejectionReason}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -212,7 +252,7 @@ export function CourseModeration() {
                     )}
                     {course.isApproved !== false && (
                       <button
-                        onClick={() => handleUpdateStatus(course._id, { isApproved: false })}
+                        onClick={() => handleOpenRejectModal(course)}
                         className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                       >
                         Reject
@@ -250,6 +290,61 @@ export function CourseModeration() {
           onPageChange={setCurrentPage}
         />
       </div>
+
+      {/* Rejection Modal */}
+      {rejectingCourse && (
+        <Modal isOpen={Boolean(rejectingCourse)} onClose={() => setRejectingCourse(null)}>
+          <div className="p-2 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xl shrink-0">
+                ⚠️
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Reject Course Submission</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Course: <strong className="text-gray-700 dark:text-gray-300">{rejectingCourse.title}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                Reason for Rejection (sent to instructor)
+              </label>
+              <textarea
+                value={rejectionReasonInput}
+                onChange={(e) => setRejectionReasonInput(e.target.value)}
+                placeholder="Explain what needs to be improved or corrected before this course can be approved..."
+                rows={4}
+                maxLength={500}
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+              />
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex justify-between">
+                <span>Providing specific feedback helps instructors fix issues quickly.</span>
+                <span>{rejectionReasonInput.length}/500</span>
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="secondary"
+                onClick={() => setRejectingCourse(null)}
+                disabled={submittingRejection}
+              >
+                Cancel
+              </Button>
+              <button
+                type="button"
+                onClick={handleConfirmReject}
+                disabled={submittingRejection}
+                className="px-4 py-2 text-sm font-semibold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50 shadow-xs"
+              >
+                {submittingRejection ? "Rejecting..." : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

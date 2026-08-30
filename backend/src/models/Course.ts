@@ -16,6 +16,7 @@ export interface ICourse extends Document {
   instructor: Types.ObjectId;
   isActive: boolean;
   isApproved: boolean;
+  rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,6 +78,7 @@ const CourseSchema = new Schema<ICourse>(
     },
     isActive: { type: Boolean, default: true },
     isApproved: { type: Boolean, default: true },
+    rejectionReason: { type: String, trim: true },
   },
   { timestamps: true }
 );

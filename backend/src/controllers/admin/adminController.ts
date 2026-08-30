@@ -3,6 +3,7 @@ import { isValidObjectId } from "mongoose";
 import User from "../../models/User";
 import Course from "../../models/Course";
 import Enrollment from "../../models/Enrollment";
+import Notification from "../../models/Notification";
 
 import { recordAuditLog } from "../../services/auditService";
 import AuditLog from "../../models/AuditLog";
@@ -101,7 +102,7 @@ export async function getCourses(req: Request, res: Response) {
 export async function updateCourseStatus(req: Request, res: Response) {
   try {
     const { courseId } = req.params;
-    const { isActive, isApproved } = req.body;
+    const { isActive, isApproved, rejectionReason } = req.body;
 
     if (!isValidObjectId(courseId)) {
       return res.status(400).json({ message: "Invalid course id" });
@@ -112,12 +113,44 @@ export async function updateCourseStatus(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    const previousState = { isActive: course.isActive, isApproved: course.isApproved };
+    const previousState = { isActive: course.isActive, isApproved: course.isApproved, rejectionReason: course.rejectionReason };
 
     if (isActive !== undefined) course.isActive = Boolean(isActive);
-    if (isApproved !== undefined) course.isApproved = Boolean(isApproved);
+    if (isApproved !== undefined) {
+      course.isApproved = Boolean(isApproved);
+      if (course.isApproved) {
+        course.rejectionReason = undefined;
+      } else if (typeof rejectionReason === "string" && rejectionReason.trim()) {
+        course.rejectionReason = rejectionReason.trim();
+      }
+    }
 
     await course.save();
+
+    // Trigger instructor notification
+    if (isApproved !== undefined) {
+      try {
+        if (isApproved) {
+          await Notification.create({
+            recipient: course.instructor,
+            title: "Course Approved",
+            message: `Your course "${course.title}" has been reviewed and approved by administrators.`,
+            type: "success",
+            link: `/courses/${course._id}`,
+          });
+        } else {
+          await Notification.create({
+            recipient: course.instructor,
+            title: "Course Submission Rejected",
+            message: `Your course "${course.title}" was not approved.${course.rejectionReason ? ` Reason: ${course.rejectionReason}` : ''}`,
+            type: "warning",
+            link: `/instructor/courses/${course._id}/edit`,
+          });
+        }
+      } catch (notifErr) {
+        console.error("Failed to send course moderation notification:", notifErr);
+      }
+    }
 
     if (req.user) {
       await recordAuditLog({
@@ -128,7 +161,7 @@ export async function updateCourseStatus(req: Request, res: Response) {
         targetName: course.title,
         details: {
           previousState,
-          newState: { isActive: course.isActive, isApproved: course.isApproved },
+          newState: { isActive: course.isActive, isApproved: course.isApproved, rejectionReason: course.rejectionReason },
         },
         req,
       });
