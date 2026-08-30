@@ -100,11 +100,16 @@ export async function getInstructorEarnings(req: Request, res: Response) {
           monthlyMap[monthKey].net += takeHome;
           monthlyMap[monthKey].sales += 1;
 
+          const student = (order.student && typeof order.student === "object" ? order.student : null) as { name?: string; email?: string } | null;
+          const billing = order.paymentMetadata && typeof order.paymentMetadata === "object" && "billingDetails" in order.paymentMetadata
+            ? (order.paymentMetadata.billingDetails as { name?: string; email?: string } | undefined)
+            : undefined;
+
           salesLedger.push({
             orderNumber: order.orderNumber,
             date: orderDate.toISOString(),
-            studentName: (order.student as any)?.name || (order.paymentMetadata as any)?.billingDetails?.name || "Student",
-            studentEmail: (order.student as any)?.email || (order.paymentMetadata as any)?.billingDetails?.email || "",
+            studentName: student?.name || billing?.name || "Student",
+            studentEmail: student?.email || billing?.email || "",
             courseTitle: item.title || courseMap[itemCourseId].title,
             salePrice: itemFinalPrice,
             platformFee: fee,
@@ -294,11 +299,16 @@ export async function exportEarningsCsv(req: Request, res: Response) {
           const fee = Math.round(itemFinalPrice * 0.20 * 100) / 100;
           const takeHome = Math.round(itemFinalPrice * 0.80 * 100) / 100;
 
+          const student = (order.student && typeof order.student === "object" ? order.student : null) as { name?: string; email?: string } | null;
+          const billing = order.paymentMetadata && typeof order.paymentMetadata === "object" && "billingDetails" in order.paymentMetadata
+            ? (order.paymentMetadata.billingDetails as { name?: string; email?: string } | undefined)
+            : undefined;
+
           const row = [
             escapeCsv(order.orderNumber),
             escapeCsv(new Date(order.createdAt).toISOString()),
-            escapeCsv((order.student as any)?.name || (order.paymentMetadata as any)?.billingDetails?.name || "Student"),
-            escapeCsv((order.student as any)?.email || (order.paymentMetadata as any)?.billingDetails?.email || ""),
+            escapeCsv(student?.name || billing?.name || "Student"),
+            escapeCsv(student?.email || billing?.email || ""),
             escapeCsv(item.title),
             escapeCsv(itemFinalPrice.toFixed(2)),
             escapeCsv(fee.toFixed(2)),

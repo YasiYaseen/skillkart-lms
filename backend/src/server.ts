@@ -60,6 +60,9 @@ app.use("/api/assignments", assignmentRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/orders", orderRoutes);
 
+import { getPublicSettings } from "./controllers/admin/adminSettingsController";
+app.get("/api/settings/public", getPublicSettings);
+
 
 // Health check
 app.get("/", (req, res) => {

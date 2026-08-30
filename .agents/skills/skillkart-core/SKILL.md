@@ -149,3 +149,4 @@ All skill files for this project live in `.agents/skills/`. Before implementing 
 | `skillkart-audit-logs` | Admin security audit logging and inspector UI |
 | `skillkart-faq` | Course FAQ management, ordering, and accordion viewer |
 | `skillkart-bulk-upload` | Bulk lesson creation and CSV / batch parsing for sections |
+| `skillkart-admin-settings` | Platform system configuration, revenue commission split, maintenance controls, SMTP diagnostics |
