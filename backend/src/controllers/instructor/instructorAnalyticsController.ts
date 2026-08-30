@@ -129,16 +129,37 @@ export async function getInstructorAnalytics(req: Request, res: Response) {
     });
 
     // 4. Most Active Students
-    const studentStatsMap = new Map<string, any>();
-    enrollments.forEach((e: any) => {
-      if (!e.student) return;
-      const sId = e.student._id.toString();
+    interface StudentStats {
+      id: string;
+      name: string;
+      email: string;
+      avatar?: string;
+      totalCompletedLessons: number;
+      totalEnrolledCourses: number;
+      completedCoursesCount: number;
+      averageProgressPercentage: number;
+      progressSums: number;
+      lastActivity: Date | string;
+    }
+
+    interface PopulatedStudent {
+      _id: Types.ObjectId;
+      name?: string;
+      email: string;
+      avatar?: string;
+    }
+
+    const studentStatsMap = new Map<string, StudentStats>();
+    enrollments.forEach((e) => {
+      const student = e.student as unknown as PopulatedStudent | null;
+      if (!student) return;
+      const sId = student._id.toString();
       if (!studentStatsMap.has(sId)) {
         studentStatsMap.set(sId, {
           id: sId,
-          name: e.student.name || "Student",
-          email: e.student.email,
-          avatar: e.student.avatar,
+          name: student.name || "Student",
+          email: student.email,
+          avatar: student.avatar,
           totalCompletedLessons: 0,
           totalEnrolledCourses: 0,
           completedCoursesCount: 0,
@@ -148,7 +169,7 @@ export async function getInstructorAnalytics(req: Request, res: Response) {
         });
       }
 
-      const stat = studentStatsMap.get(sId);
+      const stat = studentStatsMap.get(sId)!;
       stat.totalEnrolledCourses += 1;
       stat.totalCompletedLessons += (e.completedLessonIds || []).length;
       if (e.status === "completed") {
@@ -179,13 +200,15 @@ export async function getInstructorAnalytics(req: Request, res: Response) {
     const lessonLastAccessedCounts = new Map<string, number>();
 
     enrollments.forEach((e) => {
-      (e.completedLessonIds || []).forEach((lId: any) => {
+      (e.completedLessonIds || []).forEach((lId) => {
         const strId = lId.toString();
         lessonCompletionCounts.set(strId, (lessonCompletionCounts.get(strId) || 0) + 1);
       });
       if (e.lastAccessedLessonId) {
-        const lastAccess: any = e.lastAccessedLessonId;
-        const lastId = lastAccess._id ? lastAccess._id.toString() : lastAccess.toString();
+        const lastAccess = e.lastAccessedLessonId as unknown as { _id?: Types.ObjectId } | Types.ObjectId | string;
+        const lastId = typeof lastAccess === "object" && lastAccess !== null && "_id" in lastAccess && lastAccess._id
+          ? lastAccess._id.toString()
+          : lastAccess.toString();
         lessonLastAccessedCounts.set(lastId, (lessonLastAccessedCounts.get(lastId) || 0) + 1);
       }
     });

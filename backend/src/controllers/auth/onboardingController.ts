@@ -37,7 +37,7 @@ export async function completeOnboarding(req: Request, res: Response) {
     const allowedRoles = ["student", "instructor"];
     const normalizedRole = allowedRoles.includes(role) ? role : undefined;
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       onboardingCompleted: true,
       headline: normalizedHeadline,
       bio: normalizeText(bio, 500),
