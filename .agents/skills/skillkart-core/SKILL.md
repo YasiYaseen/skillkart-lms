@@ -137,3 +137,8 @@ All skill files for this project live in `.agents/skills/`. Before implementing 
 | `skillkart-file-upload` | Multer config, allowed types, size limits, serving files |
 | `skillkart-notes-bookmarks` | Personal study notes, lesson bookmarks, scoped queries, study hub |
 | `skillkart-email-notifications` | Outbound transactional emails (welcome, enrollment, certificates) |
+| `skillkart-announcements` | Course announcements, instructor broadcasting, mass notifications |
+| `skillkart-discussions` | Lesson discussions, comments, threading, instructor badges |
+| `skillkart-instructor-analytics` | Advanced instructor metrics, revenue calculation, completion rates |
+| `skillkart-search` | Advanced multi-filter search, sorting, rating aggregations |
+| `skillkart-theme` | Dark mode, ThemeContext, OS preference listening, Tailwind classes |
