@@ -1,9 +1,69 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { FileUpload } from '@components/common';
 import CourseFAQEditor from '../components/CourseFAQEditor';
+import { QuizEditorModal } from '../components/QuizEditorModal';
+import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
+
+export interface CourseLessonItem {
+    _id: string;
+    type: string;
+    content: {
+        text?: string;
+        url?: string;
+    };
+    order: number;
+}
+
+export interface CourseLesson {
+    _id: string;
+    title: string;
+    durationMinutes: number;
+    order: number;
+    items?: CourseLessonItem[];
+}
+
+export interface CourseSection {
+    _id: string;
+    title: string;
+    order: number;
+    lessons: CourseLesson[];
+}
+
+interface RawCourseData {
+    _id: string;
+    title: string;
+    description: string;
+    level: string;
+    tags: string[];
+    isPaid: boolean;
+    price: number | null;
+    thumbnailUrl?: string;
+    status: string;
+    isApproved?: boolean;
+    isActive?: boolean;
+    sections?: Array<{
+        _id: string;
+        title: string;
+        order: number;
+    }>;
+    lessons?: Array<{
+        _id: string;
+        title: string;
+        section: string;
+        order: number;
+        durationMinutes: number;
+    }>;
+    lessonItems?: Array<{
+        _id: string;
+        lesson: string;
+        type: string;
+        content: { text?: string; url?: string };
+        order: number;
+    }>;
+}
 
 const LEVEL_OPTIONS = [
     { label: 'Beginner', value: 'beginner' },
@@ -11,16 +71,14 @@ const LEVEL_OPTIONS = [
     { label: 'Advanced', value: 'advanced' },
 ];
 
-/**
- * EditCourse Page
- * Allows instructors to update course details (title, description, level, tags, price, thumbnail)
- */
 function EditCourse() {
     const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
 
+    const [activeTab, setActiveTab] = useState<'details' | 'curriculum' | 'faqs'>('details');
+
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [savingDetails, setSavingDetails] = useState(false);
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -30,26 +88,90 @@ function EditCourse() {
     const [isPaid, setIsPaid] = useState(false);
     const [price, setPrice] = useState<number | ''>('');
     const [thumbnailUrl, setThumbnailUrl] = useState('');
+    const [courseStatus, setCourseStatus] = useState('draft');
+    const [isApproved, setIsApproved] = useState<boolean | undefined>(undefined);
+
+    const [sections, setSections] = useState<CourseSection[]>([]);
+    const [newSectionTitle, setNewSectionTitle] = useState('');
+    const [addingSection, setAddingSection] = useState(false);
+    const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+    const [editingSectionTitle, setEditingSectionTitle] = useState('');
+
+    const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+    const [newLessonTitle, setNewLessonTitle] = useState('');
+    const [newLessonDuration, setNewLessonDuration] = useState<number>(10);
+    const [addingLesson, setAddingLesson] = useState(false);
+
+    const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+    const [editingLessonTitle, setEditingLessonTitle] = useState('');
+    const [editingLessonDuration, setEditingLessonDuration] = useState<number>(10);
+
+    const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+    const [newItemType, setNewItemType] = useState<'video' | 'pdf' | 'text' | 'link'>('video');
+    const [newItemContent, setNewItemContent] = useState('');
+    const [addingItem, setAddingItem] = useState(false);
+
+    const [quizLessonId, setQuizLessonId] = useState<string | null>(null);
+    const [bulkUploadSectionId, setBulkUploadSectionId] = useState<string | null>(null);
+    const [bulkUploadSectionTitle, setBulkUploadSectionTitle] = useState('');
+
+    const fetchCourseData = useCallback(async () => {
+        if (!courseId) return;
+        try {
+            const res = await api.get<{ course: RawCourseData }>(`/courses/${courseId}`);
+            const c = res.data.course;
+
+            setTitle(c.title || '');
+            setDescription(c.description || '');
+            setLevel(c.level || 'beginner');
+            setTags(c.tags || []);
+            setIsPaid(c.isPaid || false);
+            setPrice(c.price ?? '');
+            setThumbnailUrl(c.thumbnailUrl || '');
+            setCourseStatus(c.status || 'draft');
+            setIsApproved(c.isApproved);
+
+            const rawSections = c.sections || [];
+            const rawLessons = c.lessons || [];
+            const rawItems = c.lessonItems || [];
+
+            const structuredSections: CourseSection[] = rawSections.map((sec) => {
+                const secLessons = rawLessons
+                    .filter((l) => l.section === sec._id)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0))
+                    .map((l) => {
+                        const lItems = rawItems
+                            .filter((item) => item.lesson === l._id)
+                            .sort((a, b) => (a.order || 0) - (b.order || 0));
+                        return {
+                            _id: l._id,
+                            title: l.title,
+                            durationMinutes: l.durationMinutes || 0,
+                            order: l.order || 0,
+                            items: lItems,
+                        };
+                    });
+
+                return {
+                    _id: sec._id,
+                    title: sec.title,
+                    order: sec.order || 0,
+                    lessons: secLessons,
+                };
+            }).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+            setSections(structuredSections);
+        } catch {
+            toast.error('Failed to load course');
+            navigate('/instructor/courses');
+        } finally {
+            setLoading(false);
+        }
+    }, [courseId, navigate]);
 
     useEffect(() => {
-        if (!courseId) return;
-        api.get(`/courses/${courseId}`)
-            .then((res) => {
-                const c = res.data.course;
-                setTitle(c.title || '');
-                setDescription(c.description || '');
-                setLevel(c.level || 'beginner');
-                setTags(c.tags || []);
-                setIsPaid(c.isPaid || false);
-                setPrice(c.price ?? '');
-                setThumbnailUrl(c.thumbnailUrl || '');
-            })
-            .catch(() => {
-                toast.error('Failed to load course');
-                navigate('/instructor/courses');
-            })
-            .finally(() => setLoading(false));
-    }, [courseId, navigate]);
+        fetchCourseData();
+    }, [fetchCourseData]);
 
     const handleAddTag = () => {
         const trimmed = tagInput.trim().replace(/^#/, '');
@@ -70,11 +192,11 @@ function EditCourse() {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSaveDetails = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!courseId) return;
 
-        setSaving(true);
+        setSavingDetails(true);
         try {
             await api.patch(`/courses/${courseId}`, {
                 title,
@@ -85,32 +207,192 @@ function EditCourse() {
                 price: isPaid ? Number(price) : 0,
                 thumbnailUrl: thumbnailUrl || undefined,
             });
-            toast.success('Course updated successfully!');
-            navigate('/instructor/courses');
+            toast.success('Course details updated successfully!');
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update course';
             toast.error(msg);
         } finally {
-            setSaving(false);
+            setSavingDetails(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center py-20">
-                <div className="text-gray-500">Loading course...</div>
-            </div>
-        );
-    }
+    const handleAddSection = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!courseId || !newSectionTitle.trim()) return;
+        setAddingSection(true);
+        try {
+            const res = await api.post(`/courses/${courseId}/sections`, {
+                title: newSectionTitle.trim(),
+                order: sections.length + 1,
+            });
+            setSections([...sections, { ...res.data.section, lessons: [] }]);
+            setNewSectionTitle('');
+            toast.success('Section added');
+        } catch {
+            toast.error('Failed to add section');
+        } finally {
+            setAddingSection(false);
+        }
+    };
+
+    const handleUpdateSectionTitle = async (sectionId: string) => {
+        if (!editingSectionTitle.trim()) return;
+        try {
+            await api.patch(`/sections/${sectionId}`, {
+                title: editingSectionTitle.trim(),
+            });
+            setSections(sections.map((s) => (s._id === sectionId ? { ...s, title: editingSectionTitle.trim() } : s)));
+            setEditingSectionId(null);
+            toast.success('Section updated');
+        } catch {
+            toast.error('Failed to update section');
+        }
+    };
+
+    const handleDeleteSection = async (sectionId: string) => {
+        if (!window.confirm('Are you sure you want to delete this section and all of its lessons?')) return;
+        try {
+            await api.delete(`/sections/${sectionId}`);
+            setSections(sections.filter((s) => s._id !== sectionId));
+            toast.success('Section deleted');
+        } catch {
+            toast.error('Failed to delete section');
+        }
+    };
+
+    const handleAddLesson = async (e: React.FormEvent, sectionId: string) => {
+        e.preventDefault();
+        if (!newLessonTitle.trim()) return;
+        setAddingLesson(true);
+        try {
+            const sec = sections.find((s) => s._id === sectionId);
+            if (!sec) return;
+            const res = await api.post(`/sections/${sectionId}/lessons`, {
+                title: newLessonTitle.trim(),
+                durationMinutes: Number(newLessonDuration) || 10,
+                order: sec.lessons.length + 1,
+            });
+            const updatedSection: CourseSection = {
+                ...sec,
+                lessons: [...sec.lessons, { ...res.data.lesson, items: [] }],
+            };
+            setSections(sections.map((s) => (s._id === sectionId ? updatedSection : s)));
+            setNewLessonTitle('');
+            setNewLessonDuration(10);
+            setActiveSectionId(null);
+            toast.success('Lesson added');
+        } catch {
+            toast.error('Failed to add lesson');
+        } finally {
+            setAddingLesson(false);
+        }
+    };
+
+    const handleUpdateLesson = async (sectionId: string, lessonId: string) => {
+        if (!editingLessonTitle.trim()) return;
+        try {
+            await api.patch(`/lessons/${lessonId}`, {
+                title: editingLessonTitle.trim(),
+                durationMinutes: Number(editingLessonDuration) || 10,
+            });
+            setSections(
+                sections.map((s) =>
+                    s._id === sectionId
+                        ? {
+                              ...s,
+                              lessons: s.lessons.map((l) =>
+                                  l._id === lessonId
+                                      ? { ...l, title: editingLessonTitle.trim(), durationMinutes: Number(editingLessonDuration) || 10 }
+                                      : l
+                              ),
+                          }
+                        : s
+                )
+            );
+            setEditingLessonId(null);
+            toast.success('Lesson updated');
+        } catch {
+            toast.error('Failed to update lesson');
+        }
+    };
+
+    const handleDeleteLesson = async (sectionId: string, lessonId: string) => {
+        if (!window.confirm('Delete this lesson?')) return;
+        try {
+            await api.delete(`/lessons/${lessonId}`);
+            setSections(
+                sections.map((s) =>
+                    s._id === sectionId
+                        ? { ...s, lessons: s.lessons.filter((l) => l._id !== lessonId) }
+                        : s
+                )
+            );
+            toast.success('Lesson deleted');
+        } catch {
+            toast.error('Failed to delete lesson');
+        }
+    };
+
+    const handleAddItem = async (e: React.FormEvent, sectionId: string, lessonId: string) => {
+        e.preventDefault();
+        if (!newItemContent.trim()) {
+            toast.warn('Content URL or text is required');
+            return;
+        }
+        setAddingItem(true);
+        try {
+            const sec = sections.find((s) => s._id === sectionId);
+            if (!sec) return;
+            const lesson = sec.lessons.find((l) => l._id === lessonId);
+            if (!lesson) return;
+
+            let content: Record<string, string>;
+            if (newItemType === 'video' || newItemType === 'link' || newItemType === 'pdf') {
+                content = { url: newItemContent.trim() };
+            } else {
+                content = { text: newItemContent.trim() };
+            }
+
+            const res = await api.post(`/lessons/${lessonId}/items`, {
+                type: newItemType,
+                content,
+                order: (lesson.items?.length || 0) + 1,
+            });
+
+            const createdItem = res.data.lessonItem || res.data.item;
+            const updatedItems = createdItem
+                ? [...(lesson.items || []), createdItem]
+                : [...(lesson.items || [])];
+            const updatedLesson: CourseLesson = { ...lesson, items: updatedItems };
+            const updatedSection: CourseSection = {
+                ...sec,
+                lessons: sec.lessons.map((l) => (l._id === lessonId ? updatedLesson : l)),
+            };
+
+            setSections(sections.map((s) => (s._id === sectionId ? updatedSection : s)));
+            setNewItemContent('');
+            setActiveLessonId(null);
+            toast.success('Content item added');
+        } catch {
+            toast.error('Failed to add content item');
+        } finally {
+            setAddingItem(false);
+        }
+    };
+
+    const totalLectures = sections.reduce((acc, s) => acc + s.lessons.length, 0);
+    const totalDurationMinutes = sections.reduce(
+        (acc, s) => acc + s.lessons.reduce((lAcc, l) => lAcc + (l.durationMinutes || 0), 0),
+        0
+    );
 
     return (
-        <div className="max-w-2xl">
-            {/* Header */}
-            <div className="flex items-center justify-between gap-4 mb-8">
+        <div className="max-w-4xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate('/instructor/courses')}
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                        className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
                         title="Back to courses"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -118,16 +400,37 @@ function EditCourse() {
                         </svg>
                     </button>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Course</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Update your course details, pricing, and FAQs</p>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Course</h1>
+                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold capitalize ${
+                                courseStatus === 'published'
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                            }`}>
+                                {courseStatus}
+                            </span>
+                            {isApproved !== undefined && (
+                                <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
+                                    isApproved
+                                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                }`}>
+                                    {isApproved ? 'Approved' : 'Rejected'}
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                            Manage course landing info, curriculum sections, lessons, assessments, and FAQs.
+                        </p>
                     </div>
                 </div>
+
                 {courseId && (
                     <a
                         href={`/courses/${courseId}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-lg transition-colors border border-indigo-200 dark:border-indigo-800"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-xl transition-colors border border-indigo-200 dark:border-indigo-800 self-start sm:self-auto"
                     >
                         <span>Preview Course</span>
                         <span>↗</span>
@@ -135,193 +438,640 @@ function EditCourse() {
                 )}
             </div>
 
-            <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 space-y-6">
+            <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-1">
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('details')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                        activeTab === 'details'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                >
+                    <span>📋</span>
+                    <span>Course Details</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('curriculum')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                        activeTab === 'curriculum'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                >
+                    <span>📚</span>
+                    <span>Curriculum & Content</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        activeTab === 'curriculum' ? 'bg-indigo-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}>
+                        {sections.length} sec • {totalLectures} lessons
+                    </span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('faqs')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                        activeTab === 'faqs'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                >
+                    <span>❓</span>
+                    <span>FAQs & Support</span>
+                </button>
+            </div>
 
-                {/* Title */}
-                <div>
-                    <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 mb-2">
-                        Course Title <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                        id="edit-title"
-                        type="text"
-                        required
-                        minLength={3}
-                        maxLength={140}
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="e.g. Master ReactJS from scratch"
-                    />
-                </div>
-
-                {/* Description */}
-                <div>
-                    <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
-                        Description <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                        id="edit-description"
-                        required
-                        minLength={20}
-                        rows={5}
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Describe what students will learn..."
-                    />
-                </div>
-
-                {/* Level */}
-                <div>
-                    <label htmlFor="edit-level" className="block text-sm font-medium text-gray-700 mb-2">
-                        Level <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                        id="edit-level"
-                        value={level}
-                        onChange={(e) => setLevel(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                        {LEVEL_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Tags */}
-                <div>
-                    <label htmlFor="edit-tags" className="block text-sm font-medium text-gray-700 mb-2">
-                        Course Tags
-                    </label>
-                    <div className="flex gap-2">
+            {activeTab === 'details' && (
+                <form onSubmit={handleSaveDetails} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs p-6 md:p-8 space-y-6">
+                    <div>
+                        <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Course Title <span className="text-red-500">*</span>
+                        </label>
                         <input
-                            id="edit-tags"
+                            id="edit-title"
                             type="text"
-                            value={tagInput}
-                            onChange={(e) => setTagInput(e.target.value)}
-                            onKeyDown={handleTagKeyDown}
-                            placeholder="e.g. React, TypeScript (press Enter to add)"
-                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                            minLength={3}
+                            maxLength={140}
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                            placeholder="e.g. Complete React & TypeScript Bootcamp"
                         />
-                        <button
-                            type="button"
-                            onClick={handleAddTag}
-                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-                        >
-                            Add Tag
-                        </button>
                     </div>
 
-                    {tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                            {tags.map((t) => (
-                                <span
-                                    key={t}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100"
+                    <div>
+                        <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Course Description <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            id="edit-description"
+                            required
+                            minLength={20}
+                            rows={5}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                            placeholder="Describe what students will learn in this course..."
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Difficulty Level
+                        </label>
+                        <div className="grid grid-cols-3 gap-3">
+                            {LEVEL_OPTIONS.map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setLevel(opt.value)}
+                                    className={`py-2.5 px-4 rounded-xl text-sm font-medium border text-center transition-all ${
+                                        level === opt.value
+                                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold shadow-xs'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
+                                    }`}
                                 >
-                                    #{t}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveTag(t)}
-                                        className="text-blue-500 hover:text-red-500 ml-0.5 text-sm leading-none"
-                                        title="Remove tag"
-                                    >
-                                        ×
-                                    </button>
-                                </span>
+                                    {opt.label}
+                                </button>
                             ))}
                         </div>
-                    )}
-                </div>
-
-                {/* Pricing */}
-                <div className="border border-gray-100 rounded-lg p-4 space-y-4 bg-gray-50">
-                    <div className="flex items-center gap-3">
-                        <input
-                            id="edit-ispaid"
-                            type="checkbox"
-                            checked={isPaid}
-                            onChange={(e) => setIsPaid(e.target.checked)}
-                            className="w-4 h-4 text-blue-600 rounded"
-                        />
-                        <label htmlFor="edit-ispaid" className="text-sm font-medium text-gray-700 cursor-pointer">
-                            This is a paid course
-                        </label>
                     </div>
 
-                    {isPaid && (
-                        <div>
-                            <label htmlFor="edit-price" className="block text-sm font-medium text-gray-700 mb-2">
-                                Price (USD) <span className="text-red-500">*</span>
-                            </label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
-                                <input
-                                    id="edit-price"
-                                    type="number"
-                                    min="1"
-                                    step="0.01"
-                                    required={isPaid}
-                                    value={price}
-                                    onChange={(e) => setPrice(Number(e.target.value))}
-                                    className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="29.99"
-                                />
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Thumbnail */}
-                <div>
-                    <label htmlFor="edit-thumbnail" className="block text-sm font-medium text-gray-700 mb-2">
-                        Thumbnail URL <span className="text-gray-400 font-normal">(optional)</span>
-                    </label>
-                    <FileUpload 
-                        label="" 
-                        accept="image/jpeg, image/png, image/webp" 
-                        maxSizeMB={5}
-                        onUploadSuccess={(url) => setThumbnailUrl(import.meta.env.VITE_API_BASE_URL + url)} 
-                    />
-                    {thumbnailUrl && (
-                        <div className="mt-3 rounded-lg overflow-hidden border border-gray-200 aspect-video max-w-xs">
-                            <img
-                                src={thumbnailUrl}
-                                alt="Thumbnail preview"
-                                className="w-full h-full object-cover"
-                                onError={(e) => (e.currentTarget.style.display = 'none')}
+                    <div>
+                        <label htmlFor="edit-tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Tags & Topics
+                        </label>
+                        <div className="flex gap-2 mb-2">
+                            <input
+                                id="edit-tags"
+                                type="text"
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                onKeyDown={handleTagKeyDown}
+                                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                                placeholder="Add a tag and press Enter"
                             />
+                            <button
+                                type="button"
+                                onClick={handleAddTag}
+                                className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium transition-colors"
+                            >
+                                Add Tag
+                            </button>
                         </div>
-                    )}
-                </div>
+                        {tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {tags.map((tag) => (
+                                    <span
+                                        key={tag}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-semibold rounded-full border border-indigo-100 dark:border-indigo-800"
+                                    >
+                                        #{tag}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveTag(tag)}
+                                            className="hover:text-indigo-900 dark:hover:text-indigo-100 font-bold"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-4 pt-2">
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        id="save-course-btn"
-                        className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-xs"
-                    >
-                        {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => navigate('/instructor/courses')}
-                        className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors"
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </form>
+                    <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Pricing Model</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Offer your course for free or charge a one-time price</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isPaid}
+                                    onChange={(e) => setIsPaid(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                                <span className="ml-3 text-xs font-semibold text-gray-900 dark:text-white">
+                                    {isPaid ? 'Paid Course' : 'Free Course'}
+                                </span>
+                            </label>
+                        </div>
 
-            {/* Course FAQ Management */}
-            <div className="mt-10 pt-8 border-t border-gray-200">
-                <CourseFAQEditor courseId={courseId!} />
-            </div>
+                        {isPaid && (
+                            <div>
+                                <label htmlFor="edit-price" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    Price (USD $) <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative rounded-xl shadow-xs">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <span className="text-gray-500 text-sm">$</span>
+                                    </div>
+                                    <input
+                                        id="edit-price"
+                                        type="number"
+                                        min="1"
+                                        max="999"
+                                        step="0.01"
+                                        required={isPaid}
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                                        className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm font-semibold"
+                                        placeholder="29.99"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Course Thumbnail
+                        </label>
+                        {thumbnailUrl && (
+                            <div className="mb-4 relative w-48 aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xs">
+                                <img src={thumbnailUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                                <button
+                                    type="button"
+                                    onClick={() => setThumbnailUrl('')}
+                                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
+                        <FileUpload
+                            endpoint="/upload/image"
+                            accept="image/*"
+                            onUploadSuccess={(url) => setThumbnailUrl(url)}
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/instructor/courses')}
+                            className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={savingDetails}
+                            className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-xs transition-colors disabled:opacity-50"
+                        >
+                            {savingDetails ? 'Saving Changes...' : 'Save Course Details'}
+                        </button>
+                    </div>
+                </form>
+            )}
+
+            {activeTab === 'curriculum' && (
+                <div className="space-y-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Curriculum Structure</h2>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                {sections.length} Section{sections.length !== 1 ? 's' : ''} • {totalLectures} Lesson{totalLectures !== 1 ? 's' : ''} • {totalDurationMinutes} mins total duration
+                            </p>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleAddSection} className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl p-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                        <input
+                            type="text"
+                            placeholder="Enter new section title (e.g. Introduction & Fundamentals)..."
+                            value={newSectionTitle}
+                            onChange={(e) => setNewSectionTitle(e.target.value)}
+                            required
+                            className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        />
+                        <button
+                            type="submit"
+                            disabled={addingSection || !newSectionTitle.trim()}
+                            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 shrink-0 shadow-xs"
+                        >
+                            {addingSection ? 'Adding...' : '+ Add Section'}
+                        </button>
+                    </form>
+
+                    <div className="space-y-6">
+                        {sections.map((section, sIdx) => {
+                            const sectionDuration = section.lessons.reduce((acc, l) => acc + (l.durationMinutes || 0), 0);
+                            return (
+                                <div key={section._id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs overflow-hidden">
+                                    <div className="p-4 sm:p-5 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                                                {sIdx + 1}
+                                            </span>
+                                            {editingSectionId === section._id ? (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={editingSectionTitle}
+                                                        onChange={(e) => setEditingSectionTitle(e.target.value)}
+                                                        className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleUpdateSectionTitle(section._id)}
+                                                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingSectionId(null)}
+                                                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <h3 className="font-bold text-gray-900 dark:text-white text-base">
+                                                        {section.title}
+                                                    </h3>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {section.lessons.length} lesson{section.lessons.length !== 1 ? 's' : ''} • {sectionDuration} mins
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setEditingSectionId(section._id);
+                                                    setEditingSectionTitle(section.title);
+                                                }}
+                                                className="text-xs font-medium px-2.5 py-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                                title="Rename section"
+                                            >
+                                                ✏️ Rename
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setBulkUploadSectionId(section._id);
+                                                    setBulkUploadSectionTitle(section.title);
+                                                }}
+                                                className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition-colors"
+                                                title="Bulk add lessons via CSV or table"
+                                            >
+                                                ⚡ Bulk Upload
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveSectionId(activeSectionId === section._id ? null : section._id)}
+                                                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition-colors"
+                                            >
+                                                + Add Lesson
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteSection(section._id)}
+                                                className="text-xs font-medium px-2 py-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                                                title="Delete section"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {activeSectionId === section._id && (
+                                        <form onSubmit={(e) => handleAddLesson(e, section._id)} className="p-4 bg-indigo-50/40 dark:bg-indigo-950/20 border-b border-indigo-100 dark:border-indigo-900/40 flex flex-wrap items-center gap-3">
+                                            <input
+                                                type="text"
+                                                placeholder="Lesson title..."
+                                                value={newLessonTitle}
+                                                onChange={(e) => setNewLessonTitle(e.target.value)}
+                                                required
+                                                className="flex-1 min-w-[200px] px-3.5 py-2 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            />
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">Duration (mins):</span>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="300"
+                                                    value={newLessonDuration}
+                                                    onChange={(e) => setNewLessonDuration(Number(e.target.value))}
+                                                    className="w-20 px-2.5 py-2 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                />
+                                            </div>
+                                            <button
+                                                type="submit"
+                                                disabled={addingLesson || !newLessonTitle.trim()}
+                                                className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 shadow-xs"
+                                            >
+                                                {addingLesson ? 'Adding...' : 'Save Lesson'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveSectionId(null)}
+                                                className="px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </form>
+                                    )}
+
+                                    <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
+                                        {section.lessons.map((lesson, lIdx) => (
+                                            <div key={lesson._id} className="p-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors space-y-3">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xs text-gray-400 font-mono">
+                                                            {sIdx + 1}.{lIdx + 1}
+                                                        </span>
+                                                        {editingLessonId === lesson._id ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingLessonTitle}
+                                                                    onChange={(e) => setEditingLessonTitle(e.target.value)}
+                                                                    className="px-2.5 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                                />
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    value={editingLessonDuration}
+                                                                    onChange={(e) => setEditingLessonDuration(Number(e.target.value))}
+                                                                    className="w-16 px-2 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                                />
+                                                                <span className="text-xs text-gray-400">m</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleUpdateLesson(section._id, lesson._id)}
+                                                                    className="text-xs font-semibold px-2 py-1 rounded bg-indigo-600 text-white"
+                                                                >
+                                                                    Save
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setEditingLessonId(null)}
+                                                                    className="text-xs font-semibold px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                                    {lesson.title}
+                                                                </span>
+                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-mono">
+                                                                    {lesson.durationMinutes} mins
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEditingLessonId(lesson._id);
+                                                                setEditingLessonTitle(lesson.title);
+                                                                setEditingLessonDuration(lesson.durationMinutes);
+                                                            }}
+                                                            className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-medium px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                            title="Edit lesson details"
+                                                        >
+                                                            ✏️ Edit
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setQuizLessonId(lesson._id)}
+                                                            className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 transition-colors"
+                                                            title="Add or edit assessment quiz"
+                                                        >
+                                                            ⚡ Quiz
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setActiveLessonId(activeLessonId === lesson._id ? null : lesson._id)}
+                                                            className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition-colors"
+                                                        >
+                                                            + Content Item
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteLesson(section._id, lesson._id)}
+                                                            className="text-xs text-red-500 hover:text-red-700 font-medium px-1.5 py-1 rounded hover:bg-red-50 dark:hover:bg-red-950/30"
+                                                            title="Delete lesson"
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {lesson.items && lesson.items.length > 0 && (
+                                                    <div className="pl-6 space-y-1.5">
+                                                        {lesson.items.map((item) => (
+                                                            <div key={item._id} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-700/60">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-semibold uppercase text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                                                        {item.type}
+                                                                    </span>
+                                                                    <span className="text-gray-700 dark:text-gray-300 truncate max-w-sm">
+                                                                        {item.content.url || item.content.text || 'Attached item'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {activeLessonId === lesson._id && (
+                                                    <form onSubmit={(e) => handleAddItem(e, section._id, lesson._id)} className="p-3.5 bg-blue-50/40 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/40 space-y-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Item Type:</span>
+                                                            {(['video', 'pdf', 'text', 'link'] as const).map((t) => (
+                                                                <label key={t} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300 cursor-pointer capitalize">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name={`itemType-${lesson._id}`}
+                                                                        value={t}
+                                                                        checked={newItemType === t}
+                                                                        onChange={() => setNewItemType(t)}
+                                                                        className="accent-indigo-600"
+                                                                    />
+                                                                    <span>{t}</span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+
+                                                        {newItemType === 'video' && (
+                                                            <div className="space-y-2">
+                                                                <input
+                                                                    type="url"
+                                                                    placeholder="Enter YouTube, Vimeo, or video URL..."
+                                                                    value={newItemContent}
+                                                                    onChange={(e) => setNewItemContent(e.target.value)}
+                                                                    className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                                />
+                                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Or upload video file directly:</p>
+                                                                <FileUpload
+                                                                    endpoint="/upload/video"
+                                                                    accept="video/*"
+                                                                    onUploadSuccess={(url) => setNewItemContent(url)}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {newItemType === 'pdf' && (
+                                                            <div className="space-y-2">
+                                                                <input
+                                                                    type="url"
+                                                                    placeholder="Enter PDF or document URL..."
+                                                                    value={newItemContent}
+                                                                    onChange={(e) => setNewItemContent(e.target.value)}
+                                                                    className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                                />
+                                                                <FileUpload
+                                                                    endpoint="/upload/document"
+                                                                    accept=".pdf,.doc,.docx"
+                                                                    onUploadSuccess={(url) => setNewItemContent(url)}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {newItemType === 'text' && (
+                                                            <textarea
+                                                                placeholder="Enter markdown lesson notes or text..."
+                                                                rows={3}
+                                                                value={newItemContent}
+                                                                onChange={(e) => setNewItemContent(e.target.value)}
+                                                                className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                            />
+                                                        )}
+
+                                                        {newItemType === 'link' && (
+                                                            <input
+                                                                type="url"
+                                                                placeholder="Enter resource or reference URL..."
+                                                                value={newItemContent}
+                                                                onChange={(e) => setNewItemContent(e.target.value)}
+                                                                className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                            />
+                                                        )}
+
+                                                        <div className="flex justify-end gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setActiveLessonId(null)}
+                                                                className="px-3 py-1.5 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                type="submit"
+                                                                disabled={addingItem || !newItemContent.trim()}
+                                                                className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold disabled:opacity-50"
+                                                            >
+                                                                {addingItem ? 'Adding...' : 'Attach Item'}
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        {section.lessons.length === 0 && (
+                                            <div className="p-6 text-center text-xs text-gray-400 dark:text-gray-500 italic">
+                                                No lessons in this section yet. Click &ldquo;+ Add Lesson&rdquo; or &ldquo;⚡ Bulk Upload&rdquo; above.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {sections.length === 0 && (
+                            <div className="p-12 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+                                <span className="text-3xl">📚</span>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-2">No Curriculum Sections</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
+                                    Start building your course by adding your first section above.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'faqs' && courseId && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs p-6 md:p-8">
+                    <CourseFAQEditor courseId={courseId} />
+                </div>
+            )}
+
+            <QuizEditorModal
+                isOpen={Boolean(quizLessonId)}
+                onClose={() => setQuizLessonId(null)}
+                lessonId={quizLessonId}
+            />
+
+            {bulkUploadSectionId && (
+                <BulkLessonUploadModal
+                    isOpen={Boolean(bulkUploadSectionId)}
+                    onClose={() => setBulkUploadSectionId(null)}
+                    sectionId={bulkUploadSectionId}
+                    sectionTitle={bulkUploadSectionTitle}
+                    onSuccess={() => {
+                        fetchCourseData();
+                        setBulkUploadSectionId(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

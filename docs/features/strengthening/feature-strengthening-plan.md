@@ -431,7 +431,7 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 18.1 | Add curriculum editor tab/section to `EditCourse.tsx` (link to curriculum builder or embed section/lesson editor) | High | Not Started |
+| 18.1 | Add curriculum editor tab/section to `EditCourse.tsx` (link to curriculum builder or embed section/lesson editor) | High | Done |
 | 18.2 | Add "What you'll learn" bullet list field to CreateCourse and EditCourse (stored on Course model) | Medium | Not Started |
 | 18.3 | Allow instructor self-unpublish (toggle published → draft) from MyCourses — backend endpoint exists | Medium | Not Started |
 | 18.4 | Remove hardcoded Unsplash fallback thumbnail in `MyCourses.tsx` — show branded SVG placeholder instead | Low | Not Started |

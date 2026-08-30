@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { Modal } from '@/components/common';
@@ -21,6 +21,28 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
     ]);
     const [passingPercentage, setPassingPercentage] = useState<number>(60);
     const [saving, setSaving] = useState(false);
+    const [loadingExisting, setLoadingExisting] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen || !lessonId) return;
+        setLoadingExisting(true);
+        api.get(`/lessons/${lessonId}/quiz`)
+            .then((res) => {
+                if (res.data?.questions && res.data.questions.length > 0) {
+                    setQuestions(res.data.questions);
+                    setPassingPercentage(res.data.passingPercentage ?? 60);
+                } else {
+                    setQuestions([{ question: '', options: ['', ''], correctAnswer: 0 }]);
+                    setPassingPercentage(60);
+                }
+            })
+            .catch(() => {
+                // If 404 or no quiz yet, initialize fresh template
+                setQuestions([{ question: '', options: ['', ''], correctAnswer: 0 }]);
+                setPassingPercentage(60);
+            })
+            .finally(() => setLoadingExisting(false));
+    }, [isOpen, lessonId]);
 
     const handleAddQuestion = () => {
         setQuestions([...questions, { question: '', options: ['', ''], correctAnswer: 0 }]);
