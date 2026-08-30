@@ -7,6 +7,8 @@ import Section from "../../models/Section";
 import LessonProgress from "../../models/LessonProgress";
 import Certificate from "../../models/Certificate";
 import Notification from "../../models/Notification";
+import User from "../../models/User";
+import { sendEnrollmentEmail } from "../../services/emailService";
 import {
   enrollSchema,
   enrollmentListQuerySchema,
@@ -111,6 +113,26 @@ export async function enrollInCourse(req: Request, res: Response) {
         link: `/instructor/courses/${course._id}/students`,
       }
     ]);
+
+    // Send failsafe enrollment confirmation email
+    User.findById(req.user.id)
+      .select("email name")
+      .lean()
+      .then((studentUser) => {
+        if (studentUser && studentUser.email) {
+          sendEnrollmentEmail(
+            studentUser.email,
+            studentUser.name || "Student",
+            course.title,
+            course._id.toString()
+          ).catch((err) => {
+            console.error("[EMAIL] Failed to send enrollment email:", err);
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("[EMAIL] Error looking up student for email:", err);
+      });
 
     return res.status(201).json({ message: "Enrollment created", enrollment });
   } catch (error) {

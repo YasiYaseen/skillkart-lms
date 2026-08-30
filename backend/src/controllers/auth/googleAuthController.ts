@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import axios from "axios";
 import jwt from "jsonwebtoken";
 import User from "../../models/User";
+import { sendWelcomeEmail } from "../../services/emailService";
 
 export async function googleLogin(req: Request, res: Response) {
   const { access_token } = req.body;
@@ -19,6 +20,7 @@ export async function googleLogin(req: Request, res: Response) {
 
     const { email, name, picture, sub } = googleRes.data;
 
+    let isNewUser = false;
     let user = await User.findOne({ email });
     if (!user) {
       user = await User.create({
@@ -28,6 +30,13 @@ export async function googleLogin(req: Request, res: Response) {
         avatar: picture,
         password: "",
         onboardingCompleted: false,
+      });
+      isNewUser = true;
+    }
+
+    if (isNewUser) {
+      sendWelcomeEmail(user.email, user.name).catch((err) => {
+        console.error("[EMAIL] Failed to send Google welcome email:", err);
       });
     }
 

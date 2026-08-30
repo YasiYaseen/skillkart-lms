@@ -1,8 +1,8 @@
 # Email Notifications
 
-Status: Not Started
+Status: Done
 Priority: Later
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Send important LMS events to users by email.
@@ -13,7 +13,7 @@ Send important LMS events to users by email.
 - Send certificate email
 
 ## Acceptance Checklist
-- [ ] Welcome email sends after registration
-- [ ] Enrollment email sends after course enrollment
-- [ ] Certificate email sends after course completion
-- [ ] Email sending failure does not break main app flow
+- [x] Welcome email sends after registration
+- [x] Enrollment email sends after course enrollment
+- [x] Certificate email sends after course completion
+- [x] Email sending failure does not break main app flow

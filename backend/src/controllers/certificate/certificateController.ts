@@ -4,6 +4,7 @@ import Certificate from "../../models/Certificate";
 import Enrollment from "../../models/Enrollment";
 import Course from "../../models/Course";
 import User from "../../models/User";
+import { sendCertificateEmail } from "../../services/emailService";
 
 /**
  * GET /api/certificates/me
@@ -95,6 +96,27 @@ export async function claimCertificate(req: Request, res: Response) {
       enrollment: enrollment._id,
       issuedAt: enrollment.completedAt || new Date(),
     });
+
+    // Failsafe certificate email
+    Promise.all([
+      User.findById(req.user.id).select("email name").lean(),
+      Course.findById(courseId).select("title").lean(),
+    ])
+      .then(([studentUser, courseDoc]) => {
+        if (studentUser && studentUser.email && courseDoc) {
+          sendCertificateEmail(
+            studentUser.email,
+            studentUser.name || "Student",
+            courseDoc.title,
+            certificate.certificateId
+          ).catch((err) => {
+            console.error("[EMAIL] Failed to send certificate email:", err);
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("[EMAIL] Error looking up certificate details for email:", err);
+      });
 
     return res.status(201).json({ certificate, message: "Certificate issued successfully" });
   } catch {

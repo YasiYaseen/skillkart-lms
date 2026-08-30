@@ -9,6 +9,8 @@ import Quiz from "../../models/Quiz";
 import QuizAttempt from "../../models/QuizAttempt";
 import Certificate from "../../models/Certificate";
 import Notification from "../../models/Notification";
+import User from "../../models/User";
+import { sendCertificateEmail } from "../../services/emailService";
 
 async function getCourseFromLessonId(lessonId: string) {
   const lesson = await Lesson.findById(lessonId);
@@ -160,7 +162,7 @@ export async function updateLessonProgress(req: Request, res: Response) {
       await enrollment.save();
 
       // Auto-issue certificate on first completion
-      await Certificate.findOneAndUpdate(
+      const certDoc = await Certificate.findOneAndUpdate(
         { student: req.user.id, course: course._id },
         {
           $setOnInsert: {
@@ -181,6 +183,26 @@ export async function updateLessonProgress(req: Request, res: Response) {
         type: "success",
         link: `/my-certificates`,
       });
+
+      // Failsafe certificate completion email
+      User.findById(req.user.id)
+        .select("email name")
+        .lean()
+        .then((studentUser) => {
+          if (studentUser && studentUser.email && certDoc) {
+            sendCertificateEmail(
+              studentUser.email,
+              studentUser.name || "Student",
+              course.title,
+              certDoc.certificateId
+            ).catch((err) => {
+              console.error("[EMAIL] Failed to send course completion email:", err);
+            });
+          }
+        })
+        .catch((err) => {
+          console.error("[EMAIL] Error fetching user for certificate email:", err);
+        });
     } else if (!isFullyComplete && enrollment.status === "completed") {
       enrollment.status = "active";
       enrollment.completedAt = undefined;

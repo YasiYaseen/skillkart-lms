@@ -3,6 +3,7 @@ import User from "../../models/User";
 import { hash, compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { registerSchema, loginSchema } from "../../validators/content.validator";
+import { sendWelcomeEmail } from "../../services/emailService";
 
 export async function register(req: Request, res: Response) {
   try {
@@ -34,6 +35,11 @@ export async function register(req: Request, res: Response) {
     if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
     const token = sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    // Failsafe welcome email
+    sendWelcomeEmail(user.email, user.name).catch((err) => {
+      console.error("[EMAIL] Failed to send welcome email:", err);
+    });
 
     res.status(201).json({
       message: "User registered successfully",
