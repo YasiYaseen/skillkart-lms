@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { useCurrency } from '@/context/CurrencyContext';
 import { useAuth } from '@/features/auth/AuthContext';
 import { validateCouponCode, processCheckout, type OrderRecord } from '@/features/student/api/cart';
 import { addToWishlist } from '@/features/wishlist';
@@ -15,6 +16,7 @@ const POPULAR_PROMOS = [
 
 export default function CartPage() {
   const { cart, removeFromCart, clearCart, cartTotal, addToCart } = useCart();
+  const { formatAmount, formatPrice } = useCurrency();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
@@ -43,42 +45,39 @@ export default function CartPage() {
   // Interactive Payment State
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
     method: 'card',
-    cardNumber: '',
-    cardHolder: user?.name ? user.name.toUpperCase() : '',
-    expiry: '',
-    cvv: '',
-    saveCard: true,
+    cardNumber: '4242 •••• •••• 4242',
+    cardExpiry: '12/28',
+    cardCvc: '•••',
+    savePaymentDetails: true,
   });
 
+  // Recommended Upsell Courses
+  const [recommendedCourses, setRecommendedCourses] = useState<
+    Array<{ _id: string; title: string; price: number; thumbnailUrl?: string; thumbnail?: string }>
+  >([]);
+
+  // Checkout submission state
   const [checkingOut, setCheckingOut] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<OrderRecord | null>(null);
 
-interface RecommendedCourse {
-  _id: string;
-  title: string;
-  thumbnailUrl?: string;
-  thumbnail?: string;
-  price?: number;
-  isPaid?: boolean;
-  instructor?: { name?: string } | string;
-}
+  const discountTotal = appliedCoupon ? appliedCoupon.discountTotal : 0;
+  const finalTotal = Math.max(0, Math.round((cartTotal - discountTotal) * 100) / 100);
 
-  // Recommendations / Upsells state
-  const [recommendedCourses, setRecommendedCourses] = useState<RecommendedCourse[]>([]);
-
+  // Load recommended courses
   useEffect(() => {
-    // Load top recommended courses for upsell strip
     api.get('/courses?limit=4')
       .then((res) => {
-        const list: RecommendedCourse[] = res.data.courses || [];
-        setRecommendedCourses(list.filter((c) => !cart.some((it) => it.courseId === c._id)));
+        const inCartIds = new Set(cart.map((c) => c.courseId));
+        const list = (res.data?.courses || []).filter(
+          (c: { _id: string }) => !inCartIds.has(c._id)
+        );
+        setRecommendedCourses(list.slice(0, 3));
       })
       .catch(() => {});
   }, [cart]);
 
-  // Validate coupon against current cart
-  const handleApplyCoupon = async (codeToApply?: string) => {
-    const code = (codeToApply || couponInput).trim();
+  const handleApplyCoupon = async (codeToTry?: string) => {
+    const code = (codeToTry || couponInput).trim();
     if (!code) return;
 
     setValidatingCoupon(true);
@@ -96,7 +95,7 @@ interface RecommendedCourse {
           discountTotal: res.discountTotal,
         });
         setCouponInput(res.coupon.code);
-        toast.success(`Coupon "${res.coupon.code}" applied! You saved $${res.discountTotal.toFixed(2)}`);
+        toast.success(`Coupon "${res.coupon.code}" applied! You saved ${formatAmount(res.discountTotal)}`);
       }
     } catch (err: unknown) {
       const errObj = err as { response?: { data?: { message?: string } } };
@@ -127,10 +126,6 @@ interface RecommendedCourse {
       toast.error('Failed to move course to Wishlist');
     }
   };
-
-  // Calculations
-  const discountTotal = appliedCoupon ? appliedCoupon.discountTotal : 0;
-  const finalTotal = Math.max(0, Math.round((cartTotal - discountTotal) * 100) / 100);
 
   // Submit checkout
   const handleCheckout = async () => {
@@ -200,13 +195,13 @@ interface RecommendedCourse {
                     <span className="font-bold text-gray-900 dark:text-white block">{item.title}</span>
                     <span className="text-[10px] text-emerald-600 font-semibold">✓ Instant Access Activated</span>
                   </div>
-                  <span className="text-gray-600 dark:text-gray-300 font-mono font-bold">${item.finalPrice.toFixed(2)}</span>
+                  <span className="text-gray-600 dark:text-gray-300 font-mono font-bold">{formatAmount(item.finalPrice)}</span>
                 </div>
               ))}
             </div>
             <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-sm font-extrabold text-gray-900 dark:text-white">
               <span>Total Paid</span>
-              <span className="text-blue-600 dark:text-blue-400 font-mono text-base">${completedOrder.totalAmount.toFixed(2)} USD</span>
+              <span className="text-blue-600 dark:text-blue-400 font-mono text-base">{formatAmount(completedOrder.totalAmount, { showCode: true })}</span>
             </div>
           </div>
 
@@ -367,7 +362,7 @@ interface RecommendedCourse {
 
                       <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                         <span className="text-base font-extrabold text-gray-900 dark:text-white font-mono">
-                          {item.price > 0 ? `$${item.price.toFixed(2)}` : 'FREE'}
+                          {formatPrice(item.price)}
                         </span>
 
                         <button
@@ -430,7 +425,7 @@ interface RecommendedCourse {
                           <div className="truncate flex-1">
                             <h5 className="font-semibold text-xs text-gray-900 dark:text-white truncate">{c.title}</h5>
                             <span className="text-xs font-bold text-indigo-600 font-mono">
-                              {coursePrice > 0 ? `$${coursePrice.toFixed(2)}` : 'FREE'}
+                              {formatPrice(coursePrice)}
                             </span>
                           </div>
                           <button
@@ -550,7 +545,7 @@ interface RecommendedCourse {
                     ✓ {appliedCoupon.code}
                   </span>
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                    {appliedCoupon.description} applied (-${discountTotal.toFixed(2)})
+                    {appliedCoupon.description} applied (-{formatAmount(discountTotal)})
                   </span>
                 </div>
                 <button
@@ -620,25 +615,25 @@ interface RecommendedCourse {
             <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
               <div className="flex justify-between items-center">
                 <span>Original Price ({cart.length} items)</span>
-                <span className="font-mono font-medium text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
+                <span className="font-mono font-medium text-gray-900 dark:text-white">{formatAmount(cartTotal)}</span>
               </div>
 
               {discountTotal > 0 && (
                 <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-semibold">
                   <span>Coupon Discount</span>
-                  <span className="font-mono">-${discountTotal.toFixed(2)}</span>
+                  <span className="font-mono">-{formatAmount(discountTotal)}</span>
                 </div>
               )}
 
               <div className="flex justify-between items-center text-gray-400 text-[11px]">
                 <span>Estimated Taxes & Fees</span>
-                <span className="font-mono">$0.00</span>
+                <span className="font-mono">{formatAmount(0)}</span>
               </div>
 
               <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-base font-extrabold text-gray-900 dark:text-white">
                 <span>Total Amount:</span>
                 <span className="text-indigo-600 dark:text-indigo-400 font-mono text-lg">
-                  ${finalTotal.toFixed(2)} USD
+                  {formatAmount(finalTotal, { showCode: true })}
                 </span>
               </div>
             </div>
@@ -659,7 +654,7 @@ interface RecommendedCourse {
                 {checkingOut ? (
                   <span>Authorizing Order...</span>
                 ) : (
-                  <span>Authorize & Complete Purchase (${finalTotal.toFixed(2)})</span>
+                  <span>Authorize & Complete Purchase ({formatAmount(finalTotal)})</span>
                 )}
               </button>
             )}

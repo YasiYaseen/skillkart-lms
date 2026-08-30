@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { Modal } from '../../../components/common';
+import { useCurrency } from '@/context/CurrencyContext';
 
 const STATUS_BADGE: Record<string, string> = {
     published: 'bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
@@ -32,6 +33,7 @@ interface RawInstructorCourse {
 
 function MyCourses() {
     const navigate = useNavigate();
+    const { formatAmount } = useCurrency();
     const [courses, setCourses] = useState<InstructorCourse[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -154,7 +156,7 @@ function MyCourses() {
                                 </td>
 
                                 {/* Earnings */}
-                                <td className="py-4 px-6 text-gray-600 dark:text-gray-300">${course.earnings.toFixed(2)}</td>
+                                <td className="py-4 px-6 text-gray-600 dark:text-gray-300">{formatAmount(course.earnings)}</td>
 
                                 {/* Students */}
                                 <td className="py-4 px-6 text-gray-600 dark:text-gray-300">{course.students}</td>

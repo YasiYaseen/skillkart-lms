@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SparklesIcon, BookOpenIcon } from "@heroicons/react/24/solid";
 import Rating from "../common/Rating";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface RecommendedCourse {
   _id: string;
@@ -71,6 +72,7 @@ export default function CourseRecommendations({
   if (courses.length === 0) return null;
 
   const displayCourses = courses.slice(0, limit);
+  const { formatPrice } = useCurrency();
 
   return (
     <div className="space-y-6">
@@ -133,7 +135,7 @@ export default function CourseRecommendations({
               <div className="pt-2 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs">
                 <Rating value={course.averageRating || 0} count={course.reviewCount} />
                 <div className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
-                  {course.isPaid && course.price ? `$${course.price.toFixed(2)}` : "Free"}
+                  {course.isPaid && course.price ? formatPrice(course.price) : "Free"}
                 </div>
               </div>
             </div>

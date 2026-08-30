@@ -6,6 +6,7 @@ import { FileUpload } from '@components/common';
 import CourseFAQEditor from '../components/CourseFAQEditor';
 import { QuizEditorModal } from '../components/QuizEditorModal';
 import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
+import { useCurrency } from '@/context/CurrencyContext';
 
 export interface CourseLessonItem {
     _id: string;
@@ -76,6 +77,7 @@ const LEVEL_OPTIONS = [
 function EditCourse() {
     const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
+    const { currency, symbol } = useCurrency();
 
     const [activeTab, setActiveTab] = useState<'details' | 'curriculum' | 'faqs'>('details');
 
@@ -662,8 +664,7 @@ function EditCourse() {
                                             <span>{item}</span>
                                         </span>
                                         <button
-                                            type="button"
-                                            onClick={() => handleRemoveLearnItem(item)}
+                                                                                        onClick={() => handleRemoveLearnItem(item)}
                                             className="text-emerald-700 dark:text-emerald-400 hover:text-red-600 font-bold ml-2"
                                         >
                                             ×
@@ -746,11 +747,11 @@ function EditCourse() {
                         {isPaid && (
                             <div>
                                 <label htmlFor="edit-price" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                    Price (USD $) <span className="text-red-500">*</span>
+                                    Price ({symbol} {currency}) <span className="text-red-500">*</span>
                                 </label>
                                 <div className="relative rounded-xl shadow-xs">
                                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                        <span className="text-gray-500 dark:text-gray-400 text-sm">$</span>
+                                        <span className="text-gray-500 dark:text-gray-400 text-sm">{symbol}</span>
                                     </div>
                                     <input
                                         id="edit-price"

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { QuizEditorModal } from '../components/QuizEditorModal';
 import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { Button, FileUpload } from '@/components/common';
+import { useCurrency } from '@/context/CurrencyContext';
 
 export interface CourseLessonItem {
     _id: string;
@@ -39,6 +40,7 @@ const LEVEL_OPTIONS = [
 
 function CreateCourse() {
     const navigate = useNavigate();
+    const { currency, symbol } = useCurrency();
 
     // Workflow state
     const [step, setStep] = useState<number>(1);
@@ -496,7 +498,7 @@ function CreateCourse() {
                         {/* Price & Thumbnail Row */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Price ($ USD)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Price ({symbol} {currency})</label>
                                 <input
                                     type="number"
                                     required

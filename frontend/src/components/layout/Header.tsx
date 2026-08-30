@@ -7,6 +7,7 @@ import ThemeToggle from '@components/common/ThemeToggle';
 import { AuthModals } from '@features/auth';
 import { useAuth } from '@features/auth/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useCurrency } from '@/context/CurrencyContext';
 import { api } from '@/lib/api';
 
 function Header() {
@@ -15,6 +16,7 @@ function Header() {
 
   const { user, logout } = useAuth();
   const { cart, removeFromCart, cartTotal, cartCount } = useCart();
+  const { formatAmount } = useCurrency();
 
   useEffect(() => {
     api.get('/settings/public')
@@ -163,7 +165,7 @@ function Header() {
                         <div key={item.courseId} className="pt-2 first:pt-0 flex items-center justify-between gap-2 text-xs">
                           <div className="truncate flex-1">
                             <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">{item.title}</p>
-                            <span className="text-[10px] text-gray-400 font-mono">${item.price.toFixed(2)}</span>
+                            <span className="text-[10px] text-gray-400 font-mono">{formatAmount(item.price)}</span>
                           </div>
                           <button
                             onClick={(e) => {
@@ -187,7 +189,7 @@ function Header() {
 
                     <div className="pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-gray-900 dark:text-white">
                       <span>Total:</span>
-                      <span className="text-indigo-600 font-mono">${cartTotal.toFixed(2)}</span>
+                      <span className="text-indigo-600 font-mono">{formatAmount(cartTotal)}</span>
                     </div>
 
                     <Link

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useEnrollment } from "../hooks/useEnrollment";
 import { useAuth } from "@/features/auth/AuthContext";
 import { AuthModals } from "@/features/auth";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface EnrollButtonProps {
   courseId: string;
@@ -13,6 +14,7 @@ interface EnrollButtonProps {
 export function EnrollButton({ courseId, price, isPaid, onEnrolled }: EnrollButtonProps) {
   const { user } = useAuth();
   const { isEnrolled, enrolling, enroll, loading } = useEnrollment(courseId);
+  const { formatAmount } = useCurrency();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleEnrollClick = async () => {
@@ -56,7 +58,7 @@ export function EnrollButton({ courseId, price, isPaid, onEnrolled }: EnrollButt
     : !user
     ? 'Sign in to Enroll'
     : isPaid && price
-    ? `Enroll Now for $${price.toFixed(2)}`
+    ? `Enroll Now for ${formatAmount(price)}`
     : 'Enroll for Free';
 
   return (

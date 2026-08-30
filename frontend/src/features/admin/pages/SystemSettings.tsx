@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useCurrency } from '@/context/CurrencyContext';
 import { toast } from 'react-toastify';
 
 export interface SystemSettingsData {
@@ -41,6 +42,7 @@ type SettingsTab = 'general' | 'financials' | 'access' | 'maintenance' | 'email'
 
 export function SystemSettings() {
   const { user } = useAuth();
+  const { symbol, formatAmount, refreshSettings } = useCurrency();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -135,6 +137,7 @@ export function SystemSettings() {
           updatedAt: res.data.settings.updatedAt,
         }));
       }
+      await refreshSettings();
     } catch (err: unknown) {
       let msg = 'Failed to update system settings';
       if (err && typeof err === 'object' && 'response' in err) {
@@ -356,8 +359,9 @@ export function SystemSettings() {
                   <option value="EUR">EUR (€) - Euro</option>
                   <option value="GBP">GBP (£) - British Pound</option>
                   <option value="INR">INR (₹) - Indian Rupee</option>
-                  <option value="CAD">CAD ($) - Canadian Dollar</option>
-                  <option value="AUD">AUD ($) - Australian Dollar</option>
+                  <option value="CAD">CAD (CA$) - Canadian Dollar</option>
+                  <option value="AUD">AUD (A$) - Australian Dollar</option>
+                  <option value="JPY">JPY (¥) - Japanese Yen</option>
                 </select>
               </div>
             </div>
@@ -454,7 +458,7 @@ export function SystemSettings() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-                  Minimum Instructor Withdrawal Threshold ($)
+                  Minimum Instructor Withdrawal Threshold ({symbol})
                 </label>
                 <div className="relative">
                   <input
@@ -465,7 +469,7 @@ export function SystemSettings() {
                     className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none pl-8"
                     required
                   />
-                  <span className="absolute left-4 top-3 text-sm font-bold text-gray-400">$</span>
+                  <span className="absolute left-4 top-3 text-sm font-bold text-gray-400">{symbol}</span>
                 </div>
                 <p className="text-xs text-gray-400 mt-1.5">
                   Instructors must accumulate at least this balance before submitting payout withdrawal requests.
@@ -475,11 +479,11 @@ export function SystemSettings() {
               {/* Simulation Card */}
               <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 flex flex-col justify-center">
                 <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 mb-1">
-                  💡 Example Sale Simulation ($100 Course):
+                  💡 Example Sale Simulation ({formatAmount(100)} Course):
                 </span>
                 <p className="text-xs text-indigo-700 dark:text-indigo-300">
-                  • Instructor Net Take-Home: <strong className="font-bold">${(100 * (formData.instructorPayoutShare / 100)).toFixed(2)}</strong><br />
-                  • Platform Commission Retained: <strong className="font-bold">${(100 * (formData.platformCommissionRate / 100)).toFixed(2)}</strong>
+                  • Instructor Net Take-Home: <strong className="font-bold">{formatAmount(100 * (formData.instructorPayoutShare / 100))}</strong><br />
+                  • Platform Commission Retained: <strong className="font-bold">{formatAmount(100 * (formData.platformCommissionRate / 100))}</strong>
                 </p>
               </div>
             </div>

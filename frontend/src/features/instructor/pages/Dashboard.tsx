@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
+import { useCurrency } from '@/context/CurrencyContext';
 
 export interface ActiveStudent {
     id?: string;
@@ -18,6 +19,7 @@ interface InstructorCourseItem {
 }
 
 function Dashboard() {
+    const { formatAmount } = useCurrency();
     const [stats, setStats] = useState({ enrollments: 0, earnings: 0, active: 0, draft: 0 });
     const [recent, setRecent] = useState<ActiveStudent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -116,7 +118,7 @@ function Dashboard() {
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Earnings</p>
                         <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-sm">💰</span>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">${stats.earnings.toFixed(2)}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatAmount(stats.earnings)}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Net course sales revenue</p>
                 </div>
 

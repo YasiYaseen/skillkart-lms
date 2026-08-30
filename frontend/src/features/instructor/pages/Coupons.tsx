@@ -8,6 +8,7 @@ import {
   deleteInstructorCoupon,
   type InstructorCoupon,
 } from '../api/coupons';
+import { useCurrency } from '@/context/CurrencyContext';
 
 interface Course {
   _id: string;
@@ -18,6 +19,7 @@ export function Coupons() {
   const [coupons, setCoupons] = useState<InstructorCoupon[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const { symbol, formatAmount } = useCurrency();
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -195,7 +197,7 @@ export function Coupons() {
           </div>
           <h3 className="text-base font-semibold text-gray-900 dark:text-white">No promo coupons created</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
-            Create your first promo code (e.g. 50% off or $20 off) for your students.
+            Create your first promo code (e.g. 50% off or {symbol}20 off) for your students.
           </p>
           <button
             onClick={openCreateModal}
@@ -237,7 +239,7 @@ export function Coupons() {
                       </div>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">
-                      {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `$${coupon.discountValue} OFF`}
+                      {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `${formatAmount(coupon.discountValue)} OFF`}
                     </td>
                     <td className="px-5 py-4">
                       <span className="text-gray-700 dark:text-gray-300">
@@ -342,7 +344,7 @@ export function Coupons() {
                     className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
                     <option value="percentage">Percentage (% OFF)</option>
-                    <option value="fixed">Fixed Amount ($ OFF)</option>
+                    <option value="fixed">Fixed Amount ({symbol} OFF)</option>
                   </select>
                 </div>
 
@@ -365,8 +367,8 @@ export function Coupons() {
               {/* Live Preview Calculation Pill */}
               <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 flex items-center justify-between text-xs">
                 <span className="text-blue-900 dark:text-blue-200">
-                  💡 <strong>Simulator Preview:</strong> A $100 course will cost{' '}
-                  <strong className="text-emerald-600 dark:text-emerald-400 font-mono">${sampleFinal.toFixed(2)}</strong> for students (saves ${sampleDiscount.toFixed(2)})
+                  💡 <strong>Simulator Preview:</strong> A {formatAmount(100)} course will cost{' '}
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{formatAmount(sampleFinal)}</strong> for students (saves {formatAmount(sampleDiscount)})
                 </span>
               </div>
 
@@ -391,7 +393,7 @@ export function Coupons() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Min Purchase ($)
+                    Min Purchase ({symbol})
                   </label>
                   <input
                     type="number"
@@ -455,4 +457,3 @@ export function Coupons() {
 }
 
 export default Coupons;
-

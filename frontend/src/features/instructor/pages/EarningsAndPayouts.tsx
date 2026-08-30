@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { useCurrency } from '@/context/CurrencyContext';
 
 interface EarningsSummary {
   totalGrossSales: number;
@@ -75,6 +76,7 @@ export function EarningsAndPayouts() {
   const [data, setData] = useState<EarningsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
+  const { symbol, formatAmount, formatPrice } = useCurrency();
 
   // Request Payout Modal state
   const [showPayoutModal, setShowPayoutModal] = useState(false);
@@ -130,7 +132,7 @@ export function EarningsAndPayouts() {
 
   const handleOpenPayoutModal = () => {
     if (!data || data.summary.availableBalance < 50) {
-      toast.warn('Minimum withdrawal amount is $50.00');
+      toast.warn(`Minimum withdrawal amount is ${formatAmount(50)}`);
       return;
     }
     setWithdrawAmount(data.summary.availableBalance.toFixed(2));
@@ -141,7 +143,7 @@ export function EarningsAndPayouts() {
     e.preventDefault();
     const amt = parseFloat(withdrawAmount);
     if (isNaN(amt) || amt < 50) {
-      toast.error('Minimum withdrawal is $50.00');
+      toast.error(`Minimum withdrawal is ${formatAmount(50)}`);
       return;
     }
     if (data && amt > data.summary.availableBalance) {
@@ -239,10 +241,10 @@ export function EarningsAndPayouts() {
             <span className="p-1.5 bg-white/20 rounded-lg text-xs">💵</span>
           </div>
           <div className="text-3xl font-extrabold font-mono tracking-tight">
-            ${summary.availableBalance.toFixed(2)}
+            {formatAmount(summary.availableBalance)}
           </div>
           <p className="text-[11px] text-blue-100">
-            Min. withdrawal threshold: $50.00
+            Min. withdrawal threshold: {formatAmount(50)}
           </p>
         </div>
 
@@ -255,10 +257,10 @@ export function EarningsAndPayouts() {
             <span className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs">🎓</span>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 font-mono">
-            ${summary.totalLifetimeNetEarnings.toFixed(2)}
+            {formatAmount(summary.totalLifetimeNetEarnings)}
           </div>
           <p className="text-[11px] text-gray-400">
-            From ${summary.totalGrossSales.toFixed(2)} gross sales
+            From {formatAmount(summary.totalGrossSales)} gross sales
           </p>
         </div>
 
@@ -271,7 +273,7 @@ export function EarningsAndPayouts() {
             <span className="p-1.5 bg-purple-50 text-purple-600 rounded-lg text-xs">🏛️</span>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-purple-600 font-mono">
-            ${summary.totalPlatformFees.toFixed(2)}
+            {formatAmount(summary.totalPlatformFees)}
           </div>
           <p className="text-[11px] text-gray-400">
             Platform hosting & payment processing
@@ -287,10 +289,10 @@ export function EarningsAndPayouts() {
             <span className="p-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs">⏳</span>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">
-            ${summary.totalPayoutsWithdrawn.toFixed(2)}
+            {formatAmount(summary.totalPayoutsWithdrawn)}
           </div>
           <p className="text-[11px] text-gray-400">
-            Pending approval: <strong className="text-amber-600 font-mono">${summary.pendingPayoutsAmount.toFixed(2)}</strong>
+            Pending approval: <strong className="text-amber-600 font-mono">{formatAmount(summary.pendingPayoutsAmount)}</strong>
           </p>
         </div>
       </div>
@@ -342,19 +344,19 @@ export function EarningsAndPayouts() {
                       </span>
                     </td>
                     <td className="px-4 py-3.5 font-mono">
-                      {course.price > 0 ? `$${course.price.toFixed(2)}` : 'FREE'}
+                      {formatPrice(course.price)}
                     </td>
                     <td className="px-4 py-3.5 font-semibold text-gray-900 dark:text-white">
                       {course.unitsSold}
                     </td>
                     <td className="px-4 py-3.5 font-mono text-gray-800 dark:text-gray-200">
-                      ${course.grossRevenue.toFixed(2)}
+                      {formatAmount(course.grossRevenue)}
                     </td>
                     <td className="px-4 py-3.5 font-mono text-rose-500">
-                      -${course.platformFee.toFixed(2)}
+                      -{formatAmount(course.platformFee)}
                     </td>
                     <td className="px-4 py-3.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                      ${course.netEarnings.toFixed(2)}
+                      {formatAmount(course.netEarnings)}
                     </td>
                   </tr>
                 ))}
@@ -410,7 +412,7 @@ export function EarningsAndPayouts() {
                         : p.accountDetails.stripeAccountId || 'Stripe Account'}
                     </td>
                     <td className="px-4 py-3.5 font-mono font-bold text-gray-900 dark:text-white">
-                      ${p.amount.toFixed(2)}
+                      {formatAmount(p.amount)}
                     </td>
                     <td className="px-4 py-3.5">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
@@ -445,7 +447,7 @@ export function EarningsAndPayouts() {
                   Request Earnings Payout
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Available Balance: <strong className="text-blue-600 font-mono">${summary.availableBalance.toFixed(2)}</strong>
+                  Available Balance: <strong className="text-blue-600 font-mono">{formatAmount(summary.availableBalance)}</strong>
                 </p>
               </div>
               <button
@@ -504,14 +506,14 @@ export function EarningsAndPayouts() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="font-bold text-gray-700 dark:text-gray-300">
-                    Withdrawal Amount ($) *
+                    Withdrawal Amount ({symbol}) *
                   </label>
                   <button
                     type="button"
                     onClick={() => setWithdrawAmount(summary.availableBalance.toFixed(2))}
                     className="text-[10px] text-blue-600 hover:underline font-bold"
                   >
-                    Withdraw Full Balance (${summary.availableBalance.toFixed(2)})
+                    Withdraw Full Balance ({formatAmount(summary.availableBalance)})
                   </button>
                 </div>
                 <input

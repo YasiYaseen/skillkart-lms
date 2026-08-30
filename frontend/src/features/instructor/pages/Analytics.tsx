@@ -4,11 +4,13 @@ import {
   type InstructorAnalyticsResponse,
 } from '../api/analytics';
 import { toast } from 'react-toastify';
+import { useCurrency } from '@/context/CurrencyContext';
 
 function Analytics() {
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [data, setData] = useState<InstructorAnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const { formatAmount } = useCurrency();
 
   const loadAnalytics = async (courseId?: string) => {
     try {
@@ -177,7 +179,7 @@ function Analytics() {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-gray-900 dark:text-white">
-                  ${(summary?.totalEarnings || 0).toFixed(2)}
+                  {formatAmount(summary?.totalEarnings || 0)}
                 </span>
               </div>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">

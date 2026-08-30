@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import Course from "../../models/Course";
 import Order from "../../models/Order";
 import Payout from "../../models/Payout";
+import SystemSettings from "../../models/SystemSettings";
 
 export async function getInstructorEarnings(req: Request, res: Response) {
   try {
@@ -220,12 +221,15 @@ export async function requestInstructorPayout(req: Request, res: Response) {
       status: { $in: ["pending", "processing", "completed"] },
     }).lean();
 
+    const settings = await SystemSettings.findOne({ isSingleton: true }).lean();
+    const primaryCurrency = settings?.primaryCurrency || "USD";
+
     const alreadyClaimed = existingPayouts.reduce((acc, p) => acc + p.amount, 0);
     const availableBalance = Math.max(0, Math.round((totalLifetimeNetEarnings - alreadyClaimed) * 100) / 100);
 
     if (withdrawAmount > availableBalance) {
       return res.status(400).json({
-        message: `Requested amount ($${withdrawAmount.toFixed(2)}) exceeds available balance ($${availableBalance.toFixed(2)})`,
+        message: `Requested amount (${withdrawAmount.toFixed(2)} ${primaryCurrency}) exceeds available balance (${availableBalance.toFixed(2)} ${primaryCurrency})`,
       });
     }
 
@@ -234,7 +238,7 @@ export async function requestInstructorPayout(req: Request, res: Response) {
     const newPayout = await Payout.create({
       instructor: instructorId,
       amount: withdrawAmount,
-      currency: "USD",
+      currency: primaryCurrency,
       method,
       accountDetails: accountDetails || {},
       status: "pending",

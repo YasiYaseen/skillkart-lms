@@ -1,3 +1,6 @@
+import React from 'react';
+import { useCurrency } from '@/context/CurrencyContext';
+
 export interface PaymentFormState {
   method: 'card' | 'express' | 'paypal' | 'upi';
   cardNumber: string;
@@ -14,6 +17,8 @@ interface PaymentCardSimulatorProps {
 }
 
 export function PaymentCardSimulator({ formState, onChange, totalAmount }: PaymentCardSimulatorProps) {
+  const { formatAmount } = useCurrency();
+
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
     const matches = v.match(/\d{4,16}/g);
@@ -41,12 +46,10 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
 
   const handleAutoFillDemo = () => {
     onChange({
-      method: 'card',
       cardNumber: '4242 4242 4242 4242',
-      cardHolder: 'ALEX R. LEARNER',
+      cardHolder: 'JANE DOE',
       expiry: '12/28',
       cvv: '888',
-      saveCard: true,
     });
   };
 
@@ -57,7 +60,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
   return (
     <div className="space-y-6">
       {/* Payment Method Selector Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button
           type="button"
           onClick={() => onChange({ method: 'card' })}
@@ -264,7 +267,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
           </div>
 
           <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-mono text-xs text-emerald-700 dark:text-emerald-300 font-bold max-w-md mx-auto">
-            ✓ Express Token Pre-Authorized for ${totalAmount.toFixed(2)} USD
+            ✓ Express Token Pre-Authorized for {formatAmount(totalAmount, { showCode: true })}
           </div>
         </div>
       )}
@@ -323,7 +326,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
                   />
                 ))}
               </div>
-              <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 block">Scan to Pay ${totalAmount.toFixed(2)}</span>
+              <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 block">Scan to Pay {formatAmount(totalAmount)}</span>
             </div>
 
             {/* UPI ID input & app icons */}

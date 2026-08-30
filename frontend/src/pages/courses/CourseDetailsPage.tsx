@@ -10,6 +10,7 @@ import { useEnrollment } from '@/features/enrollment/hooks/useEnrollment';
 import { WishlistButton } from '@/features/wishlist';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useCurrency } from '@/context/CurrencyContext';
 import { MarkdownRenderer } from '@/components/common';
 
 function formatMinutes(totalMins: number) {
@@ -144,6 +145,7 @@ function CourseDetailsPage() {
     const { user } = useAuth();
     const { isEnrolled, loading: enrollmentLoading } = useEnrollment(courseId);
     const { addToCart, isInCart } = useCart();
+    const { formatPrice, formatAmount } = useCurrency();
     const [course, setCourse] = useState<DetailedCourseState | null>(null);
     const [reviews, setReviews] = useState<CourseReview[]>([]);
     const [reviewSort, setReviewSort] = useState<'newest' | 'highest' | 'lowest'>('newest');
@@ -777,10 +779,10 @@ function CourseDetailsSkeleton() {
                                     {/* Price */}
                                     <div className="flex items-center gap-3 mb-6">
                                         <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                                            {course.price > 0 ? `$${course.price}` : 'Free'}
+                                            {formatPrice(course.price)}
                                         </span>
                                         {course.oldPrice && (
-                                            <span className="text-lg text-gray-400 line-through">${course.oldPrice}</span>
+                                            <span className="text-lg text-gray-400 line-through">{formatAmount(course.oldPrice)}</span>
                                         )}
                                     </div>
 

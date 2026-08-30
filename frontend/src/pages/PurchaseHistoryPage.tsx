@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchOrderHistory, fetchOrderReceipt, type OrderRecord } from '@/features/student/api/cart';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useCurrency } from '@/context/CurrencyContext';
 import { toast } from 'react-toastify';
 
 export default function PurchaseHistoryPage() {
@@ -10,6 +11,7 @@ export default function PurchaseHistoryPage() {
   const [selectedReceipt, setSelectedReceipt] = useState<OrderRecord | null>(null);
   const [loadingReceipt, setLoadingReceipt] = useState(false);
   const { user } = useAuth();
+  const { currency, formatAmount } = useCurrency();
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -104,7 +106,7 @@ export default function PurchaseHistoryPage() {
           <div>
             <div className="text-xs text-gray-500 dark:text-gray-400">Total Amount Invested</div>
             <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
-              ${totalSpent.toFixed(2)}
+              {formatAmount(totalSpent)}
             </div>
           </div>
         </div>
@@ -209,7 +211,7 @@ export default function PurchaseHistoryPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap font-mono font-bold text-gray-900 dark:text-white">
-                      ${order.totalAmount.toFixed(2)} USD
+                      {formatAmount(order.totalAmount)}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
@@ -319,13 +321,13 @@ export default function PurchaseHistoryPage() {
                         {item.title}
                       </td>
                       <td className="p-3.5 text-right font-mono text-gray-500 dark:text-gray-400">
-                        ${item.originalPrice.toFixed(2)}
+                        {formatAmount(item.originalPrice)}
                       </td>
                       <td className="p-3.5 text-right font-mono text-emerald-600">
-                        {item.discountAmount > 0 ? `-$${item.discountAmount.toFixed(2)}` : '$0.00'}
+                        {item.discountAmount > 0 ? `-${formatAmount(item.discountAmount)}` : formatAmount(0)}
                       </td>
                       <td className="p-3.5 text-right font-mono font-bold text-gray-900 dark:text-white">
-                        ${item.finalPrice.toFixed(2)}
+                        {formatAmount(item.finalPrice)}
                       </td>
                     </tr>
                   ))}
@@ -338,25 +340,25 @@ export default function PurchaseHistoryPage() {
               <div className="w-full sm:w-64 space-y-2 text-xs">
                 <div className="flex justify-between text-gray-500 dark:text-gray-400">
                   <span>Subtotal</span>
-                  <span className="font-mono">${selectedReceipt.subtotal.toFixed(2)}</span>
+                  <span className="font-mono">{formatAmount(selectedReceipt.subtotal)}</span>
                 </div>
 
                 {selectedReceipt.discountTotal > 0 && (
                   <div className="flex justify-between text-emerald-600 font-semibold">
                     <span>Coupon ({selectedReceipt.couponCode || 'PROMO'})</span>
-                    <span className="font-mono">-${selectedReceipt.discountTotal.toFixed(2)}</span>
+                    <span className="font-mono">-{formatAmount(selectedReceipt.discountTotal)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-gray-500 dark:text-gray-400 text-[11px]">
                   <span>Tax & Processing</span>
-                  <span className="font-mono">$0.00</span>
+                  <span className="font-mono">{formatAmount(0)}</span>
                 </div>
 
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between font-extrabold text-sm text-gray-900 dark:text-white">
-                  <span>Total Paid (USD)</span>
+                  <span>Total Paid ({currency})</span>
                   <span className="font-mono text-indigo-600 dark:text-indigo-400">
-                    ${selectedReceipt.totalAmount.toFixed(2)}
+                    {formatAmount(selectedReceipt.totalAmount)}
                   </span>
                 </div>
               </div>

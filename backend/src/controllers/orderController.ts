@@ -137,12 +137,13 @@ export async function checkout(req: Request, res: Response) {
     }
 
     const totalAmount = Math.max(0, Math.round((subtotal - discountTotal) * 100) / 100);
+    const primaryCurrency = settings?.primaryCurrency || "USD";
 
     // Process payment through pluggable PaymentService
     const paymentResult = await PaymentService.executePayment(
       totalAmount === 0 ? "free" : paymentMethod,
       totalAmount,
-      "USD",
+      primaryCurrency,
       {
         studentId: req.user.id,
         courseCount: items.length,
@@ -172,7 +173,7 @@ export async function checkout(req: Request, res: Response) {
       discountTotal,
       taxAmount: 0,
       totalAmount,
-      currency: "USD",
+      currency: primaryCurrency,
       paymentMethod: totalAmount === 0 ? "free" : paymentMethod,
       paymentStatus: paymentResult.paymentStatus,
       transactionId: paymentResult.transactionId,

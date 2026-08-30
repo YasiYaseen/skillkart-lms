@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
+import { useCurrency } from '@/context/CurrencyContext';
 
 interface PresetItem {
   id: string;
@@ -52,6 +53,7 @@ interface GenerationResult {
 }
 
 export function CourseGenerator() {
+  const { formatPrice } = useCurrency();
   const [presets, setPresets] = useState<PresetItem[]>([]);
   const [defaultInstructor, setDefaultInstructor] = useState<DefaultInstructor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -502,7 +504,7 @@ export function CourseGenerator() {
                         <span className="flex items-center gap-1">📝 {preset.quizzesCount} Quizzes</span>
                         <span className="flex items-center gap-1">📋 {preset.assignmentsCount} Assignments</span>
                         <span className="ml-auto font-bold text-gray-900 dark:text-white">
-                          {preset.isPaid ? `$${preset.price?.toFixed(2)}` : 'FREE'}
+                          {preset.isPaid ? formatPrice(preset.price || 0) : 'FREE'}
                         </span>
                       </div>
                     </div>

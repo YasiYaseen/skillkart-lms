@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { useCurrency } from '@/context/CurrencyContext';
 
 interface FinancialMetrics {
   grossVolume: number;
@@ -79,6 +80,7 @@ export function FinancialReports() {
   const [loading, setLoading] = useState(true);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
   const [searchLedger, setSearchLedger] = useState('');
+  const { formatAmount } = useCurrency();
 
   const loadReports = async (selectedRange: string) => {
     try {
@@ -216,7 +218,7 @@ export function FinancialReports() {
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">
-            ${metrics.grossVolume.toFixed(2)}
+            {formatAmount(metrics.grossVolume)}
           </div>
           <p className="text-[11px] text-gray-400">
             Across {metrics.totalOrdersCount} paid transactions
@@ -234,7 +236,7 @@ export function FinancialReports() {
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 font-mono">
-            ${metrics.platformCommission.toFixed(2)}
+            {formatAmount(metrics.platformCommission)}
           </div>
           <p className="text-[11px] text-gray-400">
             Net revenue retained by SkillKart
@@ -252,7 +254,7 @@ export function FinancialReports() {
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-purple-600 dark:text-purple-400 font-mono">
-            ${metrics.instructorPayouts.toFixed(2)}
+            {formatAmount(metrics.instructorPayouts)}
           </div>
           <p className="text-[11px] text-gray-400">
             Total instructor earnings allocated
@@ -270,10 +272,10 @@ export function FinancialReports() {
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 font-mono">
-            -${metrics.totalDiscount.toFixed(2)}
+            -{formatAmount(metrics.totalDiscount)}
           </div>
           <p className="text-[11px] text-gray-400">
-            Avg Order Value: <strong className="text-gray-700 dark:text-gray-300 font-mono">${metrics.averageOrderValue.toFixed(2)}</strong>
+            Avg Order Value: <strong className="text-gray-700 dark:text-gray-300 font-mono">{formatAmount(metrics.averageOrderValue)}</strong>
           </p>
         </div>
       </div>
@@ -290,7 +292,7 @@ export function FinancialReports() {
             </p>
           </div>
           <div className="text-xs font-mono text-gray-400">
-            Peak Day: <strong className="text-indigo-600">${maxDailyRevenue.toFixed(2)}</strong>
+            Peak Day: <strong className="text-indigo-600">{formatAmount(maxDailyRevenue)}</strong>
           </div>
         </div>
 
@@ -303,7 +305,7 @@ export function FinancialReports() {
                   <div key={point.date} className="flex-1 min-w-[28px] flex flex-col items-center gap-2 group relative">
                     {/* Tooltip on hover */}
                     <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] py-1 px-2 rounded-lg pointer-events-none whitespace-nowrap shadow-xl z-20 font-mono">
-                      {point.date}: ${point.revenue.toFixed(2)} ({point.count} orders)
+                      {point.date}: {formatAmount(point.revenue)} ({point.count} orders)
                     </div>
 
                     {/* Bar */}
@@ -357,7 +359,7 @@ export function FinancialReports() {
 
                   <div className="text-right shrink-0">
                     <span className="font-extrabold text-gray-900 dark:text-white font-mono block">
-                      ${c.revenue.toFixed(2)}
+                      {formatAmount(c.revenue)}
                     </span>
                     <span className="text-[10px] text-gray-400">{c.unitsSold} enrollments</span>
                   </div>
@@ -396,9 +398,9 @@ export function FinancialReports() {
 
                   <div className="text-right shrink-0">
                     <span className="font-extrabold text-emerald-600 dark:text-emerald-400 font-mono block">
-                      ${inst.estimatedPayout.toFixed(2)}
+                      {formatAmount(inst.estimatedPayout)}
                     </span>
-                    <span className="text-[10px] text-gray-400">From ${inst.grossRevenue.toFixed(2)} gross</span>
+                    <span className="text-[10px] text-gray-400">From {formatAmount(inst.grossRevenue)} gross</span>
                   </div>
                 </div>
               ))}
@@ -466,7 +468,7 @@ export function FinancialReports() {
                       {tx.paymentMethod}
                     </td>
                     <td className="px-4 py-3.5 font-mono font-bold text-gray-900 dark:text-white">
-                      ${tx.totalAmount.toFixed(2)}
+                      {formatAmount(tx.totalAmount)}
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
