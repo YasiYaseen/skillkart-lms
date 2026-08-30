@@ -161,13 +161,13 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 |---|---|---|---|
 | 5.1 | Fix YouTube embed URL transform — use a proper regex or URL-parsing function that handles all YouTube URL variants | Critical | Done |
 | 5.2 | Fix PDF viewer height — replace fixed `600px` with responsive `min-h-[60vh] max-h-screen` or `aspect-[4/3]` | Critical | Done |
-| 5.3 | Align backend progress calculation — use the same lesson set (all vs mandatory) in both `getMyCourseProgress` and `getCourseProgressSnapshot` | Critical | Not Started |
+| 5.3 | Align backend progress calculation — use the same lesson set (all vs mandatory) in both `getMyCourseProgress` and `getCourseProgressSnapshot` | Critical | Done |
 | 5.4 | Change "Mark as Complete" to show "✓ Completed" when lesson is already in `completedLessonIds` | High | Done |
-| 5.5 | Add `react-markdown` (or `marked`) for text-type lesson content rendering | High | Not Started |
-| 5.6 | Show lesson duration in sidebar next to each lesson title | High | Not Started |
-| 5.7 | Show course completion modal/overlay at 100% with direct link to certificate | High | Not Started |
-| 5.8 | Add mobile sidebar toggle button | Medium | Not Started |
-| 5.9 | Show "X lessons left / ~Y min remaining" at top of sidebar | Medium | Not Started |
+| 5.5 | Add clean styled markdown formatting for text-type lesson content rendering | High | Done |
+| 5.6 | Show lesson duration in sidebar next to each lesson title | High | Done |
+| 5.7 | Show course completion modal/overlay at 100% with direct link to certificate | High | Done |
+| 5.8 | Add mobile sidebar toggle button | Medium | Done |
+| 5.9 | Show "X lessons left / ~Y min remaining" at top of sidebar | Medium | Done |
 | 5.10 | Auto-advance to next lesson after marking complete (with 3-second countdown) | Low | Not Started |
 
 ---
@@ -348,8 +348,8 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 13.1 | Upgrade My Certificates page with visual certificate cards (thumbnail, completion date, verify/print links) | High | Not Started |
-| 13.2 | Add "Share on LinkedIn" and "Copy verification link" buttons on the certificate verification page | Medium | Not Started |
+| 13.1 | Upgrade My Certificates page with visual certificate cards (thumbnail, completion date, verify/print links) | High | Done |
+| 13.2 | Add "Share on LinkedIn" and "Copy verification link" buttons on the certificate verification page | Medium | Done |
 | 13.3 | Add "Download as Image" export using `html2canvas` | Low | Not Started |
 
 ---

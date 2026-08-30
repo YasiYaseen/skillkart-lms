@@ -84,6 +84,8 @@ function LessonViewer() {
     const [quizPassed, setQuizPassed] = useState(false);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'lesson' | 'notes' | 'discussion' | 'announcements'>('lesson');
+    const [showCompletionModal, setShowCompletionModal] = useState(false);
+    const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
     // Fetch course structure only once per course visit
     useEffect(() => {
@@ -179,6 +181,9 @@ function LessonViewer() {
     const nextLesson = lessons[lessonIndex + 1];
     const prevLesson = lessons[lessonIndex - 1];
 
+    const remainingLessons = lessons.filter(l => !completedLessonIds.includes(l._id));
+    const remainingMinutes = remainingLessons.reduce((acc, l) => acc + (l.durationMinutes || 10), 0);
+
     const handleProgress = async () => {
         try {
             await api.post(`/lessons/${lessonId}/progress`, { completed: true });
@@ -189,11 +194,9 @@ function LessonViewer() {
             setProgressPercentage(p.progressPercentage || 0);
 
             if (p.isCompleted || p.progressPercentage === 100) {
-                toast.success('🎉 Congratulations! You completed this course! Your certificate is ready under My Certificates.', {
-                    autoClose: 8000,
-                });
+                setShowCompletionModal(true);
             } else {
-                toast.success('Progress saved!');
+                toast.success('Lesson completed! 🎉');
             }
         } catch {
             toast.error('Failed to save progress');
@@ -224,31 +227,55 @@ function LessonViewer() {
     if (!course) return <div className="text-center py-20 text-red-500">Course not found</div>;
 
     return (
-        <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
+        <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden bg-gray-50 dark:bg-gray-900">
+            {/* Mobile Header / Toggle Bar */}
+            <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <button
+                    onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+                    className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1.5 rounded-lg"
+                >
+                    <span>{showMobileSidebar ? '✕ Close Curriculum' : '☰ Course Curriculum'}</span>
+                    <span className="text-gray-400 font-normal">({progressPercentage}%)</span>
+                </button>
+                <Link to={`/courses/${courseId}`} className="text-xs text-gray-500 hover:underline">
+                    ← Course Info
+                </Link>
+            </div>
+
             {/* Sidebar (Curriculum) */}
-            <div className="w-full md:w-80 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
-                <div className="p-6 border-b border-gray-100">
-                    <Link to={`/courses/${courseId}`} className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 mb-2">
-                        ← Back to Course Info
-                    </Link>
-                    <h2 className="text-lg font-bold text-gray-900 leading-tight mb-4">{course.title}</h2>
+            <div className={`w-full md:w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto shrink-0 ${showMobileSidebar ? 'block absolute inset-0 z-40 md:relative' : 'hidden md:block'}`}>
+                <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                        <Link to={`/courses/${courseId}`} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                            ← Course Overview
+                        </Link>
+                        {showMobileSidebar && (
+                            <button onClick={() => setShowMobileSidebar(false)} className="md:hidden text-xs text-gray-400 font-bold">
+                                ✕
+                            </button>
+                        )}
+                    </div>
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white leading-snug mb-3 line-clamp-2">{course.title}</h2>
                     
                     {/* Progress Bar UI */}
-                    <div className="text-sm text-gray-600 mb-1 flex justify-between">
-                        <span>Course Progress</span>
-                        <span className="font-bold">{progressPercentage}%</span>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 flex justify-between">
+                        <span>{completedLessonIds.length} of {lessons.length} lessons</span>
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{progressPercentage}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
+                    <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 mb-2 overflow-hidden">
+                        <div className="bg-indigo-600 h-2 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
                     </div>
+                    {remainingMinutes > 0 && (
+                        <p className="text-[11px] text-gray-400">~{remainingMinutes} min remaining</p>
+                    )}
                 </div>
                 
                 <div className="flex flex-col">
                     {sections.map((sec, sIdx) => {
                         const secLessons = lessons.filter(l => l.section === sec._id);
                         return (
-                            <div key={sec._id} className="border-b border-gray-100">
-                                <div className="bg-gray-50 px-6 py-4 font-bold text-gray-800 text-sm">
+                            <div key={sec._id} className="border-b border-gray-100 dark:border-gray-700/60">
+                                <div className="bg-gray-50 dark:bg-gray-800/80 px-5 py-3 font-bold text-gray-700 dark:text-gray-300 text-xs">
                                     Section {sIdx + 1}: {sec.title}
                                 </div>
                                 <div className="flex flex-col">
@@ -261,19 +288,27 @@ function LessonViewer() {
                                             <Link 
                                                 key={les._id} 
                                                 to={`/learn/${courseId}/${les._id}`}
-                                                className={`px-6 py-3 text-sm transition-colors border-l-4 ${isActive ? 'bg-blue-50 border-blue-600 text-blue-700 font-medium' : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+                                                onClick={() => setShowMobileSidebar(false)}
+                                                className={`px-5 py-3 text-xs transition-colors border-l-4 ${
+                                                    isActive 
+                                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-600 text-indigo-700 dark:text-indigo-300 font-semibold' 
+                                                        : 'border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+                                                }`}
                                             >
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="flex items-start gap-2">
                                                         <span className="text-gray-400 font-mono mt-0.5">{lIdx + 1}.</span>
-                                                        <span>{les.title}</span>
+                                                        <span className="line-clamp-2">{les.title}</span>
                                                     </div>
-                                                    <div className="flex items-center gap-1 shrink-0">
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        {les.durationMinutes && (
+                                                            <span className="text-[10px] text-gray-400">{les.durationMinutes}m</span>
+                                                        )}
                                                         {isLessonBookmarked && (
                                                             <span title="Bookmarked" className="text-amber-500 text-xs">🔖</span>
                                                         )}
                                                         {isCompleted && (
-                                                            <span className="text-green-500 font-bold">✓</span>
+                                                            <span className="text-emerald-500 font-bold">✓</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -514,7 +549,7 @@ function LessonViewer() {
                                         } else {
                                             return (
                                                 <div key={item._id} className="item-content">
-                                                    <div className="prose max-w-none text-gray-700 bg-gray-50 p-6 rounded-xl border border-gray-100 whitespace-pre-wrap">
+                                                    <div className="text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/80 p-6 md:p-8 rounded-2xl border border-gray-100 dark:border-gray-700 whitespace-pre-wrap leading-relaxed text-sm md:text-base font-normal">
                                                         {content.text}
                                                     </div>
                                                 </div>
@@ -530,11 +565,11 @@ function LessonViewer() {
                                 />
 
                                 {/* Navigation Buttons */}
-                                <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">
+                                <div className="flex justify-between items-center mt-10 pt-6 border-t border-gray-100 dark:border-gray-700">
                                     {prevLesson ? (
                                         <button
                                             onClick={() => navigate(`/learn/${courseId}/${prevLesson._id}`)}
-                                            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors"
+                                            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold text-sm transition-colors"
                                         >
                                             ← Previous Lesson
                                         </button>
@@ -543,7 +578,7 @@ function LessonViewer() {
                                     {nextLesson && (
                                         <button
                                             onClick={() => navigate(`/learn/${courseId}/${nextLesson._id}`)}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all"
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-sm"
                                         >
                                             Next Lesson →
                                         </button>
@@ -556,6 +591,44 @@ function LessonViewer() {
                 )}
 
             </div>
+
+            {/* Course Completion Modal Overlay */}
+            {showCompletionModal && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="w-20 h-20 bg-gradient-to-tr from-amber-400 to-amber-200 rounded-full flex items-center justify-center text-4xl mx-auto mb-5 shadow-lg">
+                            🏆
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
+                            Course Completed!
+                        </h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                            You've mastered <strong className="text-gray-900 dark:text-white">{course?.title}</strong>. Your verifiable certificate has been issued!
+                        </p>
+                        <div className="space-y-3">
+                            <Link
+                                to="/certificates"
+                                className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md text-sm"
+                            >
+                                View & Download Certificate 🎓
+                            </Link>
+                            <Link
+                                to={`/courses/${courseId}`}
+                                className="block w-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-2.5 px-4 rounded-xl transition-all text-sm"
+                            >
+                                Leave a Course Review ⭐
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => setShowCompletionModal(false)}
+                                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 mt-2 font-medium"
+                            >
+                                Close & Keep Exploring
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

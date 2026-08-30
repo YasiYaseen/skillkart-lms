@@ -94,7 +94,7 @@ function VerifyCertificatePage() {
                         </div>
 
                         {/* Verified badge & Actions */}
-                        <div className="flex flex-wrap items-center justify-center gap-4">
+                        <div className="flex flex-wrap items-center justify-center gap-3">
                             <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 border border-green-200 rounded-full px-4 py-1.5 text-sm font-semibold">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -112,6 +112,30 @@ function VerifyCertificatePage() {
                                 </svg>
                                 Download / Print PDF
                             </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(window.location.href);
+                                    alert('Certificate verification link copied to clipboard!');
+                                }}
+                                className="print:hidden inline-flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full px-4 py-1.5 text-sm font-semibold transition-all"
+                            >
+                                <span>📋</span>
+                                <span>Copy Link</span>
+                            </button>
+
+                            <a
+                                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="print:hidden inline-flex items-center gap-1.5 bg-[#0077b5] hover:bg-[#006097] text-white rounded-full px-4 py-1.5 text-sm font-semibold transition-all"
+                            >
+                                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                </svg>
+                                <span>Share on LinkedIn</span>
+                            </a>
                         </div>
                     </div>
 
