@@ -8,6 +8,11 @@ import Enrollment from "../../models/Enrollment";
 import LessonProgress from "../../models/LessonProgress";
 import Review from "../../models/Review";
 import User from "../../models/User";
+import Note from "../../models/Note";
+import Bookmark from "../../models/Bookmark";
+import Announcement from "../../models/Announcement";
+import Comment from "../../models/Comment";
+import Certificate from "../../models/Certificate";
 import { getCourseDurationMinutes, isCourseManager } from "./shared";
 import { createCourseSchema } from "../../validators/course.validator";
 
@@ -406,6 +411,11 @@ export async function deleteCourse(req: Request, res: Response) {
 
     await LessonProgress.deleteMany({ lesson: { $in: lessonIds } });
     await LessonItem.deleteMany({ lesson: { $in: lessonIds } });
+    await Comment.deleteMany({ lesson: { $in: lessonIds } });
+    await Note.deleteMany({ course: course._id });
+    await Bookmark.deleteMany({ course: course._id });
+    await Announcement.deleteMany({ course: course._id });
+    await Certificate.deleteMany({ course: course._id });
     await Lesson.deleteMany({ section: { $in: sectionIds } });
     await Section.deleteMany({ course: course._id });
     await Enrollment.deleteMany({ course: course._id });
