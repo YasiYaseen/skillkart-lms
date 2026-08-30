@@ -26,6 +26,7 @@ import {
     Analytics,
     Assignments,
     Coupons,
+    EarningsAndPayouts,
 } from '@features/instructor';
 import {
     AdminLayout,
@@ -85,6 +86,7 @@ function App() {
                                 <Route path="/instructor/assignments" element={<Assignments />} />
                                 <Route path="/instructor/coupons" element={<Coupons />} />
                                 <Route path="/instructor/analytics" element={<Analytics />} />
+                                <Route path="/instructor/earnings" element={<EarningsAndPayouts />} />
                             </Route>
                         </Route>
 
