@@ -117,6 +117,11 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
   if (noQuiz) return null;
   if (!quiz) return null;
 
+  const answeredCount = selectedAnswers.filter((a) => a !== -1).length;
+  const totalQuestions = quiz.questions.length;
+  const answeredPercentage = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+  const correctCount = questionResults?.filter((r) => r.isCorrect).length ?? 0;
+
   return (
     <div className="mt-8 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-xs">
       <div className="bg-gray-900 text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3">
@@ -144,11 +149,72 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
         )}
       </div>
 
+      {/* Question Progress & Navigation Bar */}
+      <div className="bg-gray-50 dark:bg-gray-900/40 px-6 py-4 border-b border-gray-100 dark:border-gray-700/60 space-y-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-gray-700 dark:text-gray-300">
+            {result ? "Assessment Breakdown" : "Question Progress"}
+          </span>
+          <span className="text-gray-500 dark:text-gray-400 font-medium">
+            {result
+              ? `${correctCount} of ${totalQuestions} Correct (${result.score}%)`
+              : `${answeredCount} of ${totalQuestions} Answered (${answeredPercentage}%)`}
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all duration-300 ${
+              result
+                ? result.passed
+                  ? "bg-emerald-500"
+                  : "bg-amber-500"
+                : "bg-indigo-600"
+            }`}
+            style={{ width: `${result ? result.score : answeredPercentage}%` }}
+          />
+        </div>
+
+        {/* Question quick-navigation pills */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-xs text-gray-400 dark:text-gray-500 mr-1">Questions:</span>
+          {quiz.questions.map((_, idx) => {
+            const isAnswered = selectedAnswers[idx] !== -1;
+            const qRes = questionResults?.find((r) => r.questionIndex === idx);
+
+            let pillClass = "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 hover:border-indigo-400";
+            if (qRes) {
+              pillClass = qRes.isCorrect
+                ? "bg-emerald-500 text-white border-emerald-500 font-bold"
+                : "bg-red-500 text-white border-red-500 font-bold";
+            } else if (isAnswered) {
+              pillClass = "bg-indigo-600 text-white border-indigo-600 font-semibold";
+            }
+
+            return (
+              <a
+                key={idx}
+                href={`#question-${idx + 1}`}
+                className={`w-7 h-7 rounded-lg text-xs flex items-center justify-center border transition-all hover:scale-105 ${pillClass}`}
+                title={`Question ${idx + 1}${isAnswered ? ' (Answered)' : ''}`}
+              >
+                {idx + 1}
+              </a>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="p-6 md:p-8 space-y-8 bg-white dark:bg-gray-800">
         {quiz.questions.map((q, qIdx) => {
           const qRes = questionResults?.find((r) => r.questionIndex === qIdx);
           return (
-            <div key={qIdx} className="space-y-3.5 pb-6 border-b border-gray-100 dark:border-gray-700/60 last:border-0 last:pb-0">
+            <div
+              key={qIdx}
+              id={`question-${qIdx + 1}`}
+              className="space-y-3.5 pb-6 border-b border-gray-100 dark:border-gray-700/60 last:border-0 last:pb-0 scroll-mt-24"
+            >
               <div className="flex items-start justify-between gap-4">
                 <p className="font-semibold text-gray-900 dark:text-white text-sm md:text-base leading-relaxed">
                   <span className="text-indigo-600 dark:text-indigo-400 font-bold mr-1.5">{qIdx + 1}.</span>

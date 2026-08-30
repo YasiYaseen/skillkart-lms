@@ -233,7 +233,7 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 | 8.2 | Reveal correct answers for wrong questions after a failed attempt | High | Done |
 | 8.3 | Show attempt count before starting ("Attempt 3 of unlimited") | High | Done |
 | 8.4 | Show last attempt score before retrying ("Your last score: 60% — need 70% to pass") | High | Done |
-| 8.5 | Add question progress indicator inside quiz ("Question 2 of 5") | Medium | Not Started |
+| 8.5 | Add question progress indicator inside quiz ("Question 2 of 5") | Medium | Done |
 | 8.6 | Add configurable max attempt limit per quiz (instructor-controlled) | Low | Not Started |
 
 ---
