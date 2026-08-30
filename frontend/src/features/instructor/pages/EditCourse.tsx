@@ -86,6 +86,8 @@ function EditCourse() {
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [category, setCategory] = useState<string>('');
+    const [availableCategories, setAvailableCategories] = useState<Array<{ id: string; name: string; icon: string; slug: string }>>([]);
     const [level, setLevel] = useState('beginner');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
@@ -98,6 +100,14 @@ function EditCourse() {
     const [thumbnailUrl, setThumbnailUrl] = useState('');
     const [courseStatus, setCourseStatus] = useState('draft');
     const [isApproved, setIsApproved] = useState<boolean | undefined>(undefined);
+
+    useEffect(() => {
+        api.get<{ categories: Array<{ id: string; name: string; icon: string; slug: string }> }>('/categories')
+            .then((res) => {
+                setAvailableCategories(res.data.categories || []);
+            })
+            .catch(() => {});
+    }, []);
 
     const [sections, setSections] = useState<CourseSection[]>([]);
     const [newSectionTitle, setNewSectionTitle] = useState('');
@@ -126,11 +136,17 @@ function EditCourse() {
     const fetchCourseData = useCallback(async () => {
         if (!courseId) return;
         try {
-            const res = await api.get<{ course: RawCourseData }>(`/courses/${courseId}`);
+            const res = await api.get<{ course: RawCourseData & { category?: { _id?: string; slug?: string } | string } }>(`/courses/${courseId}`);
             const c = res.data.course;
 
             setTitle(c.title || '');
             setDescription(c.description || '');
+            const catVal = c.category
+                ? typeof c.category === 'object'
+                    ? c.category._id || c.category.slug || ''
+                    : c.category
+                : '';
+            setCategory(catVal);
             setLevel(c.level || 'beginner');
             setTags(c.tags || []);
             setWhatYouWillLearn(c.whatYouWillLearn || []);
@@ -235,6 +251,7 @@ function EditCourse() {
             await api.patch(`/courses/${courseId}`, {
                 title,
                 description,
+                category: category || undefined,
                 level,
                 tags,
                 whatYouWillLearn,
@@ -560,6 +577,25 @@ function EditCourse() {
                             className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
                             placeholder="Describe what students will learn in this course..."
                         />
+                    </div>
+
+                    <div>
+                        <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Primary Category / Learning Track
+                        </label>
+                        <select
+                            id="edit-category"
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                        >
+                            <option value="">Select a Category Track (Optional / Auto-inferred)</option>
+                            {availableCategories.map((c) => (
+                                <option key={c.id || c.slug} value={c.id || c.slug}>
+                                    {c.icon} {c.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>

@@ -75,21 +75,37 @@ function Header() {
             {/* Navigation */}
             <nav className="header-nav ml-auto">
               {user && user.role === 'admin' && (
-                <Link to="/admin" className="header-nav-link">
-                  Admin Panel
-                </Link>
+                <>
+                  <Link to="/admin" className="header-nav-link">
+                    Admin Panel
+                  </Link>
+                  <Link to="/courses" className="header-nav-link">
+                    Course Catalog
+                  </Link>
+                </>
               )}
 
               {user && user.role === 'instructor' && (
-                <Link to="/instructor" className="header-nav-link">
-                  Instructor Studio
-                </Link>
+                <>
+                  <Link to="/instructor" className="header-nav-link">
+                    Instructor Studio
+                  </Link>
+                  <Link to="/courses" className="header-nav-link">
+                    Explore Catalog
+                  </Link>
+                </>
               )}
 
               {user && user.role === 'student' && (
                 <>
+                  <Link to="/" className="header-nav-link font-semibold">
+                    Home
+                  </Link>
+                  <Link to="/courses" className="header-nav-link">
+                    Explore Courses
+                  </Link>
                   <Link to="/my-courses" className="header-nav-link">
-                    My Courses
+                    My Learning
                   </Link>
                   <Link to="/study-hub" className="header-nav-link">
                     Study Hub
@@ -97,29 +113,25 @@ function Header() {
                   <Link to="/wishlist" className="header-nav-link">
                     Wishlist
                   </Link>
-                  <Link to="/purchase-history" className="header-nav-link">
-                    Orders
-                  </Link>
                   <Link to="/my-certificates" className="header-nav-link">
-                    My Certificates
+                    Certificates
                   </Link>
                 </>
               )}
 
-              {user && (
-                <Link to="/courses/create" className="header-nav-link hidden">
-                  Add Courses
-                </Link>
-              )}
-
               {!user && (
-                <a
-                  href="/login"
-                  onClick={handleLoginClick}
-                  className="header-nav-link"
-                >
-                  Login
-                </a>
+                <>
+                  <Link to="/courses" className="header-nav-link">
+                    Explore Courses
+                  </Link>
+                  <a
+                    href="/login"
+                    onClick={handleLoginClick}
+                    className="header-nav-link"
+                  >
+                    Login
+                  </a>
+                </>
               )}
             </nav>
 

@@ -7,6 +7,7 @@ export interface ICourse extends Document {
   title: string;
   description: string;
   thumbnailUrl?: string;
+  category?: Types.ObjectId;
   tags?: string[];
   level: CourseLevel;
   isPaid: boolean;
@@ -47,6 +48,11 @@ const CourseSchema = new Schema<ICourse>(
     thumbnailUrl: {
       type: String,
       trim: true,
+    },
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
+      index: true,
     },
     tags: {
       type: [String],

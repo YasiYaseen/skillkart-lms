@@ -6,5 +6,6 @@ export { default as AuditLogs } from "./pages/AuditLogs";
 export { FinancialReports } from "./pages/FinancialReports";
 export { SystemSettings } from "./pages/SystemSettings";
 export { CourseGenerator } from "./pages/CourseGenerator";
+export { CategoryManagement } from "./pages/CategoryManagement";
 export { AdminLayout } from "./layout/AdminLayout";
 

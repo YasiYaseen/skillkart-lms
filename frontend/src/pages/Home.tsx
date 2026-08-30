@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { CourseCard, Button, SearchBar } from '../components/common';
 import { Course } from '../components/common/CourseCard';
 import { useAuth } from '@/features/auth/AuthContext';
+import { LearnerHome } from '@/features/student';
 import { api } from '@/lib/api';
 
 const DEFAULT_FALLBACK_THUMBNAIL = 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop';
@@ -59,9 +60,11 @@ interface RawHomeCourse {
     enrollmentCount?: number;
 }
 
-function Home() {
+/**
+ * Marketing Landing Page (shown to guests and logged-out visitors)
+ */
+function MarketingLanding() {
     const navigate = useNavigate();
-    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [courses, setCourses] = useState<Course[]>([]);
     const [loadingCourses, setLoadingCourses] = useState(true);
@@ -101,12 +104,10 @@ function Home() {
             {/* Hero Section */}
             <section className="py-20 md:py-28 bg-gradient-to-b from-indigo-50/60 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-center px-4">
                 <div className="container mx-auto max-w-4xl">
-                    {user ? (
-                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold mb-6">
-                            <span>👋</span>
-                            <span>Welcome back, {user.name}! Ready to learn today?</span>
-                        </div>
-                    ) : null}
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold mb-6">
+                        <span>🚀</span>
+                        <span>Transform Your Professional Skills & Knowledge</span>
+                    </div>
 
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">
                         Empower your future with<br />
@@ -118,13 +119,13 @@ function Home() {
                         </span>
                     </h1>
                     <p className="text-gray-600 dark:text-gray-300 text-lg md:text-xl mb-10 max-w-2xl mx-auto">
-                        Learn high-demand skills with interactive curriculum, quizzes, coding projects, and verified certificates from industry leaders.
+                        Learn high-demand skills in Business, Finance, Design, Engineering, AI, and Leadership with interactive curriculum, projects, and verified certificates.
                     </p>
 
                     <div className="max-w-xl mx-auto mb-6">
                         <div className="relative">
                             <SearchBar
-                                placeholder="Search for Python, React, UI/UX, Cloud..."
+                                placeholder="Search Business, Finance, Design, AI, Technology..."
                                 value={searchQuery}
                                 onChange={setSearchQuery}
                                 onSubmit={handleSearch}
@@ -138,12 +139,12 @@ function Home() {
                             Popular:
                         </span>
                         {[
-                            { label: 'Web Development', tag: 'Web Development' },
-                            { label: 'React', tag: 'React' },
-                            { label: 'Python', tag: 'Python' },
-                            { label: 'AI & ML', tag: 'AI' },
-                            { label: 'Cloud & DevOps', tag: 'Cloud' },
+                            { label: 'Business', tag: 'Business' },
+                            { label: 'Finance', tag: 'Finance' },
                             { label: 'UI/UX Design', tag: 'Design' },
+                            { label: 'AI & Data', tag: 'AI' },
+                            { label: 'Web & Tech', tag: 'Web Development' },
+                            { label: 'Marketing', tag: 'Marketing' },
                         ].map((topic) => (
                             <button
                                 key={topic.tag}
@@ -156,21 +157,10 @@ function Home() {
                         ))}
                     </div>
 
-                    {user ? (
-                        <div className="flex justify-center gap-4 mb-16">
-                            <Button size="lg" onClick={() => navigate(user.role === 'instructor' ? '/instructor/dashboard' : '/student/courses')}>
-                                Go to {user.role === 'instructor' ? 'Instructor Dashboard' : 'My Courses'} →
-                            </Button>
-                            <Button size="lg" variant="secondary" onClick={() => navigate('/courses')}>
-                                Browse All Courses
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="flex justify-center gap-4 mb-16">
-                            <Button size="lg" onClick={() => navigate('/courses')}>Explore Courses</Button>
-                            <Button size="lg" variant="secondary" onClick={() => navigate('/courses')}>Learn More &rarr;</Button>
-                        </div>
-                    )}
+                    <div className="flex justify-center gap-4 mb-16">
+                        <Button size="lg" onClick={() => navigate('/courses')}>Explore Catalog</Button>
+                        <Button size="lg" variant="secondary" onClick={() => navigate('/courses?priceTier=free')}>Free Courses &rarr;</Button>
+                    </div>
 
                     <div className="space-y-4">
                         <p className="text-xs font-semibold tracking-wider uppercase text-gray-400 dark:text-gray-500">Trusted by learners from top teams</p>
@@ -274,6 +264,30 @@ function Home() {
             </section>
         </div>
     );
+}
+
+/**
+ * Main Home Page Route
+ * Dynamically switches based on user role:
+ * - Admin -> Navigates to /admin (Admin Control Center)
+ * - Instructor -> Navigates to /instructor (Instructor Studio)
+ * - Student -> Renders the LearnerHome Hub
+ * - Guest -> Renders the MarketingLanding Page
+ */
+function Home() {
+    const { user } = useAuth();
+
+    if (user) {
+        if (user.role === 'admin') {
+            return <Navigate to="/admin" replace />;
+        }
+        if (user.role === 'instructor') {
+            return <Navigate to="/instructor" replace />;
+        }
+        return <LearnerHome />;
+    }
+
+    return <MarketingLanding />;
 }
 
 export default Home;

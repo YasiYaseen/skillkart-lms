@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
@@ -49,6 +49,8 @@ function CreateCourse() {
     // Course details state
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [category, setCategory] = useState<string>('');
+    const [availableCategories, setAvailableCategories] = useState<Array<{ id: string; name: string; icon: string; slug: string }>>([]);
     const [level, setLevel] = useState('beginner');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
@@ -59,6 +61,14 @@ function CreateCourse() {
     const [price, setPrice] = useState<number | ''>(0);
     const [thumbnail, setThumbnail] = useState<string | null>(null);
     const [creatingCourse, setCreatingCourse] = useState(false);
+
+    useEffect(() => {
+        api.get<{ categories: Array<{ id: string; name: string; icon: string; slug: string }> }>('/categories')
+            .then((res) => {
+                setAvailableCategories(res.data.categories || []);
+            })
+            .catch(() => {});
+    }, []);
 
     // Curriculum state
     const [sections, setSections] = useState<CourseSection[]>([]);
@@ -126,6 +136,7 @@ function CreateCourse() {
             const payload = {
                 title,
                 description,
+                category: category || undefined,
                 price: Number(price),
                 level,
                 tags,
@@ -339,6 +350,25 @@ function CreateCourse() {
                                 className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Course details..."
                             ></textarea>
+                        </div>
+
+                        {/* Category Selector */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Primary Category / Learning Track
+                            </label>
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Select a Category Track (Optional / Auto-inferred from tags)</option>
+                                {availableCategories.map((c) => (
+                                    <option key={c.id || c.slug} value={c.id || c.slug}>
+                                        {c.icon} {c.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         {/* Level & Tags Row */}

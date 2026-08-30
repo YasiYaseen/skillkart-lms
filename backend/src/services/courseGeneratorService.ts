@@ -8,6 +8,7 @@ import Quiz from "../models/Quiz";
 import CourseFAQ from "../models/CourseFAQ";
 import Announcement from "../models/Announcement";
 import Assignment from "../models/Assignment";
+import Category from "../models/Category";
 import { syncEnrollmentLessonCount } from "../controllers/course/shared";
 
 export interface InstructorSeedInput {
@@ -1198,6 +1199,17 @@ export async function generateInstructorAndCourses(options: GeneratorOptions): P
 
     let course: ICourse;
 
+    // Resolve matching category
+    let matchedCategory = await Category.findOne({
+      $or: [
+        { tags: { $in: preset.tags.map((t) => t.toLowerCase()) } },
+        { tagQuery: { $in: preset.tags } },
+      ],
+    });
+    if (!matchedCategory) {
+      matchedCategory = await Category.findOne({ isActive: true });
+    }
+
     if (existingCourse && options.forceRegenerate) {
       // Clean up previous child data to do a fresh replacement
       const oldSections = await Section.find({ course: existingCourse._id }).select("_id").lean();
@@ -1215,6 +1227,7 @@ export async function generateInstructorAndCourses(options: GeneratorOptions): P
 
       existingCourse.description = preset.description;
       existingCourse.thumbnailUrl = preset.thumbnailUrl;
+      existingCourse.category = matchedCategory?._id;
       existingCourse.tags = preset.tags;
       existingCourse.level = preset.level;
       existingCourse.isPaid = isPaid;
@@ -1231,6 +1244,7 @@ export async function generateInstructorAndCourses(options: GeneratorOptions): P
         title: preset.title,
         description: preset.description,
         thumbnailUrl: preset.thumbnailUrl,
+        category: matchedCategory?._id,
         tags: preset.tags,
         level: preset.level,
         isPaid,

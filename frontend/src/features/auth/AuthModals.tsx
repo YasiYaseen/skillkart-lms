@@ -48,6 +48,12 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
         onClose();
         if (!currentUser.onboardingCompleted) {
             navigate('/onboarding');
+        } else if (currentUser.role === 'admin') {
+            navigate('/admin');
+        } else if (currentUser.role === 'instructor') {
+            navigate('/instructor');
+        } else {
+            navigate('/');
         }
     };
 

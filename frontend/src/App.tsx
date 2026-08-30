@@ -38,6 +38,7 @@ import {
     FinancialReports,
     SystemSettings,
     CourseGenerator,
+    CategoryManagement,
 } from '@features/admin';
 
 /**
@@ -99,6 +100,7 @@ function App() {
                         <Route element={<AdminLayout />}>
                             <Route path="/admin" element={<AdminDashboard />} />
                             <Route path="/admin/users" element={<UserManagement />} />
+                            <Route path="/admin/categories" element={<CategoryManagement />} />
                             <Route path="/admin/courses" element={<CourseModeration />} />
                             <Route path="/admin/enrollments" element={<EnrollmentList />} />
                             <Route path="/admin/reports" element={<FinancialReports />} />

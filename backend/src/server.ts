@@ -21,6 +21,7 @@ import assignmentRoutes from "./routes/assignmentRoutes";
 import couponRoutes from "./routes/couponRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import newsletterRoutes from "./routes/newsletterRoutes";
+import categoryRoutes from "./routes/categoryRoutes";
 
 import path from "path";
 
@@ -44,6 +45,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/sections", sectionRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/me", meRoutes);

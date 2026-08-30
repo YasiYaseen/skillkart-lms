@@ -9,6 +9,7 @@ import {
   archiveCourse,
   deleteCourse,
   getCourseRecommendations,
+  getLearnerDiscoveryFeed,
 } from "../controllers/course/courseController";
 import { createSection } from "../controllers/course/sectionController";
 import {
@@ -40,6 +41,7 @@ const router = Router();
 
 router.get("/", optionalProtect, getCourses);
 router.get("/recommendations", optionalProtect, getCourseRecommendations);
+router.get("/discovery-feed", optionalProtect, getLearnerDiscoveryFeed);
 router.get("/:courseId", optionalProtect, getCourseById);
 router.get("/:courseId/curriculum", optionalProtect, getCurriculumForCourse);
 router.get("/:courseId/faqs", getCourseFAQs);

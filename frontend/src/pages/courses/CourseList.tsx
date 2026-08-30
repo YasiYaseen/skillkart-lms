@@ -78,18 +78,36 @@ function CourseList() {
     const [level, setLevel] = useState(searchParams.get('level') || '');
     const [priceTier, setPriceTier] = useState(searchParams.get('price') || '');
     const [selectedTag, setSelectedTag] = useState(searchParams.get('tag') || '');
+    const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
     const [sort, setSort] = useState(searchParams.get('sort') || 'latest');
     const [courses, setCourses] = useState<Course[]>([]);
     const [availableTags, setAvailableTags] = useState<string[]>(DEFAULT_POPULAR_TAGS);
+    const [availableCategories, setAvailableCategories] = useState<Array<{ id: string; name: string; icon: string; slug: string }>>([]);
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(8);
 
+    useEffect(() => {
+        api.get<{ categories: Array<{ id: string; name: string; icon: string; slug: string }> }>('/categories')
+            .then((res) => {
+                setAvailableCategories(res.data.categories || []);
+            })
+            .catch(() => {});
+    }, []);
+
     // Sync state with URL params
-    const updateQueryParams = useCallback((newSearch: string, newLevel: string, newTag: string, newPrice: string, newSort: string) => {
+    const updateQueryParams = useCallback((
+        newSearch: string,
+        newLevel: string,
+        newTag: string,
+        newCategory: string,
+        newPrice: string,
+        newSort: string
+    ) => {
         const nextParams: Record<string, string> = {};
         if (newSearch) nextParams.search = newSearch;
         if (newLevel) nextParams.level = newLevel;
         if (newTag) nextParams.tag = newTag;
+        if (newCategory) nextParams.category = newCategory;
         if (newPrice) nextParams.price = newPrice;
         if (newSort && newSort !== 'latest') nextParams.sort = newSort;
         setSearchParams(nextParams, { replace: true });
@@ -102,6 +120,7 @@ function CourseList() {
             if (searchQuery) params.set('q', searchQuery);
             if (level) params.set('level', level);
             if (selectedTag) params.set('tag', selectedTag);
+            if (selectedCategory) params.set('category', selectedCategory);
             if (priceTier) params.set('priceTier', priceTier);
             if (sort && sort !== 'latest') params.set('sort', sort);
 
@@ -132,7 +151,7 @@ function CourseList() {
         } finally {
             setLoading(false);
         }
-    }, [searchQuery, level, selectedTag, priceTier, sort]);
+    }, [searchQuery, level, selectedTag, selectedCategory, priceTier, sort]);
 
     useEffect(() => {
         fetchCourses();
@@ -149,36 +168,43 @@ function CourseList() {
     const handleSearch = (query: string) => {
         setSearchQuery(query);
         setVisibleCount(8);
-        updateQueryParams(query, level, selectedTag, priceTier, sort);
+        updateQueryParams(query, level, selectedTag, selectedCategory, priceTier, sort);
     };
 
     const handleLevelChange = (newLevel: string) => {
         setLevel(newLevel);
         setVisibleCount(8);
-        updateQueryParams(searchQuery, newLevel, selectedTag, priceTier, sort);
+        updateQueryParams(searchQuery, newLevel, selectedTag, selectedCategory, priceTier, sort);
     };
 
     const handlePriceChange = (newPrice: string) => {
         setPriceTier(newPrice);
         setVisibleCount(8);
-        updateQueryParams(searchQuery, level, selectedTag, newPrice, sort);
+        updateQueryParams(searchQuery, level, selectedTag, selectedCategory, newPrice, sort);
     };
 
     const handleTagChange = (newTag: string) => {
         setSelectedTag(newTag);
         setVisibleCount(8);
-        updateQueryParams(searchQuery, level, newTag, priceTier, sort);
+        updateQueryParams(searchQuery, level, newTag, selectedCategory, priceTier, sort);
+    };
+
+    const handleCategoryChange = (newCat: string) => {
+        setSelectedCategory(newCat);
+        setVisibleCount(8);
+        updateQueryParams(searchQuery, level, selectedTag, newCat, priceTier, sort);
     };
 
     const handleSortChange = (newSort: string) => {
         setSort(newSort);
         setVisibleCount(8);
-        updateQueryParams(searchQuery, level, selectedTag, priceTier, newSort);
+        updateQueryParams(searchQuery, level, selectedTag, selectedCategory, priceTier, newSort);
     };
 
     const handleClearAll = () => {
         setLevel('');
         setSelectedTag('');
+        setSelectedCategory('');
         setPriceTier('');
         setSort('latest');
         setSearchQuery('');
@@ -188,6 +214,7 @@ function CourseList() {
     const activeFiltersCount = [
         level,
         selectedTag,
+        selectedCategory,
         priceTier,
         searchQuery,
         sort !== 'latest' ? sort : '',
@@ -216,6 +243,43 @@ function CourseList() {
                     />
                 </div>
             </div>
+
+            {/* Category / Discipline Track Filter */}
+            {availableCategories.length > 0 && (
+                <div className="flex items-center gap-2 overflow-x-auto py-1.5 mb-3 scrollbar-none">
+                    <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+                        <span>🏷️</span>
+                        <span>Track:</span>
+                    </span>
+                    <button
+                        onClick={() => handleCategoryChange('')}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-xl transition-all shrink-0 cursor-pointer ${
+                            selectedCategory === ''
+                                ? 'bg-indigo-600 text-white shadow-xs'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}
+                    >
+                        All Tracks
+                    </button>
+                    {availableCategories.map((cat) => {
+                        const isSelected = selectedCategory === cat.slug || selectedCategory === cat.id;
+                        return (
+                            <button
+                                key={cat.id || cat.slug}
+                                onClick={() => handleCategoryChange(isSelected ? '' : cat.slug || cat.id)}
+                                className={`text-xs font-semibold px-3 py-1.5 rounded-xl transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                                    isSelected
+                                        ? 'bg-indigo-600 text-white shadow-xs'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-700/50'
+                                }`}
+                            >
+                                <span>{cat.icon}</span>
+                                <span>{cat.name}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* Topic / Tag Pills */}
             <div className="flex items-center gap-2 overflow-x-auto py-2 mb-4 scrollbar-none">
@@ -310,13 +374,43 @@ function CourseList() {
                 </div>
 
                 {/* Results summary & clear */}
-                <div className="w-full flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-                    <span>
-                        {!loading && `${courses.length} ${courses.length === 1 ? 'course' : 'courses'} found`}
-                    </span>
+                <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">
+                            {!loading && `${courses.length} ${courses.length === 1 ? 'course' : 'courses'} found`}
+                        </span>
+                        {activeFiltersCount > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                {selectedCategory && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                        <span>Track: {availableCategories.find(c => c.slug === selectedCategory || c.id === selectedCategory)?.name || selectedCategory}</span>
+                                        <button onClick={() => handleCategoryChange('')} className="hover:text-red-500 ml-0.5 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                                {selectedTag && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                        <span>#{selectedTag}</span>
+                                        <button onClick={() => handleTagChange('')} className="hover:text-red-500 ml-0.5 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                                {level && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                        <span className="capitalize">{level}</span>
+                                        <button onClick={() => handleLevelChange('')} className="hover:text-red-500 ml-0.5 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                                {priceTier && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                        <span className="capitalize">{priceTier}</span>
+                                        <button onClick={() => handlePriceChange('')} className="hover:text-red-500 ml-0.5 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
                     {activeFiltersCount > 0 && (
                         <button
-                            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
                             onClick={handleClearAll}
                         >
                             ✕ Reset all filters ({activeFiltersCount})
