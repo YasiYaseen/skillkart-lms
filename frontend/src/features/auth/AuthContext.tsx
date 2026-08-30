@@ -7,6 +7,7 @@ interface User {
   email: string;
   role: 'student' | 'instructor' | 'admin';
   onboardingCompleted: boolean;
+  avatar?: string;
   headline?: string;
   bio?: string;
   interests?: string[];

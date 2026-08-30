@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login } from "../controllers/auth/authController";
+import { register, login, changePassword } from "../controllers/auth/authController";
 import { googleLogin } from "../controllers/auth/googleAuthController";
 import {
   completeOnboarding,
@@ -12,6 +12,7 @@ const router = Router();
 router.post("/register", register);
 router.post("/login", login);
 router.post("/google", googleLogin);
+router.post("/change-password", protect, changePassword);
 
 router.get("/onboarding/status", protect, getOnboardingStatus);
 router.post("/onboarding/complete", protect, completeOnboarding);

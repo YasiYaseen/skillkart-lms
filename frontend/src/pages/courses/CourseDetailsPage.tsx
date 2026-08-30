@@ -120,16 +120,28 @@ function CourseDetailsPage() {
             });
     }, [courseId]);
 
+    const myReview = reviews.find((r: any) => (r.student?._id && r.student._id === user?.id) || (typeof r.student === 'string' && r.student === user?.id));
+
     const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!courseId) return;
 
         setSubmittingReview(true);
         try {
-            const res = await api.post(`/courses/${courseId}/reviews`, {
-                rating: reviewRating,
-                comment: reviewComment,
-            });
+            let res;
+            if (myReview) {
+                res = await api.patch(`/courses/${courseId}/reviews/me`, {
+                    rating: reviewRating,
+                    comment: reviewComment,
+                });
+                toast.success('Review updated');
+            } else {
+                res = await api.post(`/courses/${courseId}/reviews`, {
+                    rating: reviewRating,
+                    comment: reviewComment,
+                });
+                toast.success('Review added');
+            }
             const reviewsRes = await api.get(`/courses/${courseId}/reviews`);
             setReviews(reviewsRes.data.reviews || []);
             setCourse((current: any) => current ? {
@@ -139,11 +151,29 @@ function CourseDetailsPage() {
             } : current);
             setReviewComment('');
             setReviewRating(5);
-            toast.success('Review added');
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to submit review');
         } finally {
             setSubmittingReview(false);
+        }
+    };
+
+    const handleDeleteReview = async () => {
+        if (!courseId) return;
+        try {
+            const res = await api.delete(`/courses/${courseId}/reviews/me`);
+            const reviewsRes = await api.get(`/courses/${courseId}/reviews`);
+            setReviews(reviewsRes.data.reviews || []);
+            setCourse((current: any) => current ? {
+                ...current,
+                rating: res.data.summary.averageRating,
+                ratingCount: res.data.summary.reviewCount,
+            } : current);
+            setReviewComment('');
+            setReviewRating(5);
+            toast.success('Review deleted');
+        } catch {
+            toast.error('Failed to delete review');
         }
     };
 
@@ -265,6 +295,20 @@ function CourseDetailsPage() {
                             {/* Review form — only for enrolled students */}
                             {!enrollmentLoading && isEnrolled ? (
                                 <form onSubmit={handleReviewSubmit} className="border border-gray-100 dark:border-gray-700 rounded-lg p-4 mb-6 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="font-semibold text-sm text-gray-900">
+                                            {myReview ? 'Update Your Review' : 'Leave a Review'}
+                                        </h3>
+                                        {myReview && (
+                                            <button
+                                                type="button"
+                                                onClick={handleDeleteReview}
+                                                className="text-xs text-red-500 hover:text-red-700 font-medium"
+                                            >
+                                                Delete Review
+                                            </button>
+                                        )}
+                                    </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Your rating <span className="text-red-500">*</span>
@@ -313,7 +357,7 @@ function CourseDetailsPage() {
                                         disabled={submittingReview}
                                         className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                        {submittingReview ? 'Submitting...' : 'Submit review'}
+                                        {submittingReview ? 'Submitting...' : myReview ? 'Update Review' : 'Submit review'}
                                     </button>
                                 </form>
                             ) : !enrollmentLoading && !isEnrolled ? (
@@ -326,20 +370,37 @@ function CourseDetailsPage() {
                                 {reviews.length === 0 && (
                                     <p className="text-sm text-gray-500">Students who enroll can leave the first review.</p>
                                 )}
-                                {reviews.map((review) => (
-                                    <div key={review._id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-                                        <div className="flex items-center justify-between gap-3 mb-2">
-                                            <span className="font-medium text-gray-900">{review.student?.name || 'Student'}</span>
-                                            <span className="flex items-center gap-1 text-sm font-semibold text-orange-500">
-                                                {review.rating} <StarIcon />
-                                            </span>
+                                {reviews.map((review) => {
+                                    const isAuthor = review.student?._id === user?.id || (typeof review.student === 'string' && review.student === user?.id);
+                                    return (
+                                        <div key={review._id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                                            <div className="flex items-center justify-between gap-3 mb-2">
+                                                <span className="font-medium text-gray-900">{review.student?.name || 'Student'}</span>
+                                                <span className="flex items-center gap-1 text-sm font-semibold text-orange-500">
+                                                    {review.rating} <StarIcon />
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-700 leading-relaxed">{review.comment}</p>
+                                            <div className="flex items-center justify-between mt-2">
+                                                <p className="text-xs text-gray-400">
+                                                    {new Date(review.createdAt).toLocaleDateString()}
+                                                </p>
+                                                {isAuthor && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setReviewRating(review.rating);
+                                                            setReviewComment(review.comment);
+                                                        }}
+                                                        className="text-xs text-blue-600 hover:underline font-semibold"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <p className="text-sm text-gray-700 leading-relaxed">{review.comment}</p>
-                                        <p className="text-xs text-gray-400 mt-2">
-                                            {new Date(review.createdAt).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
 

@@ -54,7 +54,7 @@ export async function listCourseReviews(req: Request, res: Response) {
     const [summary, reviews] = await Promise.all([
       getReviewSummary(courseId),
       Review.find({ course: courseId })
-        .populate("student", "name")
+        .populate("student", "_id name")
         .sort({ createdAt: -1 })
         .lean(),
     ]);
@@ -164,6 +164,33 @@ export async function updateCourseReview(req: Request, res: Response) {
     return res.json({
       message: "Review updated",
       review,
+      summary: await getReviewSummary(courseId),
+    });
+  } catch {
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function deleteCourseReview(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const courseId = getCourseIdParam(req);
+    if (!isValidObjectId(courseId)) {
+      return res.status(400).json({ message: "Invalid course id" });
+    }
+
+    const review = await Review.findOne({ course: courseId, student: req.user.id });
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    await Review.findByIdAndDelete(review._id);
+
+    return res.json({
+      message: "Review deleted successfully",
       summary: await getReviewSummary(courseId),
     });
   } catch {

@@ -103,3 +103,39 @@ export async function login(req: Request, res: Response) {
   }
 }
 
+export async function changePassword(req: Request, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new password are required" });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user.password) {
+      user.password = await hash(String(newPassword), 10);
+      await user.save();
+      return res.json({ message: "Password set successfully" });
+    }
+
+    const isMatch = await compare(String(currentPassword), user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Incorrect current password" });
+    }
+
+    user.password = await hash(String(newPassword), 10);
+    await user.save();
+
+    return res.json({ message: "Password changed successfully" });
+  } catch {
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+

@@ -43,26 +43,37 @@ function normalizeParam(param: string | string[] | undefined): string | null {
 async function getCourseProgressSnapshot(userId: string, courseId: string) {
   const sections = await Section.find({ course: courseId }).select("_id");
   const sectionIds = sections.map((section) => section._id);
-  const mandatoryLessons = sectionIds.length
-    ? await Lesson.find({ section: { $in: sectionIds }, isMandatory: true }).select("_id")
+  const allLessons = sectionIds.length
+    ? await Lesson.find({ section: { $in: sectionIds } }).select("_id isMandatory")
     : [];
-  const mandatoryLessonIds = mandatoryLessons.map((lesson) => lesson._id);
+  const allLessonIds = allLessons.map((lesson) => lesson._id);
+  const mandatoryLessonIds = allLessons.filter((l) => l.isMandatory).map((l) => l._id);
 
-  const completedMandatory = mandatoryLessonIds.length
-    ? await LessonProgress.countDocuments({
+  const completedProgress = allLessonIds.length
+    ? await LessonProgress.find({
         user: userId,
-        lesson: { $in: mandatoryLessonIds },
+        lesson: { $in: allLessonIds },
         completed: true,
-      })
-    : 0;
+      }).select("lesson")
+    : [];
 
-  const totalMandatory = mandatoryLessonIds.length;
+  const completedLessonIdSet = new Set(completedProgress.map((p) => p.lesson.toString()));
+
+  const totalLessons = allLessonIds.length;
+  const completedLessons = completedProgress.length;
+  const totalMandatoryLessons = mandatoryLessonIds.length;
+  const completedMandatoryLessons = mandatoryLessonIds.filter((id) =>
+    completedLessonIdSet.has(id.toString())
+  ).length;
+
   const completionPercentage =
-    totalMandatory === 0 ? 0 : Math.round((completedMandatory / totalMandatory) * 100);
+    totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
 
   return {
-    totalMandatoryLessons: totalMandatory,
-    completedMandatoryLessons: completedMandatory,
+    totalLessons,
+    completedLessons,
+    totalMandatoryLessons,
+    completedMandatoryLessons,
     completionPercentage,
   };
 }

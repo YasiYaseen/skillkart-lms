@@ -4,29 +4,37 @@ import {
   registerApi,
   completeOnboardingApi,
   getOnboardingStatusApi,
+  LoginPayload,
+  RegisterPayload,
+  OnboardingPayload,
+  AuthResponse,
+  AuthUser,
 } from './auth.api';
 
-export const loginWithGoogle = async (accessToken: string) => {
+export type { LoginPayload, RegisterPayload, OnboardingPayload, AuthResponse, AuthUser };
+
+export const loginWithGoogle = async (accessToken: string): Promise<AuthResponse> => {
   const res = await googleLogin(accessToken);
   return res.data;
 };
 
-export const loginWithEmail = async (data: any) => {
+export const loginWithEmail = async (data: LoginPayload): Promise<AuthResponse> => {
   const res = await loginApi(data);
   return res.data;
 };
 
-export const registerWithEmail = async (data: any) => {
+export const registerWithEmail = async (data: RegisterPayload): Promise<AuthResponse> => {
   const res = await registerApi(data);
   return res.data;
 };
 
-export const completeOnboarding = async (data: any) => {
+export const completeOnboarding = async (data: OnboardingPayload): Promise<{ user: AuthUser }> => {
   const res = await completeOnboardingApi(data);
   return res.data;
 };
 
-export const getOnboardingStatus = async () => {
+export const getOnboardingStatus = async (): Promise<{ user: AuthUser; onboardingCompleted: boolean }> => {
   const res = await getOnboardingStatusApi();
   return res.data;
 };
+

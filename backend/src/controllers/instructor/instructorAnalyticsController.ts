@@ -312,7 +312,17 @@ export async function getInstructorStudents(req: Request, res: Response) {
       .sort({ createdAt: -1 })
       .lean();
 
-    const students = enrollments.map((e: any) => ({
+    interface PopulatedEnrollmentItem {
+      _id: Types.ObjectId;
+      student?: { _id?: Types.ObjectId; name?: string; email?: string; avatar?: string };
+      course?: { _id?: Types.ObjectId; title?: string; thumbnailUrl?: string };
+      createdAt?: Date;
+      status?: string;
+      progressPercentage?: number;
+      completedLessonIds?: Types.ObjectId[];
+    }
+
+    const students = (enrollments as unknown as PopulatedEnrollmentItem[]).map((e) => ({
       id: e._id,
       studentId: e.student?._id,
       name: e.student?.name || "Unknown Student",

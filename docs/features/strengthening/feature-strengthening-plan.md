@@ -82,12 +82,12 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 2.1 | Add avatar upload with image preview (reuse `FileUpload` component) | High | Not Started |
-| 2.2 | Add editable bio and headline fields (model fields already exist) | High | Not Started |
-| 2.3 | Add interests multi-select/tag editor so students can update recommendation preferences | High | Not Started |
-| 2.4 | Add social links section for instructors (GitHub, LinkedIn, website) | Medium | Not Started |
-| 2.5 | Add password change form (current password + new password + confirm) | Medium | Not Started |
-| 2.6 | Show account joined date and account type badge | Low | Not Started |
+| 2.1 | Add avatar upload with image preview (reuse `FileUpload` component) | High | Done |
+| 2.2 | Add editable bio and headline fields (model fields already exist) | High | Done |
+| 2.3 | Add interests multi-select/tag editor so students can update recommendation preferences | High | Done |
+| 2.4 | Add social links section for instructors (GitHub, LinkedIn, website) | Medium | Done |
+| 2.5 | Add password change form (current password + new password + confirm) | Medium | Done |
+| 2.6 | Show account joined date and account type badge | Low | Done |
 
 ---
 
@@ -254,10 +254,10 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 |---|---|---|---|
 | 9.1 | Replace `<select>` with interactive star-click rating component | High | Done |
 | 9.2 | Make star rating required before review submission (frontend validation, min 1 star) | High | Done |
-| 9.3 | Allow students to edit or delete their own review | High | Not Started |
+| 9.3 | Allow students to edit or delete their own review | High | Done |
 | 9.4 | Add pagination/load-more on reviews (10 per page) | Medium | Not Started |
 | 9.5 | Add sort controls (Most Recent / Highest / Lowest Rated) | Medium | Not Started |
-| 9.6 | Show "Verified Enrollment" badge on reviews | Low | Not Started |
+| 9.6 | Show "Verified Enrollment" badge on reviews | Low | Done |
 
 ---
 

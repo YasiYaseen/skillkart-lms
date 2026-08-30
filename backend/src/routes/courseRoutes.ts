@@ -19,6 +19,7 @@ import {
   createCourseReview,
   listCourseReviews,
   updateCourseReview,
+  deleteCourseReview,
 } from "../controllers/course/reviewController";
 import {
   listAnnouncements,
@@ -66,6 +67,7 @@ router.delete(
 router.get("/:courseId/reviews", listCourseReviews);
 router.post("/:courseId/reviews", protect, requireOnboardingCompleted, authorize("student"), createCourseReview);
 router.patch("/:courseId/reviews/me", protect, requireOnboardingCompleted, authorize("student"), updateCourseReview);
+router.delete("/:courseId/reviews/me", protect, requireOnboardingCompleted, authorize("student"), deleteCourseReview);
 
 router.post("/", protect, requireOnboardingCompleted, authorize("instructor", "admin"), createCourse);
 router.patch("/:courseId", protect, requireOnboardingCompleted, authorize("instructor", "admin"), updateCourse);
