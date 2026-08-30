@@ -136,6 +136,11 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
                 <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">
                   {completed ? 'Review Course →' : 'Continue Learning →'}
                 </span>
+                {completed && (
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                    🎓 Certificate
+                  </span>
+                )}
               </div>
             </div>
           </div>

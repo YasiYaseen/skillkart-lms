@@ -72,6 +72,7 @@ function App() {
                                 <Route path="/learn/:courseId/:lessonId" element={<LessonViewer />} />
                                 <Route path="/profile" element={<Profile />} />
                                 <Route path="/my-certificates" element={<MyCertificatesPage />} />
+                                <Route path="/certificates" element={<MyCertificatesPage />} />
                             </Route>
                         </Route>
 

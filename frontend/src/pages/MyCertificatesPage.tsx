@@ -80,22 +80,23 @@ function MyCertificatesPage() {
                                     <p className="text-sm text-gray-500 mb-4">by {cert.course.instructor.name}</p>
                                 )}
 
-                                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                                <div className="pt-4 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between gap-2">
                                     <div>
-                                        <p className="text-xs text-gray-400">Issued</p>
-                                        <p className="text-sm font-medium text-gray-700">
+                                        <p className="text-xs text-gray-400">Issued On</p>
+                                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">
                                             {new Date(cert.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                                         </p>
                                     </div>
                                     <Link
                                         to={`/certificates/verify/${cert.certificateId}`}
-                                        className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 text-xs font-semibold transition-all shadow-2xs"
                                     >
-                                        View ↗
+                                        <span>View & Download PDF</span>
+                                        <span>🎓</span>
                                     </Link>
                                 </div>
 
-                                <p className="text-xs font-mono text-gray-300 mt-2">{cert.certificateId}</p>
+                                <p className="text-[10px] font-mono text-gray-400 mt-2 truncate">ID: {cert.certificateId}</p>
                             </div>
                         </div>
                     ))}
