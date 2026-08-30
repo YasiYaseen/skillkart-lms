@@ -61,3 +61,9 @@ export const completeOnboardingApi = async (data: OnboardingPayload) =>
 export const getOnboardingStatusApi = async () =>
   api.get<{ user: AuthUser; onboardingCompleted: boolean }>('/auth/onboarding/status');
 
+export const forgotPasswordApi = async (email: string) =>
+  api.post<{ message: string; resetToken?: string }>('/auth/forgot-password', { email });
+
+export const resetPasswordApi = async (token: string, newPassword: string) =>
+  api.post<{ message: string }>('/auth/reset-password', { token, newPassword });
+

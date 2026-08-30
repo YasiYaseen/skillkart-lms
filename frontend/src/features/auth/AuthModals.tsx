@@ -4,28 +4,30 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { GoogleIcon } from '@/assets/icons';
 import { toast } from 'react-toastify';
-import { getOnboardingStatus, loginWithGoogle, loginWithEmail, registerWithEmail } from './auth.service';
+import { getOnboardingStatus, loginWithGoogle, loginWithEmail, registerWithEmail, requestPasswordReset, AuthUser } from './auth.service';
 import { useAuth } from './AuthContext';
 
 interface AuthModalsProps {
     isOpen: boolean;
-    initialMode: 'login' | 'register';
+    initialMode: 'login' | 'register' | 'forgot';
     onClose: () => void;
 }
 
 function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
     const { login } = useAuth();
-    const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+    const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [forgotSuccess, setForgotSuccess] = useState(false);
     const navigate = useNavigate();
 
     // Reset mode when opening modal
     useEffect(() => {
         if (isOpen) {
             setMode(initialMode);
+            setForgotSuccess(false);
         }
     }, [isOpen, initialMode]);
 
@@ -67,7 +69,11 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
         e.preventDefault();
         setLoading(true);
         try {
-            if (mode === 'login') {
+            if (mode === 'forgot') {
+                const res = await requestPasswordReset(email);
+                setForgotSuccess(true);
+                toast.success(res.message || 'Password reset link sent!');
+            } else if (mode === 'login') {
                 const { token, user } = await loginWithEmail({ email, password });
                 await handleAuthSuccess(token, user);
             } else {
@@ -83,81 +89,151 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
     };
 
     const isLogin = mode === 'login';
+    const isForgot = mode === 'forgot';
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    {isLogin ? 'Sign in to LMS' : 'Create your account'}
+                    {isForgot
+                        ? 'Reset your password'
+                        : isLogin
+                        ? 'Sign in to LMS'
+                        : 'Create your account'}
                 </h2>
                 <p className="text-gray-500 text-sm">
-                    {isLogin
+                    {isForgot
+                        ? 'Enter your email address and we will send you a link to reset your password.'
+                        : isLogin
                         ? 'Welcome back! Please sign in to continue'
                         : 'Welcome! Please fill in the details to get started.'}
                 </p>
             </div>
 
-            {/* Google Button */}
-            <div className="mb-6">
-                <Button
-                    variant="secondary"
-                    className="w-full justify-center"
-                    onClick={() => googleLoginBtn()}
-                    type="button"
-                >
-                    <GoogleIcon className="w-5 h-5 mr-3" />
-                    Sign in with Google
-                </Button>
-            </div>
+            {/* Google Button (only on login/register) */}
+            {!isForgot && (
+                <>
+                    <div className="mb-6">
+                        <Button
+                            variant="secondary"
+                            className="w-full justify-center"
+                            onClick={() => googleLoginBtn()}
+                            type="button"
+                        >
+                            <GoogleIcon className="w-5 h-5 mr-3" />
+                            Sign in with Google
+                        </Button>
+                    </div>
 
-            {/* Divider */}
-            <div className="relative mb-6">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-2 text-gray-500">or</span>
-                </div>
-            </div>
+                    {/* Divider */}
+                    <div className="relative mb-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200"></div>
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-2 text-gray-500">or</span>
+                        </div>
+                    </div>
+                </>
+            )}
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {!isLogin && (
+            {/* Forgot Password Success Message */}
+            {isForgot && forgotSuccess ? (
+                <div className="space-y-4">
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                        <div className="text-emerald-600 text-2xl mb-1">✉️</div>
+                        <p className="text-sm font-semibold text-emerald-900 mb-1">Check your inbox</p>
+                        <p className="text-xs text-emerald-700">
+                            If <span className="font-semibold">{email}</span> is registered, we've sent password reset instructions.
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        className="w-full justify-center"
+                        onClick={() => {
+                            setForgotSuccess(false);
+                            setMode('login');
+                        }}
+                    >
+                        Back to Sign In
+                    </Button>
+                </div>
+            ) : (
+                /* Form */
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {!isLogin && !isForgot && (
+                        <Input
+                            type="text"
+                            placeholder="Enter your full name"
+                            label="Full name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
+                    )}
                     <Input
-                        type="text"
-                        placeholder="Enter your full name"
-                        label="Full name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        type="email"
+                        placeholder="Enter your email address"
+                        label="Email address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                     />
-                )}
-                <Input
-                    type="email"
-                    placeholder="Enter your email address"
-                    label="Email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                />
 
-                <Input
-                    type="password"
-                    placeholder="Enter your password"
-                    label="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
+                    {!isForgot && (
+                        <div>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-sm font-medium text-gray-700">Password</label>
+                                {isLogin && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForgotSuccess(false);
+                                            setMode('forgot');
+                                        }}
+                                        className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline font-medium"
+                                    >
+                                        Forgot password?
+                                    </button>
+                                )}
+                            </div>
+                            <Input
+                                type="password"
+                                placeholder="Enter your password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                    )}
 
-                <Button type="submit" disabled={loading} className="w-full justify-center mt-2" size="lg">
-                    {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
-                </Button>
-            </form>
+                    <Button type="submit" disabled={loading} className="w-full justify-center mt-2" size="lg">
+                        {loading
+                            ? 'Processing...'
+                            : isForgot
+                            ? 'Send Reset Link'
+                            : isLogin
+                            ? 'Sign In'
+                            : 'Create Account'}
+                    </Button>
+                </form>
+            )}
 
             {/* Footer */}
             <div className="mt-6 text-center text-sm text-gray-600">
-                {isLogin ? (
+                {isForgot ? (
+                    <button
+                        onClick={() => {
+                            setForgotSuccess(false);
+                            setMode('login');
+                        }}
+                        type="button"
+                        className="font-semibold text-gray-900 hover:underline hover:text-blue-600 inline-flex items-center gap-1"
+                    >
+                        ← Back to sign in
+                    </button>
+                ) : isLogin ? (
                     <>
                         Don't have an account?{' '}
                         <button
@@ -181,14 +257,6 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                     </>
                 )}
             </div>
-
-            {/* Development Mode Badge */}
-            {/* <div className="mt-8 pt-4 border-t border-dashed border-gray-200 text-center">
-                <div className="flex items-center justify-center gap-1.5 text-xs text-orange-500 font-medium bg-orange-50 py-1.5 rounded-lg">
-                    <span>Secured by Component</span>
-                    <span className="px-1.5 py-0.5 bg-orange-100 rounded text-[10px] uppercase tracking-wider">Development mode</span>
-                </div>
-            </div> */}
         </Modal>
     );
 }

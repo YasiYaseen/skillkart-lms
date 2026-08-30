@@ -402,7 +402,7 @@ export async function getInstructorSubmissions(req: Request, res: Response) {
     const { courseId, assignmentId, status } = req.query;
 
     // Find courses taught by instructor
-    let courseFilter: any = {};
+    const courseFilter: Record<string, unknown> = {};
     if (req.user.role !== "admin") {
       const instructorCourses = await Course.find({ instructor: req.user.id }).select("_id");
       const courseIds = instructorCourses.map((c) => c._id);
@@ -479,7 +479,7 @@ export async function gradeSubmission(req: Request, res: Response) {
     // Notify the student
     setImmediate(async () => {
       try {
-        const assignmentObj: any = submission.assignment;
+        const assignmentObj = submission.assignment as { title?: string; maxScore?: number } | null;
         await Notification.create({
           recipient: submission.student,
           title: "Assignment Graded",

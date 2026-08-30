@@ -29,6 +29,21 @@ const SORT_OPTIONS = [
 
 const DEFAULT_POPULAR_TAGS = ['React', 'JavaScript', 'Node.js', 'Python', 'Full Stack', 'Web Development', 'Design', 'AI'];
 
+interface RawApiCourse {
+    _id: string;
+    title: string;
+    instructor?: { name?: string };
+    thumbnailUrl?: string;
+    tags?: string[];
+    averageRating?: number;
+    reviewCount?: number;
+    price?: number;
+    level?: string;
+    enrollmentCount?: number;
+    durationMinutes?: number;
+    totalLessons?: number;
+}
+
 function CourseCardSkeleton() {
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-xs animate-pulse">
@@ -92,7 +107,7 @@ function CourseList() {
 
             const res = await api.get(`/courses?${params.toString()}`);
             const data = res.data;
-            const mappedCourses = (data.courses || []).map((c: any) => ({
+            const mappedCourses = (data.courses || []).map((c: RawApiCourse) => ({
                 id: c._id,
                 title: c.title,
                 instructor: c.instructor?.name || 'Unknown Instructor',

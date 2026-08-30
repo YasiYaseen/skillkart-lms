@@ -61,6 +61,8 @@ export async function createCourse(req: Request, res: Response) {
       description: data.description,
       thumbnailUrl: data.thumbnailUrl || undefined,
       tags: data.tags || [],
+      whatYouWillLearn: data.whatYouWillLearn || [],
+      prerequisites: data.prerequisites || [],
       level: data.level || "beginner",
       isPaid: data.isPaid,
       price: data.isPaid ? data.price : null,
@@ -291,7 +293,7 @@ export async function updateCourse(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const allowed = ["title", "description", "thumbnailUrl", "tags", "level", "isPaid", "price", "status"];
+    const allowed = ["title", "description", "thumbnailUrl", "tags", "whatYouWillLearn", "prerequisites", "level", "isPaid", "price", "status"];
     for (const field of allowed) {
       if (field in req.body) {
         (course as unknown as Record<string, unknown>)[field] = req.body[field];

@@ -181,8 +181,9 @@ export function Assignments() {
 
       setShowAssignmentModal(false);
       loadAssignments(selectedCourseId);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to save assignment');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save assignment';
+      toast.error(message);
     } finally {
       setSavingAssignment(false);
     }
@@ -263,8 +264,9 @@ export function Assignments() {
       toast.success('Grade and feedback returned to student!');
       setSelectedSubmission(null);
       loadSubmissions();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to submit grade');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to submit grade';
+      toast.error(message);
     } finally {
       setSavingGrade(false);
     }
@@ -853,7 +855,7 @@ export function Assignments() {
                   </label>
                   <select
                     value={gradeStatus}
-                    onChange={(e) => setGradeStatus(e.target.value as any)}
+                    onChange={(e) => setGradeStatus(e.target.value as 'under_review' | 'graded' | 'resubmission_requested')}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
                   >
                     <option value="graded">Graded & Accepted</option>

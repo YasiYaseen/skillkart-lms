@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
+import { randomBytes } from "crypto";
 import User from "../../models/User";
 import { hash, compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { registerSchema, loginSchema } from "../../validators/content.validator";
-import { sendWelcomeEmail } from "../../services/emailService";
+import { sendWelcomeEmail, sendPasswordResetEmail } from "../../services/emailService";
 
 export async function register(req: Request, res: Response) {
   try {
@@ -138,4 +139,74 @@ export async function changePassword(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function forgotPassword(req: Request, res: Response) {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ message: "Valid email address is required" });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      // Return 200 to prevent email enumeration
+      return res.json({
+        message: "If that email is registered with SkillKart, a password reset link has been sent.",
+      });
+    }
+
+    const resetToken = randomBytes(32).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    await user.save();
+
+    // Send reset email non-blockingly
+    sendPasswordResetEmail(user.email, user.name, resetToken).catch((err) => {
+      console.error("[AUTH] Failed to send password reset email:", err);
+    });
+
+    return res.json({
+      message: "If that email is registered with SkillKart, a password reset link has been sent.",
+      // Include token in development mode for easier local testing
+      ...(process.env.NODE_ENV !== "production" ? { resetToken } : {}),
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({ message: "Server error handling password reset" });
+  }
+}
+
+export async function resetPassword(req: Request, res: Response) {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ message: "Reset token is required" });
+    }
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Password reset token is invalid or has expired" });
+    }
+
+    user.password = await hash(newPassword, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    return res.json({ message: "Password has been successfully reset. You can now log in." });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({ message: "Server error resetting password" });
+  }
+}
+
 

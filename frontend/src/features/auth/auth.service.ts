@@ -4,6 +4,8 @@ import {
   registerApi,
   completeOnboardingApi,
   getOnboardingStatusApi,
+  forgotPasswordApi,
+  resetPasswordApi,
   LoginPayload,
   RegisterPayload,
   OnboardingPayload,
@@ -37,4 +39,15 @@ export const getOnboardingStatus = async (): Promise<{ user: AuthUser; onboardin
   const res = await getOnboardingStatusApi();
   return res.data;
 };
+
+export const requestPasswordReset = async (email: string): Promise<{ message: string; resetToken?: string }> => {
+  const res = await forgotPasswordApi(email);
+  return res.data;
+};
+
+export const resetPasswordWithToken = async (token: string, newPassword: string): Promise<{ message: string }> => {
+  const res = await resetPasswordApi(token, newPassword);
+  return res.data;
+};
+
 

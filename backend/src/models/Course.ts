@@ -14,6 +14,8 @@ export interface ICourse extends Document {
   status: CourseStatus;
   publishedAt?: Date;
   instructor: Types.ObjectId;
+  whatYouWillLearn?: string[];
+  prerequisites?: string[];
   isActive: boolean;
   isApproved: boolean;
   rejectionReason?: string;
@@ -50,6 +52,14 @@ const CourseSchema = new Schema<ICourse>(
       type: [String],
       default: [],
       index: true,
+    },
+    whatYouWillLearn: {
+      type: [String],
+      default: [],
+    },
+    prerequisites: {
+      type: [String],
+      default: [],
     },
     level: {
       type: String,

@@ -14,6 +14,22 @@ export interface AppNotification {
     createdAt: string;
 }
 
+function formatRelativeTime(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffSeconds < 60) return 'just now';
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+}
+
 export default function NotificationBell() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -73,6 +89,30 @@ export default function NotificationBell() {
         }
     };
 
+    const deleteOne = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await api.delete(`/notifications/${id}`);
+            const deleted = notifications.find(n => n._id === id);
+            setNotifications(prev => prev.filter(n => n._id !== id));
+            if (deleted && !deleted.read) {
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+        } catch (error) {
+            console.error('Failed to delete notification', error);
+        }
+    };
+
+    const clearAll = async () => {
+        try {
+            await api.delete('/notifications');
+            setNotifications([]);
+            setUnreadCount(0);
+        } catch (error) {
+            console.error('Failed to clear notifications', error);
+        }
+    };
+
     const handleNotificationClick = async (notification: AppNotification) => {
         if (!notification.read) {
             await markAsRead(notification._id);
@@ -113,27 +153,41 @@ export default function NotificationBell() {
                                 </span>
                             )}
                         </div>
-                        {unreadCount > 0 && (
-                            <button 
-                                onClick={markAllAsRead}
-                                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
-                            >
-                                Mark all as read
-                            </button>
-                        )}
+                        <div className="flex items-center gap-3">
+                            {unreadCount > 0 && (
+                                <button 
+                                    onClick={markAllAsRead}
+                                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                                >
+                                    Mark all as read
+                                </button>
+                            )}
+                            {notifications.length > 0 && (
+                                <button 
+                                    onClick={clearAll}
+                                    className="text-xs text-gray-400 hover:text-red-500 font-medium transition-colors"
+                                >
+                                    Clear all
+                                </button>
+                            )}
+                        </div>
                     </div>
                     
                     <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-50 dark:divide-gray-700/60">
                         {notifications.length === 0 ? (
-                            <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
-                                🔔 No notifications yet.
+                            <div className="p-8 text-center space-y-2">
+                                <div className="w-10 h-10 mx-auto rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500 text-lg">
+                                    🔔
+                                </div>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">All caught up!</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500">You don't have any notifications right now.</p>
                             </div>
                         ) : (
                             notifications.map(notification => (
                                 <div 
                                     key={notification._id}
                                     onClick={() => handleNotificationClick(notification)}
-                                    className={`p-4 hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors cursor-pointer flex gap-3.5 ${
+                                    className={`group relative p-4 hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors cursor-pointer flex gap-3.5 ${
                                         !notification.read ? 'bg-indigo-50/40 dark:bg-indigo-950/20' : ''
                                     }`}
                                 >
@@ -154,7 +208,7 @@ export default function NotificationBell() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 pr-5">
                                         <div className="flex items-center justify-between gap-2 mb-0.5">
                                             <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{notification.title}</p>
                                             {!notification.read && (
@@ -164,15 +218,27 @@ export default function NotificationBell() {
                                         <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-2 line-clamp-2">{notification.message}</p>
                                         <div className="flex items-center justify-between">
                                             <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                                                {new Date(notification.createdAt).toLocaleDateString()}
+                                                {formatRelativeTime(notification.createdAt)}
                                             </span>
                                             {notification.link && (
-                                                <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                                                <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline">
                                                     View details →
                                                 </span>
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* Delete Button (visible on hover) */}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => deleteOne(notification._id, e)}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-3 right-3 text-gray-400 hover:text-red-500 p-1 rounded-md hover:bg-gray-200/60 dark:hover:bg-gray-600"
+                                        title="Delete notification"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
                                 </div>
                             ))
                         )}

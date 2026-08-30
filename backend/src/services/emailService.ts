@@ -1,4 +1,4 @@
-﻿import nodemailer from "nodemailer";
+import nodemailer from "nodemailer";
 
 interface ActionButton {
   text: string;
@@ -341,3 +341,44 @@ export async function sendCertificateEmail(
     text: `Hi ${userName}, congratulations on earning your certificate for ${courseTitle}! View it at ${clientUrl}/certificates/verify/${certificateId}`,
   });
 }
+
+/**
+ * 4. Send Password Reset Email with secure one-time token link
+ */
+export async function sendPasswordResetEmail(
+  userEmail: string,
+  userName: string,
+  resetToken: string
+): Promise<boolean> {
+  const clientUrl = getClientUrl();
+  const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
+  const title = "Password Reset Request 🔐";
+  const preheader = "Instructions to reset your SkillKart account password.";
+
+  const bodyHtml = `
+    <p>Hi <strong>${userName}</strong>,</p>
+    <p>We received a request to reset the password for your SkillKart LMS account. Click the button below to choose a new password:</p>
+    <div class="card">
+      <p style="margin: 0; color: #475569; font-size: 14px;">
+        This password reset link will expire in <strong>1 hour</strong>. If you did not request this, you can safely ignore this email and your password will remain unchanged.
+      </p>
+    </div>
+    <p style="font-size: 13px; color: #64748b;">
+      If the button above does not work, copy and paste this link into your browser:<br>
+      <a href="${resetUrl}" style="color: #2563eb; word-break: break-all;">${resetUrl}</a>
+    </p>
+  `;
+
+  const html = buildEmailTemplate(title, preheader, bodyHtml, {
+    text: "Reset Your Password →",
+    url: resetUrl,
+  });
+
+  return sendEmail({
+    to: userEmail,
+    subject: "Reset your SkillKart password 🔐",
+    html,
+    text: `Hi ${userName}, reset your password at ${resetUrl} (link expires in 1 hour).`,
+  });
+}
+

@@ -9,6 +9,7 @@ import { EnrollButton } from '@/features/enrollment/components/EnrollButton';
 import { useEnrollment } from '@/features/enrollment/hooks/useEnrollment';
 import { WishlistButton } from '@/features/wishlist';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useCart } from '@/context/CartContext';
 
 function formatMinutes(totalMins: number) {
     if (!totalMins || totalMins <= 0) return '0m';
@@ -65,6 +66,8 @@ interface RawCourseDetails {
     price?: number;
     durationMinutes?: number;
     tags?: string[];
+    whatYouWillLearn?: string[];
+    prerequisites?: string[];
     updatedAt?: string;
     sections: RawCourseDetailsSection[];
     lessons: RawCourseDetailsLesson[];
@@ -101,6 +104,8 @@ interface DetailedCourseState {
     totalLessons: number;
     level: string;
     tags: string[];
+    whatYouWillLearn: string[];
+    prerequisites: string[];
     lastUpdated: string;
     description: string[];
     structure: {
@@ -137,12 +142,30 @@ function CourseDetailsPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { isEnrolled, loading: enrollmentLoading } = useEnrollment(courseId);
+    const { addToCart, isInCart } = useCart();
     const [course, setCourse] = useState<DetailedCourseState | null>(null);
     const [reviews, setReviews] = useState<CourseReview[]>([]);
+    const [reviewSort, setReviewSort] = useState<'newest' | 'highest' | 'lowest'>('newest');
+    const [reviewPage, setReviewPage] = useState(1);
+    const [reviewPagination, setReviewPagination] = useState<{ total: number; page: number; pages: number; limit: number } | null>(null);
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewComment, setReviewComment] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    const loadReviews = useCallback(async (cId: string, sort: 'newest' | 'highest' | 'lowest', page: number) => {
+        try {
+            const res = await api.get<{ reviews: CourseReview[]; pagination?: { total: number; page: number; pages: number; limit: number } }>(
+                `/courses/${cId}/reviews?sort=${sort}&page=${page}&limit=5`
+            );
+            setReviews(res.data.reviews || []);
+            if (res.data.pagination) {
+                setReviewPagination(res.data.pagination);
+            }
+        } catch {
+            // Ignore review loading errors
+        }
+    }, []);
 
     useEffect(() => {
         if (courseId) {
@@ -151,13 +174,11 @@ function CourseDetailsPage() {
             });
         }
 
-        Promise.all([
-            api.get<{ course: RawCourseDetails }>(`/courses/${courseId}`),
-            api.get<{ reviews: CourseReview[] }>(`/courses/${courseId}/reviews`)
-        ])
-            .then(([courseRes, reviewRes]) => {
-                const res = courseRes;
-                const c = res.data.course;
+        if (!courseId) return;
+
+        api.get<{ course: RawCourseDetails }>(`/courses/${courseId}`)
+            .then((courseRes) => {
+                const c = courseRes.data.course;
                 const mappedSections: MappedSection[] = c.sections.map((sec: RawCourseDetailsSection) => {
                     const sectionLessons = c.lessons.filter((l: RawCourseDetailsLesson) => l.section === sec._id);
                     const secDurationMins = sectionLessons.reduce((acc: number, l: RawCourseDetailsLesson) => acc + (l.durationMinutes || 0), 0);
@@ -196,6 +217,8 @@ function CourseDetailsPage() {
                     totalLessons: c.lessons.length,
                     level: c.level || 'beginner',
                     tags: c.tags || [],
+                    whatYouWillLearn: c.whatYouWillLearn || [],
+                    prerequisites: c.prerequisites || [],
                     lastUpdated: c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : '',
                     description: c.description ? [c.description] : [],
                     structure: {
@@ -205,7 +228,6 @@ function CourseDetailsPage() {
                         sections: mappedSections
                     }
                 });
-                setReviews(reviewRes.data.reviews || []);
             })
             .catch((err: unknown) => {
                 const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to fetch course details';
@@ -214,7 +236,9 @@ function CourseDetailsPage() {
             .finally(() => {
                 setLoading(false);
             });
-    }, [courseId]);
+
+        loadReviews(courseId, reviewSort, reviewPage);
+    }, [courseId, reviewSort, reviewPage, loadReviews]);
 
     const ratingBreakdown = useMemo(() => {
         const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
@@ -255,8 +279,7 @@ function CourseDetailsPage() {
                 });
                 toast.success('Review added');
             }
-            const reviewsRes = await api.get<{ reviews: CourseReview[] }>(`/courses/${courseId}/reviews`);
-            setReviews(reviewsRes.data.reviews || []);
+            await loadReviews(courseId, reviewSort, reviewPage);
             setCourse((current) => current ? {
                 ...current,
                 rating: res.data.summary.averageRating,
@@ -276,8 +299,7 @@ function CourseDetailsPage() {
         if (!courseId) return;
         try {
             const res = await api.delete<{ summary: { averageRating: number; reviewCount: number } }>(`/courses/${courseId}/reviews/me`);
-            const reviewsRes = await api.get<{ reviews: CourseReview[] }>(`/courses/${courseId}/reviews`);
-            setReviews(reviewsRes.data.reviews || []);
+            await loadReviews(courseId, reviewSort, reviewPage);
             setCourse((current) => current ? {
                 ...current,
                 rating: res.data.summary.averageRating,
@@ -451,6 +473,24 @@ function CourseDetailsSkeleton() {
                             )}
                         </div>
 
+                        {/* What You'll Learn */}
+                        {course.whatYouWillLearn && course.whatYouWillLearn.length > 0 && (
+                            <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-6 md:p-8">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                                    <span>What you'll learn</span>
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {course.whatYouWillLearn.map((item: string, idx: number) => (
+                                        <div key={idx} className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
+                                            <span className="text-emerald-600 dark:text-emerald-400 font-bold shrink-0 mt-0.5">✓</span>
+                                            <span className="leading-snug">{item}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* 2. Course Structure */}
                         <CourseStructure
                             sections={course.structure.sections}
@@ -468,6 +508,21 @@ function CourseDetailsSkeleton() {
                                 ))}
                             </div>
                         </div>
+
+                        {/* Prerequisites / Requirements */}
+                        {course.prerequisites && course.prerequisites.length > 0 && (
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700 p-6 md:p-8">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Requirements & Prerequisites</h2>
+                                <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                                    {course.prerequisites.map((prereq: string, idx: number) => (
+                                        <li key={idx} className="flex items-start gap-2.5">
+                                            <span className="text-indigo-500 font-bold mt-0.5">•</span>
+                                            <span className="leading-snug">{prereq}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
 
                         {/* 4. Frequently Asked Questions */}
                         <CourseFAQAccordion courseId={courseId!} />
@@ -603,6 +658,34 @@ function CourseDetailsSkeleton() {
                                 </div>
                             ) : null}
 
+                            {/* Review Sorting Pills */}
+                            {reviews.length > 0 && (
+                                <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-gray-100 dark:border-gray-700/60 mb-6">
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        Sort Reviews
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        {(['newest', 'highest', 'lowest'] as const).map((mode) => (
+                                            <button
+                                                key={mode}
+                                                type="button"
+                                                onClick={() => {
+                                                    setReviewSort(mode);
+                                                    setReviewPage(1);
+                                                }}
+                                                className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                                                    reviewSort === mode
+                                                        ? 'bg-indigo-600 text-white shadow-xs'
+                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                }`}
+                                            >
+                                                {mode === 'newest' ? 'Newest' : mode === 'highest' ? 'Highest Rating' : 'Lowest Rating'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-4">
                                 {reviews.length === 0 && (
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Students who enroll can leave the first review.</p>
@@ -639,6 +722,33 @@ function CourseDetailsSkeleton() {
                                     );
                                 })}
                             </div>
+
+                            {/* Pagination Controls */}
+                            {reviewPagination && reviewPagination.pages > 1 && (
+                                <div className="flex items-center justify-between pt-6 border-t border-gray-100 dark:border-gray-700/60 mt-6">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Page {reviewPagination.page} of {reviewPagination.pages} ({reviewPagination.total} reviews)
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={reviewPagination.page <= 1}
+                                            onClick={() => setReviewPage((p) => Math.max(1, p - 1))}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 transition-colors"
+                                        >
+                                            Previous
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={reviewPagination.page >= reviewPagination.pages}
+                                            onClick={() => setReviewPage((p) => p + 1)}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 transition-colors"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                     </div>
@@ -695,6 +805,32 @@ function CourseDetailsSkeleton() {
                                                 isPaid={course.price > 0}
                                                 onEnrolled={() => navigate(`/learn/${courseId}`)}
                                             />
+                                        )}
+                                        {courseId && !isEnrolled && (
+                                            isInCart(courseId) ? (
+                                                <button
+                                                    onClick={() => navigate('/cart')}
+                                                    className="w-full py-3 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl font-bold text-xs hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <span>🛒 In Cart &bull; Go to Checkout →</span>
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => {
+                                                        addToCart({
+                                                            courseId,
+                                                            title: course.title,
+                                                            price: course.price,
+                                                            thumbnailUrl: course.thumbnail,
+                                                            instructorName: course.instructor,
+                                                        });
+                                                        toast.success('Course added to your cart!');
+                                                    }}
+                                                    className="w-full py-3 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-xl font-bold text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <span>🛒 Add to Cart</span>
+                                                </button>
+                                            )
                                         )}
                                         {courseId && (
                                             <WishlistButton courseId={courseId} variant="button" />

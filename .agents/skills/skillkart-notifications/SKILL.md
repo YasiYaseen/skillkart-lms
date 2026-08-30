@@ -39,5 +39,15 @@ If you are adding a new trigger:
 2. Import the `Notification` model.
 3. Fire the `Notification.create()` asynchronously after the primary database transaction is successful.
 
+## API Endpoints
+
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| GET | `/api/notifications` | authenticated | Get user's notifications (limit 50) and unread count |
+| PATCH | `/api/notifications/read-all` | authenticated | Mark all notifications as read |
+| PATCH | `/api/notifications/:id/read` | authenticated | Mark single notification as read |
+| DELETE | `/api/notifications/:id` | authenticated | Delete single notification |
+| DELETE | `/api/notifications` | authenticated | Clear all notifications |
+
 ## Frontend
-The frontend displays notifications via the `NotificationBell` component located at `frontend/src/components/common/NotificationBell.tsx`. It polls the `/api/notifications` endpoint.
+The frontend displays notifications via the `NotificationBell` component located at `frontend/src/components/common/NotificationBell.tsx`. It polls the `/api/notifications` endpoint every 45s, renders unread badges, supports clicking to navigate with auto-read, quick individual deletion on hover, clear-all, and relative timestamp display.

@@ -121,7 +121,7 @@ function Home() {
                         Learn high-demand skills with interactive curriculum, quizzes, coding projects, and verified certificates from industry leaders.
                     </p>
 
-                    <div className="max-w-xl mx-auto mb-10">
+                    <div className="max-w-xl mx-auto mb-6">
                         <div className="relative">
                             <SearchBar
                                 placeholder="Search for Python, React, UI/UX, Cloud..."
@@ -130,6 +130,30 @@ function Home() {
                                 onSubmit={handleSearch}
                             />
                         </div>
+                    </div>
+
+                    {/* Quick Topic Chips */}
+                    <div className="flex flex-wrap justify-center items-center gap-2 max-w-2xl mx-auto mb-10">
+                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mr-1">
+                            Popular:
+                        </span>
+                        {[
+                            { label: 'Web Development', tag: 'Web Development' },
+                            { label: 'React', tag: 'React' },
+                            { label: 'Python', tag: 'Python' },
+                            { label: 'AI & ML', tag: 'AI' },
+                            { label: 'Cloud & DevOps', tag: 'Cloud' },
+                            { label: 'UI/UX Design', tag: 'Design' },
+                        ].map((topic) => (
+                            <button
+                                key={topic.tag}
+                                type="button"
+                                onClick={() => navigate(`/courses?tag=${encodeURIComponent(topic.tag)}`)}
+                                className="text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-2xs transition-all cursor-pointer"
+                            >
+                                #{topic.label}
+                            </button>
+                        ))}
                     </div>
 
                     {user ? (

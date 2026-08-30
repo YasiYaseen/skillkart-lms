@@ -22,6 +22,8 @@ export interface IUser extends Document {
   lastActiveDate?: string;
   activeDates: string[];
   recentlyViewedCourses: Types.ObjectId[];
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +55,8 @@ const UserSchema = new Schema<IUser>(
     lastActiveDate: { type: String },
     activeDates: { type: [String], default: [] },
     recentlyViewedCourses: [{ type: Schema.Types.ObjectId, ref: "Course" }],
+    resetPasswordToken: { type: String, index: true },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 );

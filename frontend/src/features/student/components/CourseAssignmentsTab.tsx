@@ -96,8 +96,9 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
         closeSubmissionModal();
         loadAssignments();
       }, 1200);
-    } catch (err: any) {
-      setFormError(err.response?.data?.message || 'Failed to submit assignment.');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to submit assignment.';
+      setFormError(message);
     } finally {
       setSubmitting(false);
     }

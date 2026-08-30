@@ -38,6 +38,8 @@ interface RawCourseData {
     description: string;
     level: string;
     tags: string[];
+    whatYouWillLearn?: string[];
+    prerequisites?: string[];
     isPaid: boolean;
     price: number | null;
     thumbnailUrl?: string;
@@ -85,6 +87,10 @@ function EditCourse() {
     const [level, setLevel] = useState('beginner');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
+    const [whatYouWillLearn, setWhatYouWillLearn] = useState<string[]>([]);
+    const [learnInput, setLearnInput] = useState('');
+    const [prerequisites, setPrerequisites] = useState<string[]>([]);
+    const [prereqInput, setPrereqInput] = useState('');
     const [isPaid, setIsPaid] = useState(false);
     const [price, setPrice] = useState<number | ''>('');
     const [thumbnailUrl, setThumbnailUrl] = useState('');
@@ -125,6 +131,8 @@ function EditCourse() {
             setDescription(c.description || '');
             setLevel(c.level || 'beginner');
             setTags(c.tags || []);
+            setWhatYouWillLearn(c.whatYouWillLearn || []);
+            setPrerequisites(c.prerequisites || []);
             setIsPaid(c.isPaid || false);
             setPrice(c.price ?? '');
             setThumbnailUrl(c.thumbnailUrl || '');
@@ -192,6 +200,30 @@ function EditCourse() {
         }
     };
 
+    const handleAddLearnItem = () => {
+        const trimmed = learnInput.trim();
+        if (trimmed && !whatYouWillLearn.includes(trimmed)) {
+            setWhatYouWillLearn([...whatYouWillLearn, trimmed]);
+            setLearnInput('');
+        }
+    };
+
+    const handleRemoveLearnItem = (itemToRemove: string) => {
+        setWhatYouWillLearn(whatYouWillLearn.filter((item) => item !== itemToRemove));
+    };
+
+    const handleAddPrereqItem = () => {
+        const trimmed = prereqInput.trim();
+        if (trimmed && !prerequisites.includes(trimmed)) {
+            setPrerequisites([...prerequisites, trimmed]);
+            setPrereqInput('');
+        }
+    };
+
+    const handleRemovePrereqItem = (itemToRemove: string) => {
+        setPrerequisites(prerequisites.filter((item) => item !== itemToRemove));
+    };
+
     const handleSaveDetails = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!courseId) return;
@@ -203,6 +235,8 @@ function EditCourse() {
                 description,
                 level,
                 tags,
+                whatYouWillLearn,
+                prerequisites,
                 isPaid,
                 price: isPaid ? Number(price) : 0,
                 thumbnailUrl: thumbnailUrl || undefined,
@@ -579,6 +613,104 @@ function EditCourse() {
                                     </span>
                                 ))}
                             </div>
+                        )}
+                    </div>
+
+                    {/* What You'll Learn */}
+                    <div>
+                        <label htmlFor="edit-learn-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                            What You'll Learn <span className="text-xs text-gray-500 font-normal">(key outcomes / skills)</span>
+                        </label>
+                        <div className="flex gap-2">
+                            <input
+                                id="edit-learn-input"
+                                type="text"
+                                value={learnInput}
+                                onChange={(e) => setLearnInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddLearnItem();
+                                    }
+                                }}
+                                placeholder="e.g. Build production-ready fullstack applications"
+                                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleAddLearnItem}
+                                className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium transition-colors"
+                            >
+                                + Add Outcome
+                            </button>
+                        </div>
+                        {whatYouWillLearn.length > 0 && (
+                            <ul className="mt-3 space-y-1.5">
+                                {whatYouWillLearn.map((item, idx) => (
+                                    <li key={idx} className="flex items-center justify-between text-xs bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                                        <span className="flex items-center gap-2">
+                                            <span className="text-emerald-600 font-bold">✓</span>
+                                            <span>{item}</span>
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveLearnItem(item)}
+                                            className="text-emerald-700 dark:text-emerald-400 hover:text-red-600 font-bold ml-2"
+                                        >
+                                            ×
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+
+                    {/* Prerequisites */}
+                    <div>
+                        <label htmlFor="edit-prereq-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                            Prerequisites / Requirements <span className="text-xs text-gray-500 font-normal">(what students need to know before starting)</span>
+                        </label>
+                        <div className="flex gap-2">
+                            <input
+                                id="edit-prereq-input"
+                                type="text"
+                                value={prereqInput}
+                                onChange={(e) => setPrereqInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddPrereqItem();
+                                    }
+                                }}
+                                placeholder="e.g. Basic understanding of JavaScript and HTML"
+                                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleAddPrereqItem}
+                                className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium transition-colors"
+                            >
+                                + Add Requirement
+                            </button>
+                        </div>
+                        {prerequisites.length > 0 && (
+                            <ul className="mt-3 space-y-1.5">
+                                {prerequisites.map((item, idx) => (
+                                    <li key={idx} className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-700/50 text-gray-800 dark:text-gray-300 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-600">
+                                        <span className="flex items-center gap-2">
+                                            <span className="text-gray-400">•</span>
+                                            <span>{item}</span>
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemovePrereqItem(item)}
+                                            className="text-gray-500 hover:text-red-600 font-bold ml-2"
+                                        >
+                                            ×
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
                         )}
                     </div>
 

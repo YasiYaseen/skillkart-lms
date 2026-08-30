@@ -59,19 +59,19 @@ Improvements to existing implemented features to improve UX quality, data integr
 
 | Area | Status | Doc |
 | --- | --- | --- |
-| Home Page Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#1-home-page-landing-page) |
-| User Profile Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#2-user-profile-page) |
-| Course Catalog Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#3-course-catalog--course-list-page) |
-| Course Details Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#4-course-details-page) |
-| Lesson Viewer Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#5-lesson-viewer-learning-page) |
-| Student Dashboard Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#6-student-dashboard-my-courses) |
-| Enrollment Flow Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#7-enrollment-flow) |
-| Quiz & Assessment Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#8-quiz--assessment) |
-| Reviews & Ratings Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#9-reviews--ratings) |
-| Instructor Management Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#10-instructor-course-management) |
-| Admin Dashboard Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#11-admin-dashboard) |
-| Notifications Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#12-notifications) |
-| Certificates Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#13-certificates) |
+| Home Page Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#1-home-page-landing-page) |
+| User Profile Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#2-user-profile-page) |
+| Course Catalog Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#3-course-catalog--course-list-page) |
+| Course Details Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#4-course-details-page) |
+| Lesson Viewer Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#5-lesson-viewer-learning-page) |
+| Student Dashboard Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#6-student-dashboard-my-courses) |
+| Enrollment Flow Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#7-enrollment-flow) |
+| Quiz & Assessment Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#8-quiz--assessment) |
+| Reviews & Ratings Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#9-reviews--ratings) |
+| Instructor Management Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#10-instructor-course-management) |
+| Admin Dashboard Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#11-admin-dashboard) |
+| Notifications Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#12-notifications) |
+| Certificates Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#13-certificates) |
 
 ## Nice-To-Have Features
 

@@ -198,6 +198,9 @@ function LessonViewer() {
                 setShowCompletionModal(true);
             } else {
                 toast.success('Lesson completed! 🎉');
+                if (nextLesson) {
+                    navigate(`/learn/${courseId}/${nextLesson._id}`);
+                }
             }
         } catch {
             toast.error('Failed to save progress');

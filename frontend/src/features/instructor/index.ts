@@ -7,4 +7,5 @@ export { default as StudentsEnrolled } from './pages/StudentsEnrolled';
 export { default as Announcements } from './pages/Announcements';
 export { default as Analytics } from './pages/Analytics';
 export { default as Assignments } from './pages/Assignments';
+export { default as Coupons } from './pages/Coupons';
 

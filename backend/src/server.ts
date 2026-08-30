@@ -18,6 +18,8 @@ import wishlistRoutes from "./routes/wishlistRoutes";
 import instructorRoutes from "./routes/instructorRoutes";
 import noteRoutes from "./routes/noteRoutes";
 import assignmentRoutes from "./routes/assignmentRoutes";
+import couponRoutes from "./routes/couponRoutes";
+import orderRoutes from "./routes/orderRoutes";
 
 import path from "path";
 
@@ -55,6 +57,8 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/instructor", instructorRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/assignments", assignmentRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/orders", orderRoutes);
 
 
 // Health check

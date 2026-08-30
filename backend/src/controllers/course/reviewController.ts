@@ -51,15 +51,39 @@ export async function listCourseReviews(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    const [summary, reviews] = await Promise.all([
+    const { sort = "newest", page = "1", limit = "10" } = req.query;
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit as string, 10) || 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    let sortOption: Record<string, 1 | -1> = { createdAt: -1 };
+    if (sort === "highest") {
+      sortOption = { rating: -1, createdAt: -1 };
+    } else if (sort === "lowest") {
+      sortOption = { rating: 1, createdAt: -1 };
+    }
+
+    const [summary, totalCount, reviews] = await Promise.all([
       getReviewSummary(courseId),
+      Review.countDocuments({ course: courseId }),
       Review.find({ course: courseId })
         .populate("student", "_id name")
-        .sort({ createdAt: -1 })
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limitNum)
         .lean(),
     ]);
 
-    return res.json({ ...summary, reviews });
+    return res.json({
+      ...summary,
+      reviews,
+      pagination: {
+        total: totalCount,
+        page: pageNum,
+        pages: Math.ceil(totalCount / limitNum) || 1,
+        limit: limitNum,
+      },
+    });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }

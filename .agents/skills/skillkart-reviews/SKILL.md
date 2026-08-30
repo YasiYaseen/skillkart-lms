@@ -1,4 +1,4 @@
-﻿---
+---
 name: skillkart-reviews
 description: Course reviews and ratings system for SkillKart — creating, updating, and aggregating star ratings with enrollment gating.
 ---
@@ -36,13 +36,20 @@ Covers creating and updating course reviews, rating aggregation, and the enrollm
 
 | Method | Route | Auth | Description |
 |---|---|---|---|
-| GET | `/api/courses/:courseId/reviews` | public | List reviews + rating summary |
+| GET | `/api/courses/:courseId/reviews?sort=newest\|highest\|lowest&page=1&limit=10` | public | List reviews (with sorting and pagination) + rating summary |
 | POST | `/api/courses/:courseId/reviews` | student | Create a review |
 | PUT | `/api/courses/:courseId/reviews` | student | Update own review |
+| PATCH | `/api/courses/:courseId/reviews/me` | student | Update own review |
+| DELETE | `/api/courses/:courseId/reviews/me` | student | Delete own review |
 
 ---
 
-## Rating Aggregation (`getReviewSummary`)
+## Rating Aggregation & Querying (`listCourseReviews`)
+
+Supports query parameters:
+- `sort`: `"newest"` (default), `"highest"`, or `"lowest"`
+- `page`: integer page (default `1`)
+- `limit`: items per page (default `10`, max `50`)
 
 Always computed via MongoDB aggregation — never stored on the Course document directly:
 
@@ -66,6 +73,12 @@ The `listCourseReviews` response returns:
   averageRating: number;  // e.g. 4.3
   reviewCount: number;
   reviews: Review[];
+  pagination: {
+    total: number;
+    page: number;
+    pages: number;
+    limit: number;
+  };
 }
 ```
 

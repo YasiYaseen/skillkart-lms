@@ -6,11 +6,13 @@ import NotificationBell from '@components/common/NotificationBell';
 import ThemeToggle from '@components/common/ThemeToggle';
 import { AuthModals } from '@features/auth';
 import { useAuth } from '@features/auth/AuthContext';
+import { useCart } from '@/context/CartContext';
 
 function Header() {
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
 
   const { user, logout } = useAuth();
+  const { cartCount } = useCart();
 
   const handleLoginClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -70,6 +72,9 @@ function Header() {
                   <Link to="/wishlist" className="header-nav-link">
                     Wishlist
                   </Link>
+                  <Link to="/purchase-history" className="header-nav-link">
+                    Orders
+                  </Link>
                   <Link to="/my-certificates" className="header-nav-link">
                     My Certificates
                   </Link>
@@ -92,6 +97,22 @@ function Header() {
                 </a>
               )}
             </nav>
+
+            {/* Shopping Cart Icon */}
+            <Link
+              to="/cart"
+              className="relative p-2 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              title="Shopping Cart"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+              </svg>
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-indigo-600 text-white text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
+            </Link>
 
             <ThemeToggle />
 
