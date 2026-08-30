@@ -387,7 +387,12 @@ function CourseDetailsPage() {
                                     {/* Action Buttons */}
                                     <div className="space-y-3 mb-6">
                                         {courseId && (
-                                            <EnrollButton courseId={courseId} onEnrolled={() => navigate(`/learn/${courseId}`)} />
+                                            <EnrollButton
+                                                courseId={courseId}
+                                                price={course.price}
+                                                isPaid={course.price > 0}
+                                                onEnrolled={() => navigate(`/learn/${courseId}`)}
+                                            />
                                         )}
                                         {courseId && (
                                             <WishlistButton courseId={courseId} variant="button" />

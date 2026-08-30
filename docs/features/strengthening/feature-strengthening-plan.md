@@ -61,11 +61,11 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 1.1 | Replace mock featured courses with real API call `GET /api/courses?limit=4&sort=rating` | High | Not Started |
-| 1.2 | Replace identical testimonial texts with unique copy (or use real reviews from DB) | High | Not Started |
-| 1.3 | Replace lorem ipsum CTA paragraph with real product copy | High | Not Started |
-| 1.4 | Add platform stats banner: total students, total courses, total instructors (from a public stats endpoint) | Medium | Not Started |
-| 1.5 | Personalize hero for logged-in users: "Welcome back, {name}!" with CTA to My Courses | Medium | Not Started |
+| 1.1 | Replace mock featured courses with real API call `GET /api/courses?limit=4&sort=rating` | High | Done |
+| 1.2 | Replace identical testimonial texts with unique copy (or use real reviews from DB) | High | Done |
+| 1.3 | Replace lorem ipsum CTA paragraph with real product copy | High | Done |
+| 1.4 | Add platform stats banner: total students, total courses, total instructors (from a public stats endpoint) | Medium | Done |
+| 1.5 | Personalize hero for logged-in users: "Welcome back, {name}!" with CTA to My Courses | Medium | Done |
 | 1.6 | Add category/topic quick-links (Web Dev, Design, Business) that pre-filter the catalog | Low | Not Started |
 
 ---
@@ -185,9 +185,9 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 6.1 | Replace `window.confirm()` unenroll dialog with a proper `<Modal>` confirmation | Critical | Not Started |
-| 6.2 | Add "Resume Learning →" button on each course card linking to `/learn/:courseId/:lastLessonId` | High | Not Started |
-| 6.3 | Add visual progress bar on each enrolled course card | High | Not Started |
+| 6.1 | Replace `window.confirm()` unenroll dialog with a proper `<Modal>` confirmation | Critical | Done |
+| 6.2 | Add "Resume Learning →" button on each course card linking to `/learn/:courseId/:lastLessonId` | High | Done |
+| 6.3 | Add visual progress bar on each enrolled course card | High | Done |
 | 6.4 | Add illustrated empty state for students with 0 enrollments with CTA to browse courses | Medium | Not Started |
 | 6.5 | Show completion date on completed course cards | Medium | Not Started |
 | 6.6 | Show "Last lesson: {title}" subtitle on in-progress course cards | Medium | Not Started |
@@ -207,10 +207,10 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 7.1 | Add auth guard to `EnrollButton` — show "Sign in to Enroll" for unauthenticated users that opens the auth modal | Critical | Not Started |
-| 7.2 | Show "Continue Learning →" instead of "Enroll" when student is already enrolled (linking to last lesson) | High | Not Started |
-| 7.3 | Show price on paid course enroll button (`Enroll for $29.99`) | High | Not Started |
-| 7.4 | Show enrollment count on course details page ("Join 1,200+ students") | Medium | Not Started |
+| 7.1 | Add auth guard to `EnrollButton` — show "Sign in to Enroll" for unauthenticated users that opens the auth modal | Critical | Done |
+| 7.2 | Show "Continue Learning →" instead of "Enroll" when student is already enrolled (linking to last lesson) | High | Done |
+| 7.3 | Show price on paid course enroll button (`Enroll for $29.99`) | High | Done |
+| 7.4 | Show enrollment count on course details page ("Join 1,200+ students") | Medium | Done |
 | 7.5 | Add unenroll option in My Courses (already exists) — make more discoverable | Low | Not Started |
 
 ---

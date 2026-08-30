@@ -1,70 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CourseCard, Button, SearchBar } from '../components/common';
 import { Course } from '../components/common/CourseCard';
+import { useAuth } from '@/features/auth/AuthContext';
+import { api } from '@/lib/api';
 
-// --- Mock Data ---
-const FEATURED_COURSES: Course[] = [
-    {
-        id: 1,
-        title: 'Build Text to image SaaS App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 2,
-        title: 'Build AI BG Removal SaaS App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 3,
-        title: 'React Router Complete Course in One Video',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    },
-    {
-        id: 4,
-        title: 'Build Full Stack E-Commerce MERN App in React JS',
-        instructor: 'Richard James',
-        thumbnail: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop',
-        rating: 4.5,
-        reviewCount: 122,
-        price: 10.99
-    }
-];
+const DEFAULT_FALLBACK_THUMBNAIL = 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop';
 
 const TESTIMONIALS = [
     {
         id: 1,
-        name: "Donald Jackman",
-        role: "SWE 1 @ Amazon",
+        name: "Alex Rivera",
+        role: "Full Stack Engineer @ Spotify",
         image: "https://randomuser.me/api/portraits/men/32.jpg",
-        content: "I've been using SkillKart for nearly two years, primarily for Instagram, and it has been incredibly user-friendly, making my work much easier.",
+        content: "SkillKart's structured learning paths helped me transition from a junior developer to a full-stack engineer in just 6 months. The hands-on curriculum is top tier.",
     },
     {
         id: 2,
-        name: "Richard Nelson",
-        role: "SDE 2 @ Samsung",
-        image: "https://randomuser.me/api/portraits/men/45.jpg",
-        content: "I've been using SkillKart for nearly two years, primarily for Instagram, and it has been incredibly user-friendly, making my work much easier.",
+        name: "Priya Sharma",
+        role: "Frontend Developer @ Microsoft",
+        image: "https://randomuser.me/api/portraits/women/44.jpg",
+        content: "The interactive quizzes, streak tracking, and verified certificates gave me the confidence and practical portfolio to land my dream tech job.",
     },
     {
         id: 3,
-        name: "James Washington",
-        role: "SDE 2 @ Google",
+        name: "Marcus Chen",
+        role: "Lead Cloud Architect & Instructor",
         image: "https://randomuser.me/api/portraits/men/22.jpg",
-        content: "I've been using SkillKart for nearly two years, primarily for Instagram, and it has been incredibly user-friendly, making my work much easier.",
+        content: "As an instructor, SkillKart gives me the best tools to publish courses, track student completion analytics, and connect with motivated learners worldwide.",
     }
+];
+
+const STATS = [
+    { label: "Active Learners", value: "10,000+" },
+    { label: "Expert Courses", value: "150+" },
+    { label: "Completion Rate", value: "95%" },
+    { label: "Student Rating", value: "4.8 / 5.0" },
 ];
 
 const COMPANIES = [
@@ -77,34 +48,70 @@ const COMPANIES = [
 
 function Home() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loadingCourses, setLoadingCourses] = useState(true);
+
+    useEffect(() => {
+        api.get('/courses')
+            .then((res) => {
+                const raw = res.data?.courses || [];
+                const mapped: Course[] = raw.slice(0, 4).map((c: any) => ({
+                    id: c._id,
+                    title: c.title,
+                    instructor: c.instructor?.name || 'Instructor',
+                    thumbnail: c.thumbnailUrl || DEFAULT_FALLBACK_THUMBNAIL,
+                    rating: c.averageRating || 4.5,
+                    reviewCount: c.reviewCount || 0,
+                    price: c.price || 0,
+                    level: c.level || 'beginner',
+                    tags: c.tags || [],
+                    enrollmentCount: c.enrollmentCount || 0,
+                }));
+                setCourses(mapped);
+            })
+            .catch(() => {
+                // Keep empty on error
+            })
+            .finally(() => {
+                setLoadingCourses(false);
+            });
+    }, []);
 
     const handleSearch = (query: string) => {
         navigate(`/courses?search=${encodeURIComponent(query)}`);
     };
 
     return (
-        <div className="bg-white">
+        <div className="bg-white dark:bg-gray-900 transition-colors">
             {/* Hero Section */}
-            <section className="py-20 md:py-28 bg-gradient-to-b from-blue-50 to-white text-center px-4">
+            <section className="py-20 md:py-28 bg-gradient-to-b from-indigo-50/60 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-center px-4">
                 <div className="container mx-auto max-w-4xl">
-                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
-                        Empower your future with the<br />
-                        courses designed to <span className="text-blue-600 relative inline-block">
-                            fit your choice.
-                            <svg className="absolute w-full h-3 -bottom-1 left-0 text-blue-200 -z-10" viewBox="0 0 100 10" preserveAspectRatio="none">
+                    {user ? (
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold mb-6">
+                            <span>👋</span>
+                            <span>Welcome back, {user.name}! Ready to learn today?</span>
+                        </div>
+                    ) : null}
+
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">
+                        Empower your future with<br />
+                        courses designed to <span className="text-indigo-600 dark:text-indigo-400 relative inline-block">
+                            fit your goals.
+                            <svg className="absolute w-full h-3 -bottom-1 left-0 text-indigo-200 dark:text-indigo-800/60 -z-10" viewBox="0 0 100 10" preserveAspectRatio="none">
                                 <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" />
                             </svg>
                         </span>
                     </h1>
-                    <p className="text-gray-600 text-lg md:text-xl mb-10 max-w-2xl mx-auto">
-                        We bring together world-class instructors, interactive content, and a supportive community to help you achieve your personal and professional goals.
+                    <p className="text-gray-600 dark:text-gray-300 text-lg md:text-xl mb-10 max-w-2xl mx-auto">
+                        Learn high-demand skills with interactive curriculum, quizzes, coding projects, and verified certificates from industry leaders.
                     </p>
 
-                    <div className="max-w-xl mx-auto mb-16">
+                    <div className="max-w-xl mx-auto mb-10">
                         <div className="relative">
                             <SearchBar
-                                placeholder="Search for courses"
+                                placeholder="Search for Python, React, UI/UX, Cloud..."
                                 value={searchQuery}
                                 onChange={setSearchQuery}
                                 onSubmit={handleSearch}
@@ -112,66 +119,105 @@ function Home() {
                         </div>
                     </div>
 
+                    {user ? (
+                        <div className="flex justify-center gap-4 mb-16">
+                            <Button size="lg" onClick={() => navigate(user.role === 'instructor' ? '/instructor/dashboard' : '/student/courses')}>
+                                Go to {user.role === 'instructor' ? 'Instructor Dashboard' : 'My Courses'} →
+                            </Button>
+                            <Button size="lg" variant="secondary" onClick={() => navigate('/courses')}>
+                                Browse All Courses
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="flex justify-center gap-4 mb-16">
+                            <Button size="lg" onClick={() => navigate('/courses')}>Explore Courses</Button>
+                            <Button size="lg" variant="secondary" onClick={() => navigate('/courses')}>Learn More &rarr;</Button>
+                        </div>
+                    )}
+
                     <div className="space-y-4">
-                        <p className="text-sm font-medium text-gray-500">Trusted by learners from</p>
+                        <p className="text-xs font-semibold tracking-wider uppercase text-gray-400 dark:text-gray-500">Trusted by learners from top teams</p>
                         <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
                             {COMPANIES.map((company) => (
-                                <img key={company.name} src={company.logo} alt={company.name} className="h-6 md:h-8 object-contain" />
+                                <img key={company.name} src={company.logo} alt={company.name} className="h-6 md:h-8 object-contain dark:invert" />
                             ))}
                         </div>
                     </div>
                 </div>
             </section>
 
+            {/* Stats Banner */}
+            <section className="border-y border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 py-10">
+                <div className="container mx-auto px-4 max-w-6xl">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                        {STATS.map((stat, idx) => (
+                            <div key={idx} className="p-4">
+                                <p className="text-3xl md:text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-1">{stat.value}</p>
+                                <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{stat.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* Featured Courses */}
-            <section className="py-20 container mx-auto px-4">
+            <section className="py-20 container mx-auto px-4 max-w-7xl">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Learn from the best</h2>
-                    <p className="text-gray-600 max-w-2xl mx-auto">
-                        Discover our top-rated courses across various categories. From coding and design to business and wellness, our courses are crafted to deliver results.
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Featured & Top-Rated Courses</h2>
+                    <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                        Explore our highest rated programs taught by experienced engineers, designers, and industry specialists.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {FEATURED_COURSES.map(course => (
-                        <CourseCard key={course.id} course={course} />
-                    ))}
-                </div>
+                {loadingCourses ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[1, 2, 3, 4].map((n) => (
+                            <div key={n} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 h-72 animate-pulse" />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {courses.map((course) => (
+                            <CourseCard key={course.id} course={course} />
+                        ))}
+                    </div>
+                )}
 
                 <div className="text-center mt-12">
                     <Button variant="secondary" onClick={() => navigate('/courses')}>
-                        Show all courses
+                        Show all courses ({courses.length > 0 ? '150+' : 'Explore'}) &rarr;
                     </Button>
                 </div>
             </section>
 
             {/* Testimonials */}
-            <section className="py-20 bg-gray-50">
-                <div className="container mx-auto px-4">
+            <section className="py-20 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
+                <div className="container mx-auto px-4 max-w-6xl">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-4">Testimonials</h2>
-                        <p className="text-gray-600 max-w-2xl mx-auto">
-                            Hear from our learners as they share their journeys of transformation, success, and how our platform has made a difference in their lives.
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Learner Success Stories</h2>
+                        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                            See how SkillKart helps developers, students, and professionals achieve their goals and accelerate their careers.
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {TESTIMONIALS.map((testimonial) => (
-                            <div key={testimonial.id} className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <img src={testimonial.image} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover" />
-                                    <div>
-                                        <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
-                                        <p className="text-xs text-gray-500">{testimonial.role}</p>
+                            <div key={testimonial.id} className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xs border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <img src={testimonial.image} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover border-2 border-indigo-100 dark:border-indigo-900" />
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 dark:text-white text-sm">{testimonial.name}</h4>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{testimonial.role}</p>
+                                        </div>
                                     </div>
+                                    <div className="flex text-amber-400 mb-4 text-sm">
+                                        {[...Array(5)].map((_, i) => <span key={i}>★</span>)}
+                                    </div>
+                                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed italic">
+                                        "{testimonial.content}"
+                                    </p>
                                 </div>
-                                <div className="flex text-orange-400 mb-4 text-sm">
-                                    {[...Array(5)].map((_, i) => <span key={i}>★</span>)}
-                                </div>
-                                <p className="text-gray-600 text-sm leading-relaxed">
-                                    "{testimonial.content}"
-                                </p>
-                                <a href="#" className="text-blue-600 text-sm font-medium mt-4 inline-block hover:underline">Read more</a>
                             </div>
                         ))}
                     </div>
@@ -179,17 +225,16 @@ function Home() {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 container mx-auto px-4 text-center">
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Learn anything, anytime, anywhere</h2>
-                <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-                    Incididunt sint fugiat pariatur cupidatat consectetur sit cillum anim id veniam aliqua proident excepteur commodo do ea.
+            <section className="py-20 container mx-auto px-4 text-center max-w-4xl">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Start learning skills for your future today</h2>
+                <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
+                    Join thousands of students and professionals advancing their careers with hands-on, high-impact online courses.
                 </p>
                 <div className="flex justify-center gap-4">
-                    <Button size="lg" onClick={() => navigate('/courses')}>Get started</Button>
-                    <Button size="lg" variant="secondary" onClick={() => navigate('/courses')}>Learn more &rarr;</Button>
+                    <Button size="lg" onClick={() => navigate('/courses')}>Get Started</Button>
+                    <Button size="lg" variant="secondary" onClick={() => navigate('/courses')}>Explore Catalog &rarr;</Button>
                 </div>
             </section>
-
         </div>
     );
 }
