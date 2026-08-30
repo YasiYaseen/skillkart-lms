@@ -284,3 +284,51 @@ export async function getInstructorAnalytics(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function getInstructorStudents(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const instructorId = req.user.id;
+    const courseQuery: Record<string, unknown> = { isActive: true };
+    if (req.user.role !== "admin") {
+      courseQuery.instructor = new Types.ObjectId(instructorId);
+    }
+
+    const courses = await Course.find(courseQuery).select("_id title").lean();
+    const courseIds = courses.map((c) => c._id);
+
+    if (courseIds.length === 0) {
+      return res.json({ students: [] });
+    }
+
+    const enrollments = await Enrollment.find({
+      course: { $in: courseIds },
+    })
+      .populate("student", "name email avatar")
+      .populate("course", "title thumbnailUrl")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const students = enrollments.map((e: any) => ({
+      id: e._id,
+      studentId: e.student?._id,
+      name: e.student?.name || "Unknown Student",
+      email: e.student?.email || "",
+      avatar: e.student?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(e.student?.name || "User")}&background=random`,
+      courseId: e.course?._id,
+      courseTitle: e.course?.title || "Unknown Course",
+      enrolledAt: e.createdAt,
+      status: e.status || "active",
+      progressPercentage: e.progressPercentage || 0,
+      completedLessonsCount: e.completedLessonIds?.length || 0,
+    }));
+
+    return res.json({ students });
+  } catch (error) {
+    console.error("Error in getInstructorStudents:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}

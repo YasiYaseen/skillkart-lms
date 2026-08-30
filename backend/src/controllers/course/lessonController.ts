@@ -107,3 +107,42 @@ export async function updateLesson(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function deleteLesson(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { lessonId } = req.params;
+    if (!isValidObjectId(lessonId)) {
+      return res.status(400).json({ message: "Invalid lesson id" });
+    }
+
+    const lesson = await Lesson.findById(lessonId);
+    if (!lesson) {
+      return res.status(404).json({ message: "Lesson not found" });
+    }
+
+    const section = await Section.findById(lesson.section);
+    if (!section) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
+    const course = await Course.findById(section.course);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    await Lesson.findByIdAndDelete(lessonId);
+    await syncEnrollmentLessonCount(course._id.toString());
+
+    return res.json({ message: "Lesson deleted successfully" });
+  } catch {
+    return res.status(500).json({ message: "Server error" });
+  }
+}

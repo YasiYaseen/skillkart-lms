@@ -229,10 +229,10 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 8.1 | Show per-question correct/incorrect indicators after quiz submission | High | Not Started |
-| 8.2 | Reveal correct answers for wrong questions after a failed attempt | High | Not Started |
-| 8.3 | Show attempt count before starting ("Attempt 3 of unlimited") | High | Not Started |
-| 8.4 | Show last attempt score before retrying ("Your last score: 60% — need 70% to pass") | High | Not Started |
+| 8.1 | Show per-question correct/incorrect indicators after quiz submission | High | Done |
+| 8.2 | Reveal correct answers for wrong questions after a failed attempt | High | Done |
+| 8.3 | Show attempt count before starting ("Attempt 3 of unlimited") | High | Done |
+| 8.4 | Show last attempt score before retrying ("Your last score: 60% — need 70% to pass") | High | Done |
 | 8.5 | Add question progress indicator inside quiz ("Question 2 of 5") | Medium | Not Started |
 | 8.6 | Add configurable max attempt limit per quiz (instructor-controlled) | Low | Not Started |
 
@@ -252,8 +252,8 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 9.1 | Replace `<select>` with interactive star-click rating component | High | Not Started |
-| 9.2 | Make star rating required before review submission (frontend validation, min 1 star) | High | Not Started |
+| 9.1 | Replace `<select>` with interactive star-click rating component | High | Done |
+| 9.2 | Make star rating required before review submission (frontend validation, min 1 star) | High | Done |
 | 9.3 | Allow students to edit or delete their own review | High | Not Started |
 | 9.4 | Add pagination/load-more on reviews (10 per page) | Medium | Not Started |
 | 9.5 | Add sort controls (Most Recent / Highest / Lowest Rated) | Medium | Not Started |
@@ -278,12 +278,12 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 10.1 | Replace N+1 calls in `StudentsEnrolled.tsx` with a single `GET /instructor/students` endpoint | Critical | Not Started |
-| 10.2 | Replace `<input type="text">` for text content items with `<textarea>` (minimum) | Critical | Not Started |
-| 10.3 | Add section and lesson delete buttons in the curriculum builder (with confirmation) | High | Not Started |
-| 10.4 | Add section/lesson reordering with up/down arrow buttons | High | Not Started |
+| 10.1 | Replace N+1 calls in `StudentsEnrolled.tsx` with a single `GET /instructor/students` endpoint | Critical | Done |
+| 10.2 | Replace `<input type="text">` for text content items with `<textarea>` (minimum) | Critical | Done |
+| 10.3 | Add section and lesson delete buttons in the curriculum builder (with confirmation) | High | Done |
+| 10.4 | Add section/lesson reordering with up/down arrow buttons | High | Done |
 | 10.5 | Add curriculum editor tab to `EditCourse.tsx` (or link to the curriculum builder) | High | Not Started |
-| 10.6 | Add "Preview Course" button in `EditCourse.tsx` linking to `/courses/:courseId` | High | Not Started |
+| 10.6 | Add "Preview Course" button in `EditCourse.tsx` linking to `/courses/:courseId` | High | Done |
 | 10.7 | Show enrollment count and avg rating on each row in instructor My Courses table | Medium | Not Started |
 | 10.8 | Allow instructors to self-unpublish their courses (return to draft) | Medium | Not Started |
 | 10.9 | Remove hardcoded Unsplash fallback thumbnail — require thumbnail upload or default to a branded placeholder SVG | Low | Not Started |
@@ -330,10 +330,10 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 12.1 | Make notifications clickable — route to relevant content based on notification type (`/courses/:id`, `/learn/:courseId/:lessonId`, etc.) | High | Not Started |
-| 12.2 | Add "Mark all as read" button in notification panel | High | Not Started |
+| 12.1 | Make notifications clickable — route to relevant content based on notification type (`/courses/:id`, `/learn/:courseId/:lessonId`, etc.) | High | Done |
+| 12.2 | Add "Mark all as read" button in notification panel | High | Done |
 | 12.3 | Add dismiss/delete on individual notifications | Medium | Not Started |
-| 12.4 | Add pulsing animation on bell icon when there are unread notifications | Low | Not Started |
+| 12.4 | Add pulsing animation on bell icon when there are unread notifications | Low | Done |
 
 ---
 

@@ -96,11 +96,16 @@ export async function getQuiz(req: Request, res: Response) {
       { sort: { createdAt: -1 } }
     ).lean();
 
+    const totalAttempts = req.user
+      ? await QuizAttempt.countDocuments({ user: req.user.id, lesson: lessonId })
+      : 0;
+
     return res.json({
       lessonId,
       passingPercentage: quiz.passingPercentage,
       questions: safeQuestions,
       latestAttempt: latestAttempt ?? null,
+      totalAttempts,
     });
   } catch {
     return res.status(500).json({ message: "Server error" });
@@ -129,8 +134,16 @@ export async function submitQuiz(req: Request, res: Response) {
     }
 
     let correct = 0;
+    const questionResults = [];
     for (let i = 0; i < quiz.questions.length; i++) {
-      if (answers[i] === quiz.questions[i].correctAnswer) correct++;
+      const isCorrect = answers[i] === quiz.questions[i].correctAnswer;
+      if (isCorrect) correct++;
+      questionResults.push({
+        questionIndex: i,
+        selectedAnswer: answers[i],
+        correctAnswer: quiz.questions[i].correctAnswer,
+        isCorrect,
+      });
     }
 
     const score = Math.round((correct / quiz.questions.length) * 100);
@@ -144,7 +157,20 @@ export async function submitQuiz(req: Request, res: Response) {
       passed,
     });
 
-    return res.json({ score, passed, passingPercentage: quiz.passingPercentage });
+    const totalAttempts = await QuizAttempt.countDocuments({
+      user: req.user.id,
+      lesson: lessonId,
+    });
+
+    return res.json({
+      score,
+      passed,
+      passingPercentage: quiz.passingPercentage,
+      correctCount: correct,
+      totalQuestions: quiz.questions.length,
+      questionResults,
+      totalAttempts,
+    });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }

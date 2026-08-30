@@ -319,13 +319,9 @@ function CreateCourse() {
                         </div>
 
                         <div className="pt-4 flex justify-end">
-                            <button
-                                type="submit"
-                                disabled={creatingCourse}
-                                className="bg-gray-900 text-white px-8 py-3 rounded-lg font-semibold flex items-center justify-center min-w-[150px] disabled:opacity-50 shadow-xs"
-                            >
-                                {creatingCourse ? 'Saving...' : 'Save & Continue'}
-                            </button>
+                            <Button type="submit" size="lg">
+                                Next: Build Curriculum &rarr;
+                            </Button>
                         </div>
                     </form>
                 </div>
@@ -359,10 +355,32 @@ function CreateCourse() {
                         {sections.map((sec, sIdx) => (
                             <div key={sec._id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                                    <h3 className="font-bold text-gray-800 text-sm">
-                                        Section {sIdx + 1}: {sec.title}
-                                    </h3>
                                     <div className="flex items-center gap-3">
+                                        <div className="flex flex-col gap-0.5">
+                                            <button
+                                                type="button"
+                                                disabled={sIdx === 0}
+                                                onClick={() => handleMoveSection(sIdx, 'up')}
+                                                className="text-[10px] text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+                                                title="Move Section Up"
+                                            >
+                                                ▲
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={sIdx === sections.length - 1}
+                                                onClick={() => handleMoveSection(sIdx, 'down')}
+                                                className="text-[10px] text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+                                                title="Move Section Down"
+                                            >
+                                                ▼
+                                            </button>
+                                        </div>
+                                        <h3 className="font-bold text-gray-800 text-sm">
+                                            Section {sIdx + 1}: {sec.title}
+                                        </h3>
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
                                         <button
                                             type="button"
                                             onClick={() => setBulkUploadSectionId(sec._id)}
@@ -372,9 +390,17 @@ function CreateCourse() {
                                         </button>
                                         <button
                                             onClick={() => setActiveSectionId(activeSectionId === sec._id ? null : sec._id)}
-                                            className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                                            className="text-xs font-medium text-blue-600 hover:text-blue-800 bg-white border border-blue-200 px-3 py-1.5 rounded-lg"
                                         >
                                             {activeSectionId === sec._id ? 'Cancel' : '+ Add Lesson'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteSection(sec._id)}
+                                            className="text-xs text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded"
+                                            title="Delete Section"
+                                        >
+                                            🗑️
                                         </button>
                                     </div>
                                 </div>
@@ -385,10 +411,32 @@ function CreateCourse() {
                                         {sec.lessons.map((les: any, lIdx: number) => (
                                             <div key={les._id} className="p-4 border border-gray-100 rounded-lg bg-gray-50/50">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-semibold text-sm text-gray-700">
-                                                        Lesson {lIdx + 1}: {les.title} ({les.durationMinutes} mins)
-                                                    </span>
-                                                    <div className="space-x-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <button
+                                                                type="button"
+                                                                disabled={lIdx === 0}
+                                                                onClick={() => handleMoveLesson(sec._id, lIdx, 'up')}
+                                                                className="text-[10px] text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+                                                                title="Move Lesson Up"
+                                                            >
+                                                                ▲
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={lIdx === sec.lessons.length - 1}
+                                                                onClick={() => handleMoveLesson(sec._id, lIdx, 'down')}
+                                                                className="text-[10px] text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+                                                                title="Move Lesson Down"
+                                                            >
+                                                                ▼
+                                                            </button>
+                                                        </div>
+                                                        <span className="font-semibold text-sm text-gray-700">
+                                                            Lesson {lIdx + 1}: {les.title} ({les.durationMinutes} mins)
+                                                        </span>
+                                                    </div>
+                                                    <div className="space-x-2 flex items-center">
                                                         <button
                                                             onClick={() => setActiveLessonId(activeLessonId === les._id ? null : les._id)}
                                                             className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded hover:bg-gray-50 font-medium"
@@ -400,6 +448,14 @@ function CreateCourse() {
                                                             className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1.5 rounded hover:bg-purple-100 font-medium"
                                                         >
                                                             ⚡ Quiz
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteLesson(sec._id, les._id)}
+                                                            className="text-xs text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                                            title="Delete Lesson"
+                                                        >
+                                                            ✕
                                                         </button>
                                                     </div>
                                                 </div>
@@ -423,31 +479,44 @@ function CreateCourse() {
                                                 {/* Add item inline form */}
                                                 {activeLessonId === les._id && (
                                                     <form onSubmit={(e) => handleAddItem(e, sec._id, les._id)} className="mt-4 pt-3 border-t border-gray-200 space-y-3">
-                                                        <div className="flex gap-4">
-                                                            <select
-                                                                value={newItemType}
-                                                                onChange={(e) => setNewItemType(e.target.value)}
-                                                                className="border border-gray-300 rounded px-3 py-1.5 text-xs bg-white"
-                                                            >
-                                                                <option value="video">Video URL</option>
-                                                                <option value="pdf">PDF URL</option>
-                                                                <option value="link">External Link</option>
-                                                                <option value="text">Text Article</option>
-                                                            </select>
-                                                            <input
-                                                                type="text"
-                                                                required
-                                                                placeholder={newItemType === 'text' ? 'Article content...' : 'Resource URL...'}
-                                                                value={newItemContent}
-                                                                onChange={(e) => setNewItemContent(e.target.value)}
-                                                                className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-xs"
-                                                            />
-                                                            <button
-                                                                type="submit"
-                                                                className="bg-gray-800 text-white text-xs px-4 py-1.5 rounded font-medium hover:bg-gray-900"
-                                                            >
-                                                                Save Item
-                                                            </button>
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <select
+                                                                    value={newItemType}
+                                                                    onChange={(e) => setNewItemType(e.target.value)}
+                                                                    className="border border-gray-300 rounded px-3 py-1.5 text-xs bg-white"
+                                                                >
+                                                                    <option value="video">Video URL</option>
+                                                                    <option value="pdf">PDF URL</option>
+                                                                    <option value="link">External Link</option>
+                                                                    <option value="text">Text Article (Markdown)</option>
+                                                                </select>
+                                                                <button
+                                                                    type="submit"
+                                                                    className="bg-gray-800 text-white text-xs px-4 py-1.5 rounded font-medium hover:bg-gray-900 ml-auto"
+                                                                >
+                                                                    Save Item
+                                                                </button>
+                                                            </div>
+                                                            {newItemType === 'text' ? (
+                                                                <textarea
+                                                                    required
+                                                                    rows={4}
+                                                                    placeholder="Write lesson notes, markdown, or article content..."
+                                                                    value={newItemContent}
+                                                                    onChange={(e) => setNewItemContent(e.target.value)}
+                                                                    className="w-full border border-gray-300 rounded-lg p-3 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                                                                />
+                                                            ) : (
+                                                                <input
+                                                                    type="url"
+                                                                    required
+                                                                    placeholder={newItemType === 'pdf' ? 'https://.../document.pdf' : 'https://youtube.com/... or https://...'}
+                                                                    value={newItemContent}
+                                                                    onChange={(e) => setNewItemContent(e.target.value)}
+                                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                                />
+                                                            )}
                                                         </div>
                                                     </form>
                                                 )}
