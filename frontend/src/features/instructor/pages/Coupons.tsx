@@ -114,8 +114,20 @@ export function Coupons() {
     }
   };
 
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success(`Copied "${code}" to clipboard!`);
+  };
+
   const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesRedeemed || 0), 0);
   const activeCouponsCount = coupons.filter((c) => c.isActive).length;
+
+  // Simulator calculation for modal
+  const sampleOriginal = 100;
+  const sampleDiscount = discountType === 'percentage'
+    ? (sampleOriginal * Number(discountValue || 0)) / 100
+    : Math.min(sampleOriginal, Number(discountValue || 0));
+  const sampleFinal = Math.max(0, sampleOriginal - sampleDiscount);
 
   if (loading) {
     return <div className="text-gray-500 py-16 text-center">Loading coupons manager...</div>;
@@ -209,9 +221,18 @@ export function Coupons() {
                 {coupons.map((coupon) => (
                   <tr key={coupon._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="font-mono font-extrabold text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/60">
-                        {coupon.code}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-extrabold text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/60">
+                          {coupon.code}
+                        </span>
+                        <button
+                          onClick={() => handleCopyCode(coupon.code)}
+                          title="Copy Code to Clipboard"
+                          className="text-gray-400 hover:text-indigo-600 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                        >
+                          📋
+                        </button>
+                      </div>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">
                       {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `$${coupon.discountValue} OFF`}
@@ -222,16 +243,24 @@ export function Coupons() {
                       </span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {coupon.timesRedeemed} used
-                      </span>
-                      {coupon.maxRedemptions && (
-                        <span className="text-gray-400 text-[11px]"> / {coupon.maxRedemptions} max</span>
-                      )}
+                      <div className="space-y-1">
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {coupon.timesRedeemed} used
+                        </span>
+                        {coupon.maxRedemptions && (
+                          <div className="text-gray-400 text-[10px]">
+                            {coupon.maxRedemptions - coupon.timesRedeemed} spots left ({coupon.maxRedemptions} max)
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap text-gray-500 text-[11px]">
                       {coupon.expiresAt ? (
-                        new Date(coupon.expiresAt).toLocaleDateString()
+                        new Date(coupon.expiresAt) < new Date() ? (
+                          <span className="text-rose-500 font-bold">Expired</span>
+                        ) : (
+                          new Date(coupon.expiresAt).toLocaleDateString()
+                        )
                       ) : (
                         <span className="text-gray-400">Never expires</span>
                       )}
@@ -331,6 +360,14 @@ export function Coupons() {
                 </div>
               </div>
 
+              {/* Live Preview Calculation Pill */}
+              <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-xs">
+                <span className="text-indigo-900 dark:text-indigo-200">
+                  💡 <strong>Simulator Preview:</strong> A $100 course will cost{' '}
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-mono">${sampleFinal.toFixed(2)}</strong> for students (saves ${sampleDiscount.toFixed(2)})
+                </span>
+              </div>
+
               <div>
                 <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Applicable Course Scope (Optional)
@@ -416,3 +453,4 @@ export function Coupons() {
 }
 
 export default Coupons;
+

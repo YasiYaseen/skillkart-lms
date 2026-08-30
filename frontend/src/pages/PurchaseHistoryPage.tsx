@@ -42,6 +42,16 @@ export default function PurchaseHistoryPage() {
     window.print();
   };
 
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredOrders = orders.filter((order) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    const matchesNumber = order.orderNumber?.toLowerCase().includes(term);
+    const matchesCourses = order.items?.some((i) => i.title?.toLowerCase().includes(term));
+    return matchesNumber || matchesCourses;
+  });
+
   const totalSpent = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   const totalCoursesPurchased = orders.reduce((sum, o) => sum + (o.items?.length || 0), 0);
 
@@ -110,6 +120,22 @@ export default function PurchaseHistoryPage() {
         </div>
       </div>
 
+      {/* Orders Filter Toolbar */}
+      {orders.length > 0 && (
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by order # or course title..."
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden shadow-xs"
+            />
+            <span className="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+          </div>
+        </div>
+      )}
+
       {/* Orders Table */}
       {orders.length === 0 ? (
         <div className="text-center py-16 px-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xs space-y-4">
@@ -145,7 +171,7 @@ export default function PurchaseHistoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {orders.map((order) => (
+                {filteredOrders.map((order) => (
                   <tr key={order._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
                     <td className="px-5 py-4 whitespace-nowrap font-mono font-bold text-gray-900 dark:text-white">
                       {order.orderNumber}
@@ -158,10 +184,22 @@ export default function PurchaseHistoryPage() {
                       })}
                     </td>
                     <td className="px-5 py-4">
-                      <div className="font-semibold text-gray-900 dark:text-white max-w-xs truncate">
-                        {order.items.map((it) => it.title).join(', ')}
+                      <div className="space-y-1">
+                        {order.items.map((it, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-900 dark:text-white truncate max-w-xs">{it.title}</span>
+                            {typeof it.course === 'object' && it.course?._id ? (
+                              <Link
+                                to={`/learn/${it.course._id}`}
+                                className="text-[10px] text-indigo-600 hover:underline shrink-0"
+                              >
+                                [Open Course]
+                              </Link>
+                            ) : null}
+                          </div>
+                        ))}
                       </div>
-                      <div className="text-[11px] text-gray-400">
+                      <div className="text-[11px] text-gray-400 mt-1">
                         {order.items.length} {order.items.length === 1 ? 'course' : 'courses'}
                       </div>
                     </td>

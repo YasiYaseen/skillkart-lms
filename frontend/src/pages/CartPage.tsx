@@ -3,7 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/features/auth/AuthContext';
 import { validateCouponCode, processCheckout, type OrderRecord } from '@/features/student/api/cart';
+import { addToWishlist } from '@/features/wishlist';
 import { toast } from 'react-toastify';
+
+const POPULAR_PROMOS = [
+  { code: 'WELCOME20', label: '20% OFF Welcome Bonus' },
+  { code: 'SKILL50', label: '$50 OFF Super Saver' },
+];
 
 export default function CartPage() {
   const { cart, removeFromCart, clearCart, cartTotal } = useCart();
@@ -31,16 +37,16 @@ export default function CartPage() {
   const [completedOrder, setCompletedOrder] = useState<OrderRecord | null>(null);
 
   // Validate coupon against current cart
-  const handleApplyCoupon = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!couponInput.trim()) return;
+  const handleApplyCoupon = async (codeToApply?: string) => {
+    const code = (codeToApply || couponInput).trim();
+    if (!code) return;
 
     setValidatingCoupon(true);
     setCouponError(null);
 
     try {
       const courseIds = cart.map((i) => i.courseId);
-      const res = await validateCouponCode(couponInput.trim(), courseIds);
+      const res = await validateCouponCode(code, courseIds);
       if (res.valid) {
         setAppliedCoupon({
           code: res.coupon.code,
@@ -49,6 +55,7 @@ export default function CartPage() {
           description: res.coupon.description,
           discountTotal: res.discountTotal,
         });
+        setCouponInput(res.coupon.code);
         toast.success(`Coupon "${res.coupon.code}" applied! You saved $${res.discountTotal.toFixed(2)}`);
       }
     } catch (err: any) {
@@ -63,6 +70,20 @@ export default function CartPage() {
     setAppliedCoupon(null);
     setCouponInput('');
     setCouponError(null);
+  };
+
+  const handleMoveToWishlist = async (item: { courseId: string; title: string }) => {
+    if (!user) {
+      toast.info('Please log in to save items to your wishlist');
+      return;
+    }
+    try {
+      await addToWishlist(item.courseId);
+      removeFromCart(item.courseId);
+      toast.success(`"${item.title}" moved to your Wishlist!`);
+    } catch {
+      toast.error('Failed to move course to Wishlist');
+    }
   };
 
   // Calculations
@@ -210,16 +231,16 @@ export default function CartPage() {
               </span>
               <button
                 onClick={clearCart}
-                className="text-xs text-gray-400 hover:text-rose-500 transition-colors"
+                className="text-xs text-gray-400 hover:text-rose-500 transition-colors font-medium"
               >
-                Clear Cart
+                Clear All
               </button>
             </div>
 
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {cart.map((item) => (
                 <div key={item.courseId} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-1">
                     {item.thumbnailUrl ? (
                       <img
                         src={item.thumbnailUrl}
@@ -232,7 +253,7 @@ export default function CartPage() {
                       </div>
                     )}
 
-                    <div className="space-y-0.5">
+                    <div className="space-y-0.5 min-w-0">
                       <Link
                         to={`/courses/${item.courseId}`}
                         className="text-sm font-bold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-1"
@@ -240,17 +261,26 @@ export default function CartPage() {
                         {item.title}
                       </Link>
                       {item.instructorName && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                           Instructor: {item.instructorName}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                     <span className="text-base font-extrabold text-gray-900 dark:text-white font-mono">
                       {item.price > 0 ? `$${item.price.toFixed(2)}` : 'FREE'}
                     </span>
+
+                    <button
+                      onClick={() => handleMoveToWishlist(item)}
+                      title="Move to Wishlist"
+                      className="text-xs text-gray-400 hover:text-indigo-600 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      Save for Later
+                    </button>
+
                     <button
                       onClick={() => removeFromCart(item.courseId)}
                       title="Remove course from cart"
@@ -265,13 +295,16 @@ export default function CartPage() {
               ))}
             </div>
 
-            <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+            <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
               <Link
                 to="/courses"
                 className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
               >
-                + Add more courses
+                + Add more courses to cart
               </Link>
+              <span className="text-xs text-gray-500">
+                Subtotal: <strong className="font-mono text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</strong>
+              </span>
             </div>
           </div>
 
@@ -382,8 +415,8 @@ export default function CartPage() {
           </div>
         </div>
 
-        {/* Right Column: Coupon & Order Summary */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* Right Column: Sticky Coupon & Order Summary */}
+        <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
           {/* Promo Coupon Card */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-3">
             <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -408,28 +441,53 @@ export default function CartPage() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleApplyCoupon} className="space-y-2">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                    placeholder="e.g. SKILL50"
-                    className="flex-1 text-xs px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white uppercase font-mono tracking-wider focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                  />
-                  <button
-                    type="submit"
-                    disabled={validatingCoupon || !couponInput.trim()}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors shrink-0"
-                  >
-                    {validatingCoupon ? 'Checking...' : 'Apply'}
-                  </button>
-                </div>
+              <div className="space-y-3">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleApplyCoupon();
+                  }}
+                  className="space-y-2"
+                >
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      placeholder="e.g. SKILL50"
+                      className="flex-1 text-xs px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white uppercase font-mono tracking-wider focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                    />
+                    <button
+                      type="submit"
+                      disabled={validatingCoupon || !couponInput.trim()}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors shrink-0"
+                    >
+                      {validatingCoupon ? 'Checking...' : 'Apply'}
+                    </button>
+                  </div>
 
-                {couponError && (
-                  <p className="text-[11px] text-rose-600 dark:text-rose-400">{couponError}</p>
-                )}
-              </form>
+                  {couponError && (
+                    <p className="text-[11px] text-rose-600 dark:text-rose-400">{couponError}</p>
+                  )}
+                </form>
+
+                {/* Popular Promo Pills */}
+                <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                  <span className="text-[10px] text-gray-400 block mb-1.5 font-medium">Quick Offer Codes:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {POPULAR_PROMOS.map((promo) => (
+                      <button
+                        key={promo.code}
+                        type="button"
+                        onClick={() => handleApplyCoupon(promo.code)}
+                        className="text-[10px] px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 font-mono font-bold transition-colors"
+                      >
+                        🏷️ {promo.code}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

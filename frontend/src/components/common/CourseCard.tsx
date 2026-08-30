@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import Rating from './Rating';
 import { WishlistButton } from '@/features/wishlist';
+import { useCart } from '@/context/CartContext';
+import { toast } from 'react-toastify';
 
 export interface Course {
     id: string | number;
@@ -58,8 +60,24 @@ export function CourseCard({ course, className = '', showWishlist = true }: Cour
         totalLessons,
     } = course;
 
+    const { addToCart, isInCart } = useCart();
     const durationStr = formatDuration(durationMinutes);
     const isFree = !price || price === 0;
+    const inCart = id ? isInCart(String(id)) : false;
+
+    const handleAddToCart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!id) return;
+        addToCart({
+            courseId: String(id),
+            title,
+            price,
+            thumbnailUrl: thumbnail,
+            instructorName: instructor,
+        });
+        toast.success(`"${title}" added to your cart!`);
+    };
 
     return (
         <Link
@@ -91,11 +109,11 @@ export function CourseCard({ course, className = '', showWishlist = true }: Cour
                     )}
                 </div>
 
-                {showWishlist && id && (
-                    <div className="absolute top-2 right-2 z-10">
+                <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+                    {showWishlist && id && (
                         <WishlistButton courseId={String(id)} variant="icon" />
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
             <div className="p-5 flex flex-col flex-1">
@@ -137,12 +155,28 @@ export function CourseCard({ course, className = '', showWishlist = true }: Cour
                     )}
                 </div>
 
-                {/* Footer: Rating & Price */}
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+                {/* Footer: Rating, Price & Quick Cart Button */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700 gap-2">
                     <Rating value={rating} count={reviewCount} />
-                    <span className={`text-base font-extrabold ${isFree ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
-                        {isFree ? 'Free' : `$${price.toFixed(2)}`}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className={`text-base font-extrabold ${isFree ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+                            {isFree ? 'Free' : `$${price.toFixed(2)}`}
+                        </span>
+
+                        {!isFree && id && (
+                            <button
+                                onClick={handleAddToCart}
+                                title={inCart ? 'Already in Cart' : 'Add to Shopping Cart'}
+                                className={`p-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center ${
+                                    inCart
+                                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 border border-emerald-200 dark:border-emerald-800'
+                                        : 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white'
+                                }`}
+                            >
+                                {inCart ? '✓' : '🛒'}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </Link>
@@ -150,3 +184,4 @@ export function CourseCard({ course, className = '', showWishlist = true }: Cour
 }
 
 export default CourseCard;
+
