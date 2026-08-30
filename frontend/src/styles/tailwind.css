@@ -737,4 +737,151 @@
             margin-left: 0;
         }
     }
+
+    /* ============================================
+       Dark Theme Overrides
+       ============================================ */
+    html.dark,
+    html.dark body {
+        background-color: #0b0f19;
+        color: #f1f5f9;
+    }
+
+    html.dark .header {
+        background: #0f172a;
+        border-bottom-color: #1e293b;
+    }
+
+    html.dark .header-logo {
+        color: #f8fafc;
+    }
+
+    html.dark .header-nav-link {
+        color: #94a3b8;
+    }
+
+    html.dark .header-nav-link:hover {
+        color: #60a5fa;
+    }
+
+    html.dark .course-card {
+        background: #111827;
+        border-color: #1f2937;
+    }
+
+    html.dark .course-card:hover {
+        border-color: #374151;
+        box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.4);
+    }
+
+    html.dark .course-card-thumbnail {
+        background: #1f2937;
+    }
+
+    html.dark .course-card-title {
+        color: #f8fafc;
+    }
+
+    html.dark .course-card-instructor {
+        color: #9ca3af;
+    }
+
+    html.dark .course-card-price {
+        color: #f8fafc;
+    }
+
+    html.dark .rating-value {
+        color: #e2e8f0;
+    }
+
+    html.dark .rating-count {
+        color: #9ca3af;
+    }
+
+    html.dark .rating-star.empty {
+        color: #374151;
+    }
+
+    html.dark .search-input {
+        background: #111827;
+        border-color: #1f2937;
+        color: #f8fafc;
+    }
+
+    html.dark .search-input::placeholder {
+        color: #64748b;
+    }
+
+    html.dark .search-input:focus {
+        background: #111827;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    html.dark .page-title {
+        color: #f8fafc;
+    }
+
+    html.dark .breadcrumb {
+        color: #94a3b8;
+    }
+
+    html.dark .breadcrumb a {
+        color: #60a5fa;
+    }
+
+    html.dark .course-filters {
+        border-bottom-color: #1f2937;
+    }
+
+    html.dark .filter-label,
+    html.dark .filter-results-count {
+        color: #94a3b8;
+    }
+
+    html.dark .filter-pill {
+        background: #111827;
+        border-color: #1f2937;
+        color: #cbd5e1;
+    }
+
+    html.dark .filter-pill:hover {
+        background: #1e3a8a;
+        border-color: #3b82f6;
+        color: #93c5fd;
+    }
+
+    html.dark .filter-pill.active {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #ffffff;
+    }
+
+    html.dark .clear-filters-btn {
+        color: #60a5fa;
+    }
+
+    html.dark .clear-filters-btn:hover {
+        color: #93c5fd;
+    }
+
+    html.dark .btn-secondary {
+        background-color: transparent;
+        color: #e2e8f0;
+        border-color: #374151;
+    }
+
+    html.dark .btn-secondary:hover {
+        background-color: #1f2937;
+        border-color: #4b5563;
+    }
+
+    html.dark .btn-ghost {
+        color: #94a3b8;
+    }
+
+    html.dark .btn-ghost:hover {
+        background-color: #1f2937;
+        color: #f8fafc;
+    }
 }

@@ -59,7 +59,7 @@ Polish features for the final stage if time allows.
 
 | Feature | Status | Doc |
 | --- | --- | --- |
-| Dark Mode | Not Started | [docs/features/nice-to-have/dark-mode.md](features/nice-to-have/dark-mode.md) |
+| Dark Mode | Done | [docs/features/nice-to-have/dark-mode.md](features/nice-to-have/dark-mode.md) |
 | Course Tags | Not Started | [docs/features/nice-to-have/course-tags.md](features/nice-to-have/course-tags.md) |
 | Instructor Public Profile | Not Started | [docs/features/nice-to-have/instructor-public-profile.md](features/nice-to-have/instructor-public-profile.md) |
 | Student Learning Streaks | Not Started | [docs/features/nice-to-have/student-learning-streaks.md](features/nice-to-have/student-learning-streaks.md) |

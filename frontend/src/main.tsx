@@ -5,14 +5,17 @@ import '@styles/tailwind.css'
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from './features/auth/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 console.log(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-            <AuthProvider>
-                <App />
-            </AuthProvider>
+            <ThemeProvider>
+                <AuthProvider>
+                    <App />
+                </AuthProvider>
+            </ThemeProvider>
         </GoogleOAuthProvider>
         <ToastContainer position='bottom-right' />
     </StrictMode>,

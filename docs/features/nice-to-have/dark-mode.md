@@ -1,8 +1,8 @@
 # Dark Mode
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Add a dark theme option for better user preference support.
@@ -13,6 +13,6 @@ Add a dark theme option for better user preference support.
 - Main pages remain readable in both themes
 
 ## Acceptance Checklist
-- [ ] Theme toggle exists
-- [ ] Preference persists after refresh
-- [ ] Main layouts work in dark mode
+- [x] Theme toggle exists
+- [x] Preference persists after refresh
+- [x] Main layouts work in dark mode

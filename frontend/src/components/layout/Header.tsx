@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { GraduationCapIcon } from '@assets/icons';
 import Button from '@components/common/Button';
 import NotificationBell from '@components/common/NotificationBell';
+import ThemeToggle from '@components/common/ThemeToggle';
 import { AuthModals } from '@features/auth';
 import { useAuth } from '@features/auth/AuthContext';
 
@@ -91,6 +92,8 @@ function Header() {
                 </a>
               )}
             </nav>
+
+            <ThemeToggle />
 
             {!user ? (
               <Button
