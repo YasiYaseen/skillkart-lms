@@ -7,4 +7,5 @@ export { default as Input } from '@components/common/Input';
 export { default as Select } from '@components/common/Select';
 export { default as FileUpload } from '@components/common/FileUpload';
 export { default as ProtectedRoute } from '@components/common/ProtectedRoute';
+export { default as Pagination } from '@components/common/Pagination';
 export type { Course } from '@components/common/CourseCard';

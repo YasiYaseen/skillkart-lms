@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { toast } from "react-toastify";
+import { Pagination } from "@/components/common";
 
 export interface ModerationCourse {
   _id: string;
@@ -17,10 +18,14 @@ export interface ModerationCourse {
   };
 }
 
+const PAGE_SIZE = 10;
+
 export function CourseModeration() {
   const [courses, setCourses] = useState<ModerationCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchCourses();
@@ -50,37 +55,88 @@ export function CourseModeration() {
     }
   };
 
-  const filteredCourses = courses.filter((c) => {
-    const q = searchQuery.toLowerCase();
-    const titleMatch = c.title?.toLowerCase().includes(q);
-    const instructorMatch = c.instructor?.name?.toLowerCase().includes(q);
-    const levelMatch = c.level?.toLowerCase().includes(q);
-    return titleMatch || instructorMatch || levelMatch;
-  });
+  const filteredCourses = useMemo(() => {
+    return courses.filter((c) => {
+      const q = searchQuery.toLowerCase();
+      const titleMatch = c.title?.toLowerCase().includes(q);
+      const instructorMatch = c.instructor?.name?.toLowerCase().includes(q);
+      const levelMatch = c.level?.toLowerCase().includes(q);
+      const matchesQuery = titleMatch || instructorMatch || levelMatch;
+
+      let matchesStatus = true;
+      if (statusFilter === "pending") {
+        matchesStatus = c.isApproved === undefined;
+      } else if (statusFilter === "approved") {
+        matchesStatus = c.isApproved === true;
+      } else if (statusFilter === "rejected") {
+        matchesStatus = c.isApproved === false;
+      } else if (statusFilter === "disabled") {
+        matchesStatus = c.isActive === false;
+      }
+
+      return matchesQuery && matchesStatus;
+    });
+  }, [courses, searchQuery, statusFilter]);
+
+  const totalPages = Math.ceil(filteredCourses.length / PAGE_SIZE) || 1;
+  const paginatedCourses = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredCourses.slice(start, start + PAGE_SIZE);
+  }, [filteredCourses, currentPage]);
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+  };
+
+  const handleStatusChange = (val: string) => {
+    setStatusFilter(val);
+    setCurrentPage(1);
+  };
 
   if (loading) {
-    return <div className="py-20 text-center text-gray-500">Loading courses...</div>;
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="flex justify-between items-center">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-52" />
+          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl w-64" />
+        </div>
+        <div className="h-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl" />
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Course Moderation</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Review, approve, reject, or disable courses across the platform.</p>
         </div>
-        <div className="w-full sm:w-72">
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <input
             type="text"
-            placeholder="Search by title or instructor..."
+            placeholder="Search title or instructor..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3.5 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="px-3.5 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+          <select
+            value={statusFilter}
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="px-3.5 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="all">All Moderation States</option>
+            <option value="pending">Pending Review</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="disabled">Disabled</option>
+          </select>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xs overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             <thead className="bg-gray-50 dark:bg-gray-900/50">
@@ -92,14 +148,14 @@ export function CourseModeration() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-              {filteredCourses.map((course) => (
+              {paginatedCourses.map((course) => (
                 <tr key={course._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       {course.thumbnailUrl ? (
-                        <img src={course.thumbnailUrl} alt={course.title} className="w-12 h-9 rounded object-cover border border-gray-200 dark:border-gray-700 shrink-0" />
+                        <img src={course.thumbnailUrl} alt={course.title} className="w-12 h-9 rounded-lg object-cover border border-gray-200 dark:border-gray-700 shrink-0" />
                       ) : (
-                        <div className="w-12 h-9 rounded bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="w-12 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
                           {course.title?.substring(0, 2).toUpperCase()}
                         </div>
                       )}
@@ -129,7 +185,7 @@ export function CourseModeration() {
                     <div className="flex flex-col gap-1.5 items-start">
                       <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                         course.isApproved === true
-                          ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                          ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
                           : course.isApproved === false
                           ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
                           : "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
@@ -149,7 +205,7 @@ export function CourseModeration() {
                     {course.isApproved !== true && (
                       <button
                         onClick={() => handleUpdateStatus(course._id, { isApproved: true })}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
                       >
                         Approve
                       </button>
@@ -175,16 +231,24 @@ export function CourseModeration() {
                   </td>
                 </tr>
               ))}
-              {filteredCourses.length === 0 && (
+              {paginatedCourses.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                    {searchQuery ? "No courses matching your search." : "No courses found."}
+                    {searchQuery || statusFilter !== "all" ? "No courses matching your filter criteria." : "No courses found."}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredCourses.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </div>
   );
