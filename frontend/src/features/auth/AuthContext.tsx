@@ -20,6 +20,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  isLoading: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
@@ -30,8 +31,15 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const handleAuthExpired = () => {
+      setToken(null);
+      setUser(null);
+    };
+    window.addEventListener('auth:expired', handleAuthExpired);
+
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     if (storedToken && storedUser) {
@@ -52,14 +60,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem('user');
             setToken(null);
             setUser(null);
+          })
+          .finally(() => {
+            setIsLoading(false);
           });
       } catch {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setToken(null);
         setUser(null);
+        setIsLoading(false);
       }
+    } else {
+      setIsLoading(false);
     }
+
+    return () => {
+      window.removeEventListener('auth:expired', handleAuthExpired);
+    };
   }, []);
 
   const login = (token: string, user: User) => {
@@ -87,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

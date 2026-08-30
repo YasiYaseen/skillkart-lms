@@ -12,6 +12,27 @@ import {
     fetchCourseBookmarks,
 } from '@/features/student/api/bookmarks';
 
+function getEmbedVideoUrl(rawUrl: string): string {
+    if (!rawUrl) return '';
+    try {
+        const parsed = new URL(rawUrl);
+        if (parsed.hostname.includes('youtube.com')) {
+            const videoId = parsed.searchParams.get('v');
+            if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+            if (parsed.pathname.startsWith('/embed/')) return rawUrl;
+        } else if (parsed.hostname === 'youtu.be') {
+            const videoId = parsed.pathname.slice(1).split('?')[0];
+            if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+        } else if (parsed.hostname.includes('vimeo.com')) {
+            const videoId = parsed.pathname.replace(/\D/g, '');
+            if (videoId) return `https://player.vimeo.com/video/${videoId}`;
+        }
+    } catch {
+        // Fallback for relative or non-URL string
+    }
+    return rawUrl;
+}
+
 function LessonViewer() {
     const { courseId, lessonId } = useParams();
     const navigate = useNavigate();
@@ -359,13 +380,29 @@ function LessonViewer() {
                                         <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
                                     </button>
 
-                                    <button
-                                        onClick={handleProgress}
-                                        disabled={!quizPassed && activeLesson.type === 'quiz'}
-                                        className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
-                                    >
-                                        Mark as Complete
-                                    </button>
+                                    {completedLessonIds.includes(activeLesson._id) ? (
+                                        <div className="flex items-center gap-2">
+                                            <span className="bg-emerald-500/20 border border-emerald-400 text-emerald-300 px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                                                <span>✓</span>
+                                                <span>Completed</span>
+                                            </span>
+                                            <button
+                                                onClick={handleProgress}
+                                                className="bg-white/10 hover:bg-white/20 text-gray-200 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
+                                                title="Mark again to refresh progress"
+                                            >
+                                                Update
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={handleProgress}
+                                            disabled={!quizPassed && activeLesson.type === 'quiz'}
+                                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                                        >
+                                            Mark as Complete
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         
@@ -379,22 +416,23 @@ function LessonViewer() {
                                         const content = item.content || {};
 
                                         if (item.type === 'video') {
-                                            const url = content.url || '';
+                                            const rawUrl = content.url || '';
+                                            const embedUrl = getEmbedVideoUrl(rawUrl);
                                             return (
                                                 <div key={item._id} className="item-content">
                                                     <div className="aspect-video bg-black rounded-xl overflow-hidden mb-4 relative drop-shadow-md">
                                                         <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                                                            {url.includes('youtube.com') || url.includes('youtu.be') ? (
+                                                            {embedUrl.includes('youtube.com') || embedUrl.includes('player.vimeo.com') ? (
                                                                 <iframe
                                                                     className="w-full h-full"
-                                                                    src={url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                                                                    src={embedUrl}
                                                                     title="Video player"
                                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                                     allowFullScreen>
                                                                 </iframe>
                                                             ) : (
                                                                 <video controls className="w-full h-full">
-                                                                    <source src={url} />
+                                                                    <source src={rawUrl} />
                                                                 </video>
                                                             )}
                                                         </div>
@@ -411,7 +449,7 @@ function LessonViewer() {
                                                             <span className="font-semibold text-gray-700 text-sm">PDF Resource</span>
                                                             <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-sm text-blue-600 hover:underline font-medium">Open in new tab ↗</a>
                                                         </div>
-                                                        <iframe src={url} className="w-full" style={{ height: '600px' }} title="PDF viewer" />
+                                                        <iframe src={url} className="w-full h-[65vh] min-h-[400px] border-0" title="PDF viewer" />
                                                     </div>
                                                 </div>
                                             );

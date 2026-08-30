@@ -1,4 +1,4 @@
-﻿# SkillKart Feature Strengthening Plan
+# SkillKart Feature Strengthening Plan
 
 > **Purpose:** This document audits each core feature of SkillKart and identifies concrete improvements — including real bugs found by code audit — that will raise UX quality, data integrity, and product polish.
 >
@@ -38,10 +38,10 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 0.1 | Move `setMode(initialMode)` from render body to a `useEffect` in `AuthModals.tsx` | Critical | Not Started |
-| 0.2 | Add global Axios 401 interceptor to auto-logout when JWT expires | Critical | Not Started |
-| 0.3 | Add `isLoading` state to `AuthContext` and block protected routes until auth resolves | High | Not Started |
-| 0.4 | Change submit button label to "Sign In" vs "Create Account" based on mode | High | Not Started |
+| 0.1 | Move `setMode(initialMode)` from render body to a `useEffect` in `AuthModals.tsx` | Critical | Done |
+| 0.2 | Add global Axios 401 interceptor to auto-logout when JWT expires | Critical | Done |
+| 0.3 | Add `isLoading` state to `AuthContext` and block protected routes until auth resolves | High | Done |
+| 0.4 | Change submit button label to "Sign In" vs "Create Account" based on mode | High | Done |
 | 0.5 | Add forgot password flow (request reset email + reset-password page) | High | Not Started |
 | 0.6 | Type `auth.service.ts` request/response interfaces (remove `any`) | Medium | Not Started |
 
@@ -130,10 +130,10 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 4.1 | Remove hardcoded `oldPrice` calculation — either add a real `comparePrice` field to Course model or remove the strikethrough entirely | Critical | Not Started |
-| 4.2 | Fix `studentCount: null` — fetch real enrollment count from API and display it | Critical | Not Started |
-| 4.3 | Remove hardcoded level-based subtitle — use the actual course description's first sentence or add a real `tagline` field | High | Not Started |
-| 4.4 | Replace star rating `<select>` in review form with interactive click-able star icons | High | Not Started |
+| 4.1 | Remove hardcoded `oldPrice` calculation — either add a real `comparePrice` field to Course model or remove the strikethrough entirely | Critical | Done |
+| 4.2 | Fix `studentCount: null` — fetch real enrollment count from API and display it | Critical | Done |
+| 4.3 | Remove hardcoded level-based subtitle — use the actual course description's first sentence or add a real `tagline` field | High | Done |
+| 4.4 | Replace star rating `<select>` in review form with interactive click-able star icons | High | Done |
 | 4.5 | Add skeleton loading state (hero, curriculum, reviews shimmer) | High | Not Started |
 | 4.6 | Add rating distribution bar chart (★5: 60%, ★4: 25%, etc.) above review list | High | Not Started |
 | 4.7 | Make curriculum sections collapsible/expandable | Medium | Not Started |
@@ -159,10 +159,10 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 5.1 | Fix YouTube embed URL transform — use a proper regex or URL-parsing function that handles all YouTube URL variants | Critical | Not Started |
-| 5.2 | Fix PDF viewer height — replace fixed `600px` with responsive `min-h-[60vh] max-h-screen` or `aspect-[4/3]` | Critical | Not Started |
+| 5.1 | Fix YouTube embed URL transform — use a proper regex or URL-parsing function that handles all YouTube URL variants | Critical | Done |
+| 5.2 | Fix PDF viewer height — replace fixed `600px` with responsive `min-h-[60vh] max-h-screen` or `aspect-[4/3]` | Critical | Done |
 | 5.3 | Align backend progress calculation — use the same lesson set (all vs mandatory) in both `getMyCourseProgress` and `getCourseProgressSnapshot` | Critical | Not Started |
-| 5.4 | Change "Mark as Complete" to show "✓ Completed" when lesson is already in `completedLessonIds` | High | Not Started |
+| 5.4 | Change "Mark as Complete" to show "✓ Completed" when lesson is already in `completedLessonIds` | High | Done |
 | 5.5 | Add `react-markdown` (or `marked`) for text-type lesson content rendering | High | Not Started |
 | 5.6 | Show lesson duration in sidebar next to each lesson title | High | Not Started |
 | 5.7 | Show course completion modal/overlay at 100% with direct link to certificate | High | Not Started |
@@ -306,14 +306,14 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 11.1 | Fix `isApproved: undefined` bug — add explicit `"Pending"` status for courses where `isApproved` is `undefined` | Critical | Not Started |
+| 11.1 | Fix `isApproved: undefined` bug — add explicit `"Pending"` status for courses where `isApproved` is `undefined` | Critical | Done |
 | 11.2 | Add search input to Users Management table (filter by name/email/role) | High | Not Started |
 | 11.3 | Add pagination to all admin tables (Users, Courses, Enrollments) | High | Not Started |
-| 11.4 | Add "View Course" link in Course Moderation table so admin can preview before approving | High | Not Started |
+| 11.4 | Add "View Course" link in Course Moderation table so admin can preview before approving | High | Done |
 | 11.5 | Add rejection reason text field when rejecting a course (shown to instructor) | High | Not Started |
 | 11.6 | Add trend badges to admin stat cards ("+12 this week") | Medium | Not Started |
 | 11.7 | Add enrollment/revenue chart (past 7 or 30 days) to Admin Dashboard | Medium | Not Started |
-| 11.8 | Add search/filter to Course Moderation table | Medium | Not Started |
+| 11.8 | Add search/filter to Course Moderation table | Medium | Done |
 
 ---
 

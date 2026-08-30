@@ -88,19 +88,15 @@ function CourseDetailsPage() {
                 setCourse({
                     id: c._id,
                     title: c.title,
-                    subtitle: c.level === 'beginner'
-                        ? 'Beginner friendly starting point.'
-                        : c.level === 'intermediate'
-                            ? 'Intermediate level course.'
-                            : 'Advanced level material.',
+                    subtitle: c.description ? c.description.split('.')[0] + '.' : `${c.level.charAt(0).toUpperCase() + c.level.slice(1)} level course`,
                     instructor: c.instructor?.name || 'Unknown Instructor',
                     instructorId: c.instructor?._id || (typeof c.instructor === 'string' ? c.instructor : null),
                     rating: c.averageRating || 0,
                     ratingCount: c.reviewCount || 0,
-                    studentCount: null,
+                    studentCount: c.studentCount || 0,
                     thumbnail: c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop',
                     price: c.price || 0,
-                    oldPrice: c.price ? (c.price * 1.5).toFixed(2) : 0,
+                    oldPrice: null,
                     totalHours: Math.round((c.durationMinutes || 0) / 60),
                     totalLessons: c.lessons.length,
                     level: c.level || 'beginner',
@@ -268,21 +264,33 @@ function CourseDetailsPage() {
 
                             {/* Review form — only for enrolled students */}
                             {!enrollmentLoading && isEnrolled ? (
-                                <form onSubmit={handleReviewSubmit} className="border border-gray-100 rounded-lg p-4 mb-6 space-y-4">
+                                <form onSubmit={handleReviewSubmit} className="border border-gray-100 dark:border-gray-700 rounded-lg p-4 mb-6 space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="review-rating">
-                                            Your rating
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Your rating <span className="text-red-500">*</span>
                                         </label>
-                                        <select
-                                            id="review-rating"
-                                            value={reviewRating}
-                                            onChange={(event) => setReviewRating(Number(event.target.value))}
-                                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            {[5, 4, 3, 2, 1].map((rating) => (
-                                                 <option key={rating} value={rating}>{rating} stars</option>
+                                        <div className="flex items-center gap-1.5">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <button
+                                                    key={star}
+                                                    type="button"
+                                                    onClick={() => setReviewRating(star)}
+                                                    className="p-1 text-2xl transition-transform hover:scale-110 focus:outline-none"
+                                                    title={`${star} Star${star > 1 ? 's' : ''}`}
+                                                >
+                                                    <span className={star <= reviewRating ? "text-amber-400" : "text-gray-300 dark:text-gray-600"}>
+                                                        ★
+                                                    </span>
+                                                </button>
                                             ))}
-                                        </select>
+                                            <span className="ml-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                                {reviewRating === 5 && "5 Stars - Excellent"}
+                                                {reviewRating === 4 && "4 Stars - Very Good"}
+                                                {reviewRating === 3 && "3 Stars - Average"}
+                                                {reviewRating === 2 && "2 Stars - Poor"}
+                                                {reviewRating === 1 && "1 Star - Terrible"}
+                                            </span>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="review-comment">

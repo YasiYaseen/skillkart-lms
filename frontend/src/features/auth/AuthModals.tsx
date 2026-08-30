@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button, Input, Modal } from '@/components/common';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -22,10 +22,12 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    // Reset mode when reopening
-    if (!isOpen && mode !== initialMode) {
-        setMode(initialMode);
-    }
+    // Reset mode when opening modal
+    useEffect(() => {
+        if (isOpen) {
+            setMode(initialMode);
+        }
+    }, [isOpen, initialMode]);
 
     const handleAuthSuccess = async (token: string, user: any) => {
         login(token, user);
@@ -147,7 +149,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                 />
 
                 <Button type="submit" disabled={loading} className="w-full justify-center mt-2" size="lg">
-                    {loading ? 'Processing...' : (isLogin ? 'Continue' : 'Continue')}
+                    {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
                 </Button>
             </form>
 

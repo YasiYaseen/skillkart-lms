@@ -232,11 +232,16 @@ export async function getCourseById(req: Request, res: Response) {
 
     const durationMinutes = lessons.reduce((sum, lesson) => sum + (lesson.durationMinutes || 0), 0);
     const ratingSummary = await getCourseRatingSummary(course._id.toString());
+    const studentCount = await Enrollment.countDocuments({
+      course: course._id,
+      status: { $in: ["active", "completed"] },
+    });
 
     return res.json({
       course: {
         ...course,
         durationMinutes,
+        studentCount,
         ...ratingSummary,
         sections,
         lessons,
