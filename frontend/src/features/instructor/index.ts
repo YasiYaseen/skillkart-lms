@@ -4,3 +4,4 @@ export { default as MyCourses } from './pages/MyCourses';
 export { default as CreateCourse } from './pages/CreateCourse';
 export { default as EditCourse } from './pages/EditCourse';
 export { default as StudentsEnrolled } from './pages/StudentsEnrolled';
+export { default as Announcements } from './pages/Announcements';

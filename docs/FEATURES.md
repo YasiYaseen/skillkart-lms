@@ -43,7 +43,7 @@ Useful after the MVP is stable.
 | Feature | Status | Doc |
 | --- | --- | --- |
 | Wishlist | Done | [docs/features/later/wishlist.md](features/later/wishlist.md) |
-| Announcements | Not Started | [docs/features/later/announcements.md](features/later/announcements.md) |
+| Announcements | Done | [docs/features/later/announcements.md](features/later/announcements.md) |
 | Discussion or Comments | Not Started | [docs/features/later/discussion-comments.md](features/later/discussion-comments.md) |
 | Advanced Instructor Analytics | Not Started | [docs/features/later/advanced-instructor-analytics.md](features/later/advanced-instructor-analytics.md) |
 | Advanced Search | Not Started | [docs/features/later/advanced-search.md](features/later/advanced-search.md) |

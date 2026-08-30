@@ -1,8 +1,8 @@
 # Announcements
 
-Status: Not Started
+Status: Done
 Priority: Later
-Owner: Unassigned
+Owner: Implemented
 
 ## Goal
 Let instructors share updates with enrolled students.
@@ -13,7 +13,7 @@ Let instructors share updates with enrolled students.
 - Announcements show title, message, and created date
 
 ## Acceptance Checklist
-- [ ] Instructor can create announcement
-- [ ] Enrolled students can view announcements
-- [ ] Non-enrolled students cannot view course announcements
-- [ ] Announcements appear in latest-first order
+- [x] Instructor can create announcement
+- [x] Enrolled students can view announcements
+- [x] Non-enrolled students cannot view course announcements
+- [x] Announcements appear in latest-first order

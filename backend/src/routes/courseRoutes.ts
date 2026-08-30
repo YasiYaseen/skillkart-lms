@@ -19,6 +19,11 @@ import {
   listCourseReviews,
   updateCourseReview,
 } from "../controllers/course/reviewController";
+import {
+  listAnnouncements,
+  createAnnouncement,
+  deleteAnnouncement,
+} from "../controllers/course/announcementController";
 import { protect, optionalProtect } from "../middleware/authMiddleware";
 import { authorize } from "../middleware/roleMiddleware";
 import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
@@ -71,6 +76,23 @@ router.get(
   requireOnboardingCompleted,
   authorize("instructor", "admin"),
   getCourseStudents
+);
+
+// Announcements
+router.get("/:courseId/announcements", protect, listAnnouncements);
+router.post(
+  "/:courseId/announcements",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  createAnnouncement
+);
+router.delete(
+  "/:courseId/announcements/:announcementId",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  deleteAnnouncement
 );
 
 export default router;
