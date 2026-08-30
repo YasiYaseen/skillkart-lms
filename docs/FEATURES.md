@@ -53,6 +53,26 @@ Useful after the MVP is stable.
 | Notes and Bookmarks | Done | [docs/features/later/notes-bookmarks.md](features/later/notes-bookmarks.md) |
 | Email Notifications | Done | [docs/features/later/email-notifications.md](features/later/email-notifications.md) |
 
+## Feature Strengthening
+
+Improvements to existing implemented features to improve UX quality, data integrity, and polish. See the [strengthening plan](features/strengthening/feature-strengthening-plan.md) for full task breakdowns.
+
+| Area | Status | Doc |
+| --- | --- | --- |
+| Home Page Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#1-home-page-landing-page) |
+| User Profile Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#2-user-profile-page) |
+| Course Catalog Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#3-course-catalog--course-list-page) |
+| Course Details Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#4-course-details-page) |
+| Lesson Viewer Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#5-lesson-viewer-learning-page) |
+| Student Dashboard Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#6-student-dashboard-my-courses) |
+| Enrollment Flow Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#7-enrollment-flow) |
+| Quiz & Assessment Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#8-quiz--assessment) |
+| Reviews & Ratings Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#9-reviews--ratings) |
+| Instructor Management Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#10-instructor-course-management) |
+| Admin Dashboard Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#11-admin-dashboard) |
+| Notifications Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#12-notifications) |
+| Certificates Strengthening | Not Started | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#13-certificates) |
+
 ## Nice-To-Have Features
 
 Polish features for the final stage if time allows.
