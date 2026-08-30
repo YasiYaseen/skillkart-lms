@@ -41,8 +41,22 @@ export async function getWishlist(req: Request, res: Response) {
     // Filter out any courses that may have been deleted or are unapproved
     const validItems = items.filter((item) => item.course != null);
 
+    interface PopulatedWishlistItem {
+      _id: Types.ObjectId;
+      createdAt: Date;
+      course: {
+        _id: Types.ObjectId;
+        title: string;
+        description?: string;
+        thumbnailUrl?: string;
+        price?: number;
+        level?: string;
+        instructor?: { name: string; email: string };
+      };
+    }
+
     const enriched = await Promise.all(
-      validItems.map(async (item: any) => {
+      (validItems as unknown as PopulatedWishlistItem[]).map(async (item) => {
         const courseId = item.course._id.toString();
         const [ratingSummary, enrollmentCount] = await Promise.all([
           getCourseRatingSummary(courseId),

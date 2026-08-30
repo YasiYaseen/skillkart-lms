@@ -24,7 +24,7 @@ export async function checkEnrollment(req: Request, res: Response, next: NextFun
     }
 
     // Attach for downstream use if needed
-    (req as any).enrollment = enrollment;
+    req.enrollment = enrollment;
     next();
   } catch {
     return res.status(500).json({ message: "Server error" });

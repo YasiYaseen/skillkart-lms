@@ -1,8 +1,8 @@
 # Instructor Public Profile
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Show public instructor information and courses.
@@ -13,6 +13,6 @@ Show public instructor information and courses.
 - Course detail page links to instructor profile
 
 ## Acceptance Checklist
-- [ ] Instructor profile page exists
-- [ ] Profile shows instructor details
-- [ ] Profile shows published courses
+- [x] Instructor profile page exists
+- [x] Profile shows instructor details
+- [x] Profile shows published courses

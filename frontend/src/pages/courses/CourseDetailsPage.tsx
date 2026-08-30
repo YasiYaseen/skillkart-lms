@@ -1,5 +1,5 @@
 import CourseStructure from '@/components/course/CourseStructure';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '@/lib/api';
@@ -87,6 +87,7 @@ function CourseDetailsPage() {
                             ? 'Intermediate level course.'
                             : 'Advanced level material.',
                     instructor: c.instructor?.name || 'Unknown Instructor',
+                    instructorId: c.instructor?._id || (typeof c.instructor === 'string' ? c.instructor : null),
                     rating: c.averageRating || 0,
                     ratingCount: c.reviewCount || 0,
                     studentCount: null,
@@ -188,8 +189,19 @@ function CourseDetailsPage() {
                                 )}
                             </div>
 
-                            <div className="text-sm text-gray-700">
-                                Course by <a href="#" className="text-blue-600 underline font-medium">{course.instructor}</a>
+                            <div className="text-sm text-gray-700 dark:text-gray-300">
+                                Course by{' '}
+                                {course.instructorId ? (
+                                    <Link
+                                        to={`/instructors/${course.instructorId}`}
+                                        className="text-blue-600 dark:text-blue-400 font-medium hover:underline inline-flex items-center gap-1"
+                                    >
+                                        {course.instructor}
+                                        <span className="text-xs">↗</span>
+                                    </Link>
+                                ) : (
+                                    <span className="font-medium text-gray-900 dark:text-white">{course.instructor}</span>
+                                )}
                             </div>
 
                             {course.tags && course.tags.length > 0 && (

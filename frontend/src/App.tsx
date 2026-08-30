@@ -8,6 +8,7 @@ import Home from '@pages/Home';
 import Profile from '@pages/Profile';
 import MyCertificatesPage from '@pages/MyCertificatesPage';
 import VerifyCertificatePage from '@pages/VerifyCertificatePage';
+import InstructorPublicProfile from '@pages/InstructorPublicProfile';
 import { WishlistPage } from '@features/wishlist';
 import { OnboardingGuard } from '@/components/OnboardingGuard';
 import {
@@ -42,6 +43,7 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/courses" element={<CourseList />} />
                         <Route path="/courses/:courseId" element={<CourseDetailsPage />} />
+                        <Route path="/instructors/:instructorId" element={<InstructorPublicProfile />} />
                         <Route path="/onboarding" element={<OnboardingPage />} />
                         <Route path="/certificates/verify/:certificateId" element={<VerifyCertificatePage />} />
 
