@@ -50,7 +50,7 @@ Useful after the MVP is stable.
 
 | Advanced Search | Done | [docs/features/later/advanced-search.md](features/later/advanced-search.md) |
 
-| Notes and Bookmarks | Not Started | [docs/features/later/notes-bookmarks.md](features/later/notes-bookmarks.md) |
+| Notes and Bookmarks | Done | [docs/features/later/notes-bookmarks.md](features/later/notes-bookmarks.md) |
 | Email Notifications | Not Started | [docs/features/later/email-notifications.md](features/later/email-notifications.md) |
 
 ## Nice-To-Have Features

@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { LessonQuiz } from '@/components/LessonQuiz';
 import { CourseAnnouncements } from '@/features/student/components/CourseAnnouncements';
 import { LessonDiscussion } from '@/features/student/components/LessonDiscussion';
+import { LessonNotes } from '@/features/student/components/LessonNotes';
+import {
+    fetchLessonBookmarkStatus,
+    toggleLessonBookmark,
+    fetchCourseBookmarks,
+} from '@/features/student/api/bookmarks';
 
 function LessonViewer() {
     const { courseId, lessonId } = useParams();
@@ -15,11 +21,13 @@ function LessonViewer() {
     const [lessons, setLessons] = useState<any[]>([]);
     const [items, setItems] = useState<any[]>([]);
     const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
+    const [bookmarkedLessonIds, setBookmarkedLessonIds] = useState<string[]>([]);
+    const [isBookmarked, setIsBookmarked] = useState(false);
+    const [togglingBookmark, setTogglingBookmark] = useState(false);
     const [progressPercentage, setProgressPercentage] = useState<number>(0);
     const [quizPassed, setQuizPassed] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'lesson' | 'discussion' | 'announcements'>('lesson');
-
+    const [activeTab, setActiveTab] = useState<'lesson' | 'notes' | 'discussion' | 'announcements'>('lesson');
 
     // Fetch course structure only once per course visit
     useEffect(() => {
@@ -42,6 +50,35 @@ function LessonViewer() {
         fetchCourse();
     }, [courseId]);
 
+    // Fetch course bookmarks
+    const loadCourseBookmarks = useCallback(async () => {
+        if (!courseId) return;
+        try {
+            const bookmarks = await fetchCourseBookmarks(courseId);
+            setBookmarkedLessonIds(bookmarks.map((b) => b.lesson?._id || (b.lesson as any)));
+        } catch {
+            // Silently fail for non-enrolled
+        }
+    }, [courseId]);
+
+    useEffect(() => {
+        loadCourseBookmarks();
+    }, [loadCourseBookmarks]);
+
+    // Fetch active lesson bookmark status
+    useEffect(() => {
+        if (!lessonId) return;
+        let isMounted = true;
+        fetchLessonBookmarkStatus(lessonId)
+            .then((status) => {
+                if (isMounted) setIsBookmarked(status);
+            })
+            .catch(() => {});
+        return () => {
+            isMounted = false;
+        };
+    }, [lessonId]);
+
     // Fetch progress and handle lesson redirect whenever lesson context changes
     useEffect(() => {
         if (!courseId) return;
@@ -57,10 +94,9 @@ function LessonViewer() {
                     if (p.lastLessonId) {
                         navigate(`/learn/${courseId}/${p.lastLessonId}`, { replace: true });
                     }
-                    // Fallback to first lesson handled after course loads (see course effect)
                 }
             } catch {
-                // Progress fetch failing silently is acceptable (non-enrolled edge case)
+                // Progress fetch failing silently is acceptable
             }
         };
 
@@ -90,13 +126,32 @@ function LessonViewer() {
             await api.post(`/lessons/${lessonId}/progress`, { completed: true });
             toast.success('Progress saved!');
             
-            // Refetch progress silently to update UI
             const progRes = await api.get(`/me/courses/${courseId}/progress`);
             const p = progRes.data;
             setCompletedLessonIds(p.completedLessonIds || []);
             setProgressPercentage(p.progressPercentage || 0);
-        } catch(err) {
+        } catch {
             toast.error('Failed to save progress');
+        }
+    };
+
+    const handleToggleBookmark = async () => {
+        if (!lessonId || togglingBookmark) return;
+        try {
+            setTogglingBookmark(true);
+            const res = await toggleLessonBookmark(lessonId);
+            setIsBookmarked(res.bookmarked);
+            if (res.bookmarked) {
+                setBookmarkedLessonIds((prev) => Array.from(new Set([...prev, lessonId])));
+                toast.success('Lesson bookmarked!');
+            } else {
+                setBookmarkedLessonIds((prev) => prev.filter((id) => id !== lessonId));
+                toast.info('Bookmark removed');
+            }
+        } catch {
+            toast.error('Failed to update bookmark');
+        } finally {
+            setTogglingBookmark(false);
         }
     };
 
@@ -135,6 +190,8 @@ function LessonViewer() {
                                     {secLessons.map((les, lIdx) => {
                                         const isActive = les._id === lessonId;
                                         const isCompleted = completedLessonIds.includes(les._id);
+                                        const isLessonBookmarked = bookmarkedLessonIds.includes(les._id);
+
                                         return (
                                             <Link 
                                                 key={les._id} 
@@ -146,9 +203,14 @@ function LessonViewer() {
                                                         <span className="text-gray-400 font-mono mt-0.5">{lIdx + 1}.</span>
                                                         <span>{les.title}</span>
                                                     </div>
-                                                    {isCompleted && (
-                                                        <span className="text-green-500 font-bold shrink-0">✓</span>
-                                                    )}
+                                                    <div className="flex items-center gap-1 shrink-0">
+                                                        {isLessonBookmarked && (
+                                                            <span title="Bookmarked" className="text-amber-500 text-xs">🔖</span>
+                                                        )}
+                                                        {isCompleted && (
+                                                            <span className="text-green-500 font-bold">✓</span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </Link>
                                         );
@@ -175,10 +237,10 @@ function LessonViewer() {
                 ) : (
                     <div className="max-w-4xl mx-auto">
                         {/* Tab bar */}
-                        <div className="flex items-center gap-1 mb-6 border-b border-gray-200">
+                        <div className="flex items-center gap-1 mb-6 border-b border-gray-200 overflow-x-auto">
                             <button
                                 onClick={() => setActiveTab('lesson')}
-                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap ${
                                     activeTab === 'lesson'
                                         ? 'border-blue-600 text-blue-600'
                                         : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -187,8 +249,21 @@ function LessonViewer() {
                                 Lesson Content
                             </button>
                             <button
+                                onClick={() => setActiveTab('notes')}
+                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                                    activeTab === 'notes'
+                                        ? 'border-blue-600 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                </svg>
+                                Notes
+                            </button>
+                            <button
                                 onClick={() => setActiveTab('discussion')}
-                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 ${
+                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                                     activeTab === 'discussion'
                                         ? 'border-blue-600 text-blue-600'
                                         : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -201,7 +276,7 @@ function LessonViewer() {
                             </button>
                             <button
                                 onClick={() => setActiveTab('announcements')}
-                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 ${
+                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                                     activeTab === 'announcements'
                                         ? 'border-blue-600 text-blue-600'
                                         : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -213,6 +288,16 @@ function LessonViewer() {
                                 Announcements
                             </button>
                         </div>
+
+                        {/* Notes tab */}
+                        {activeTab === 'notes' && (
+                            <LessonNotes
+                                courseId={courseId!}
+                                lessonId={lessonId!}
+                                lessonTitle={activeLesson.title}
+                                onNavigateLesson={(targetId) => navigate(`/learn/${courseId}/${targetId}`)}
+                            />
+                        )}
 
                         {/* Discussion tab */}
                         {activeTab === 'discussion' && (
@@ -227,127 +312,161 @@ function LessonViewer() {
                             <CourseAnnouncements courseId={courseId!} />
                         )}
 
-
                         {/* Lesson Content tab */}
                         {activeTab === 'lesson' && (
                         <div className="border border-gray-200 bg-white shadow-sm rounded-2xl overflow-hidden">
-                        <div className="p-6 md:p-8 bg-gray-900 text-white flex justify-between items-center">
-                            <h1 className="text-2xl font-bold">{activeLesson.title}</h1>
-                            <button
-                                onClick={handleProgress}
-                                disabled={!quizPassed && activeLesson.type === 'quiz'}
-                                className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                Mark as Complete
-                            </button>
-                        </div>
-
-                        
-                        <div className="p-6 md:p-8 space-y-8">
-                            {activeItems.length === 0 ? (
-                                <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl">
-                                    <p className="text-gray-500">No content available for this lesson yet.</p>
+                            <div className="p-6 md:p-8 bg-gray-900 text-white flex flex-wrap justify-between items-center gap-4">
+                                <div>
+                                    <span className="text-xs text-blue-400 font-semibold tracking-wider uppercase">
+                                        Lesson {lessonIndex + 1}
+                                    </span>
+                                    <h1 className="text-2xl font-bold">{activeLesson.title}</h1>
                                 </div>
-                            ) : (
-                                activeItems.map((item) => {
-                                    const content = item.content || {};
 
-                                    if (item.type === 'video') {
-                                        const url = content.url || '';
-                                        return (
-                                            <div key={item._id} className="item-content">
-                                                <div className="aspect-video bg-black rounded-xl overflow-hidden mb-4 relative drop-shadow-md">
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                                                        {url.includes('youtube.com') || url.includes('youtu.be') ? (
-                                                            <iframe
-                                                                className="w-full h-full"
-                                                                src={url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                                                                title="Video player"
-                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                                allowFullScreen>
-                                                            </iframe>
-                                                        ) : (
-                                                            <video controls className="w-full h-full">
-                                                                <source src={url} />
-                                                            </video>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    } else if (item.type === 'pdf') {
-                                        const url = content.url || '';
-                                        return (
-                                            <div key={item._id} className="item-content">
-                                                <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                                                    <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-200 bg-white">
-                                                        <span className="text-red-500 text-xl">📄</span>
-                                                        <span className="font-semibold text-gray-700 text-sm">PDF Resource</span>
-                                                        <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-sm text-blue-600 hover:underline font-medium">Open in new tab ↗</a>
-                                                    </div>
-                                                    <iframe src={url} className="w-full" style={{ height: '600px' }} title="PDF viewer" />
-                                                </div>
-                                            </div>
-                                        );
-                                    } else if (item.type === 'link') {
-                                        const url = content.url || '';
-                                        return (
-                                            <div key={item._id} className="item-content">
-                                                <a
-                                                    href={url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-xl p-5 hover:bg-blue-100 transition-colors group"
-                                                >
-                                                    <div className="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center shrink-0 text-lg group-hover:bg-blue-700 transition-colors">
-                                                        🔗
-                                                    </div>
-                                                    <div className="overflow-hidden">
-                                                        <p className="font-semibold text-blue-700 text-sm">External Resource</p>
-                                                        <p className="text-blue-500 text-xs truncate">{url}</p>
-                                                    </div>
-                                                    <span className="ml-auto text-blue-400 text-lg shrink-0">↗</span>
-                                                </a>
-                                            </div>
-                                        );
-                                    } else {
-                                        return (
-                                            <div key={item._id} className="item-content">
-                                                <div className="prose max-w-none text-gray-700 bg-gray-50 p-6 rounded-xl border border-gray-100 whitespace-pre-wrap">
-                                                    {content.text}
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-                                })
-                            )}
-
-                            {/* Quiz - renders only if lesson has a quiz */}
-                            <LessonQuiz
-                                lessonId={lessonId!}
-                                onQuizPassed={() => setQuizPassed(true)}
-                            />
-
-                            {/* Navigation Buttons */}
-                            <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">
-                                {prevLesson ? (
+                                <div className="flex items-center gap-3">
+                                    {/* Bookmark Toggle Button */}
                                     <button
-                                        onClick={() => navigate(`/learn/${courseId}/${prevLesson._id}`)}
-                                        className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors"
+                                        onClick={handleToggleBookmark}
+                                        disabled={togglingBookmark}
+                                        title={isBookmarked ? 'Remove bookmark' : 'Bookmark this lesson'}
+                                        className={`px-3.5 py-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold ${
+                                            isBookmarked
+                                                ? 'bg-amber-500/20 border-amber-400 text-amber-300 hover:bg-amber-500/30'
+                                                : 'bg-white/10 border-white/20 text-gray-200 hover:bg-white/20'
+                                        }`}
                                     >
-                                        ← Previous Lesson
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill={isBookmarked ? 'currentColor' : 'none'}
+                                            stroke="currentColor"
+                                            strokeWidth={isBookmarked ? 0 : 2}
+                                            className="w-4 h-4 text-amber-400"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
+                                            />
+                                        </svg>
+                                        <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
                                     </button>
-                                ) : <div />}
 
-                                {nextLesson && (
                                     <button
-                                        onClick={() => navigate(`/learn/${courseId}/${nextLesson._id}`)}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all"
+                                        onClick={handleProgress}
+                                        disabled={!quizPassed && activeLesson.type === 'quiz'}
+                                        className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
                                     >
-                                        Next Lesson →
+                                        Mark as Complete
                                     </button>
-                                )}
+                                </div>
                             </div>
+                        
+                            <div className="p-6 md:p-8 space-y-8">
+                                {activeItems.length === 0 ? (
+                                    <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl">
+                                        <p className="text-gray-500">No content available for this lesson yet.</p>
+                                    </div>
+                                ) : (
+                                    activeItems.map((item) => {
+                                        const content = item.content || {};
+
+                                        if (item.type === 'video') {
+                                            const url = content.url || '';
+                                            return (
+                                                <div key={item._id} className="item-content">
+                                                    <div className="aspect-video bg-black rounded-xl overflow-hidden mb-4 relative drop-shadow-md">
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                                                            {url.includes('youtube.com') || url.includes('youtu.be') ? (
+                                                                <iframe
+                                                                    className="w-full h-full"
+                                                                    src={url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                                                                    title="Video player"
+                                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                    allowFullScreen>
+                                                                </iframe>
+                                                            ) : (
+                                                                <video controls className="w-full h-full">
+                                                                    <source src={url} />
+                                                                </video>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        } else if (item.type === 'pdf') {
+                                            const url = content.url || '';
+                                            return (
+                                                <div key={item._id} className="item-content">
+                                                    <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                                                        <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-200 bg-white">
+                                                            <span className="text-red-500 text-xl">📄</span>
+                                                            <span className="font-semibold text-gray-700 text-sm">PDF Resource</span>
+                                                            <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-sm text-blue-600 hover:underline font-medium">Open in new tab ↗</a>
+                                                        </div>
+                                                        <iframe src={url} className="w-full" style={{ height: '600px' }} title="PDF viewer" />
+                                                    </div>
+                                                </div>
+                                            );
+                                        } else if (item.type === 'link') {
+                                            const url = content.url || '';
+                                            return (
+                                                <div key={item._id} className="item-content">
+                                                    <a
+                                                        href={url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-xl p-5 hover:bg-blue-100 transition-colors group"
+                                                    >
+                                                        <div className="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center shrink-0 text-lg group-hover:bg-blue-700 transition-colors">
+                                                            🔗
+                                                        </div>
+                                                        <div className="overflow-hidden">
+                                                            <p className="font-semibold text-blue-700 text-sm">External Resource</p>
+                                                            <p className="text-blue-500 text-xs truncate">{url}</p>
+                                                        </div>
+                                                        <span className="ml-auto text-blue-400 text-lg shrink-0">↗</span>
+                                                    </a>
+                                                </div>
+                                            );
+                                        } else {
+                                            return (
+                                                <div key={item._id} className="item-content">
+                                                    <div className="prose max-w-none text-gray-700 bg-gray-50 p-6 rounded-xl border border-gray-100 whitespace-pre-wrap">
+                                                        {content.text}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                    })
+                                )}
+
+                                {/* Quiz - renders only if lesson has a quiz */}
+                                <LessonQuiz
+                                    lessonId={lessonId!}
+                                    onQuizPassed={() => setQuizPassed(true)}
+                                />
+
+                                {/* Navigation Buttons */}
+                                <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">
+                                    {prevLesson ? (
+                                        <button
+                                            onClick={() => navigate(`/learn/${courseId}/${prevLesson._id}`)}
+                                            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors"
+                                        >
+                                            ← Previous Lesson
+                                        </button>
+                                    ) : <div />}
+
+                                    {nextLesson && (
+                                        <button
+                                            onClick={() => navigate(`/learn/${courseId}/${nextLesson._id}`)}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all"
+                                        >
+                                            Next Lesson →
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         )}

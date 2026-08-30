@@ -63,6 +63,9 @@ function Header() {
                   <Link to="/my-courses" className="header-nav-link">
                     My Courses
                   </Link>
+                  <Link to="/study-hub" className="header-nav-link">
+                    Study Hub
+                  </Link>
                   <Link to="/wishlist" className="header-nav-link">
                     Wishlist
                   </Link>

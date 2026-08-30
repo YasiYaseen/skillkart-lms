@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from '@components/layout';
 import { ProtectedRoute } from '@components/common';
 import { CourseList, CourseDetailsPage } from '@pages/courses';
-import { MyCourses as StudentMyCourses, LessonViewer } from '@features/student';
+import { MyCourses as StudentMyCourses, LessonViewer, NotesAndBookmarksPage } from '@features/student';
 import OnboardingPage from '@pages/OnboardingPage';
 import Home from '@pages/Home';
 import Profile from '@pages/Profile';
@@ -48,6 +48,9 @@ function App() {
                         <Route element={<ProtectedRoute allowedRoles={['student', 'admin', 'instructor']} />}>
                             <Route path="/my-courses" element={<StudentMyCourses />} />
                             <Route path="/wishlist" element={<WishlistPage />} />
+                            <Route path="/study-hub" element={<NotesAndBookmarksPage />} />
+                            <Route path="/my-notes" element={<NotesAndBookmarksPage />} />
+                            <Route path="/my-bookmarks" element={<NotesAndBookmarksPage />} />
                             <Route path="/learn/:courseId" element={<LessonViewer />} />
                             <Route path="/learn/:courseId/:lessonId" element={<LessonViewer />} />
                             <Route path="/profile" element={<Profile />} />

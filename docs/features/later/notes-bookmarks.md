@@ -1,8 +1,8 @@
 # Notes and Bookmarks
 
-Status: Not Started
+Status: Done
 Priority: Later
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Let students save personal study notes and important lessons.
@@ -13,7 +13,7 @@ Let students save personal study notes and important lessons.
 - Students can bookmark important lessons
 
 ## Acceptance Checklist
-- [ ] Student can create lesson note
-- [ ] Student can edit lesson note
-- [ ] Student can delete lesson note
-- [ ] Student can bookmark and unbookmark lessons
+- [x] Student can create lesson note
+- [x] Student can edit lesson note
+- [x] Student can delete lesson note
+- [x] Student can bookmark and unbookmark lessons

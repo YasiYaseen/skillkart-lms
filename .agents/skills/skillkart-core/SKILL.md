@@ -135,3 +135,4 @@ All skill files for this project live in `.agents/skills/`. Before implementing 
 | `skillkart-notifications` | Notification model, trigger patterns, supported types |
 | `skillkart-wishlist` | Wishlist CRUD, enriched course response |
 | `skillkart-file-upload` | Multer config, allowed types, size limits, serving files |
+| `skillkart-notes-bookmarks` | Personal study notes, lesson bookmarks, scoped queries, study hub |
