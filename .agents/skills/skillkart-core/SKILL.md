@@ -150,3 +150,5 @@ All skill files for this project live in `.agents/skills/`. Before implementing 
 | `skillkart-faq` | Course FAQ management, ordering, and accordion viewer |
 | `skillkart-bulk-upload` | Bulk lesson creation and CSV / batch parsing for sections |
 | `skillkart-admin-settings` | Platform system configuration, revenue commission split, maintenance controls, SMTP diagnostics |
+| `skillkart-assignments` | Course assignments, rubric criteria, student submissions, and instructor gradebook |
+| `skillkart-cart-coupons` | Multi-course cart, coupons, order history, invoice receipts, and payment simulator |

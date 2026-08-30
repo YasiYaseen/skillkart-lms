@@ -52,6 +52,10 @@ Useful after the MVP is stable.
 
 | Notes and Bookmarks | Done | [docs/features/later/notes-bookmarks.md](features/later/notes-bookmarks.md) |
 | Email Notifications | Done | [docs/features/later/email-notifications.md](features/later/email-notifications.md) |
+| Course Assignments & Gradebook | Done | [docs/features/later/assignments.md](features/later/assignments.md) |
+| Cart, Coupons & Invoices | Done | [docs/features/later/cart-coupons.md](features/later/cart-coupons.md) |
+| Instructor Earnings & Payouts | Done | [docs/features/later/instructor-earnings-payouts.md](features/later/instructor-earnings-payouts.md) |
+| Admin Financial Reports & Analytics | Done | [docs/features/later/admin-financial-reports.md](features/later/admin-financial-reports.md) |
 
 ## Feature Strengthening
 
