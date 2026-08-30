@@ -134,12 +134,12 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 | 4.2 | Fix `studentCount: null` — fetch real enrollment count from API and display it | Critical | Done |
 | 4.3 | Remove hardcoded level-based subtitle — use the actual course description's first sentence or add a real `tagline` field | High | Done |
 | 4.4 | Replace star rating `<select>` in review form with interactive click-able star icons | High | Done |
-| 4.5 | Add skeleton loading state (hero, curriculum, reviews shimmer) | High | Not Started |
-| 4.6 | Add rating distribution bar chart (★5: 60%, ★4: 25%, etc.) above review list | High | Not Started |
-| 4.7 | Make curriculum sections collapsible/expandable | Medium | Not Started |
-| 4.8 | Add total course duration summary next to lesson count in curriculum | Medium | Not Started |
+| 4.5 | Add skeleton loading state (hero, curriculum, reviews shimmer) | High | Done |
+| 4.6 | Add rating distribution bar chart (★5: 60%, ★4: 25%, etc.) above review list | High | Done |
+| 4.7 | Make curriculum sections collapsible/expandable | Medium | Done |
+| 4.8 | Add total course duration summary next to lesson count in curriculum | Medium | Done |
 | 4.9 | Add "What you'll learn" section that instructors can populate | Medium | Not Started |
-| 4.10 | Add 404 error state with back button instead of bare red text | Medium | Not Started |
+| 4.10 | Add 404 error state with back button instead of bare red text | Medium | Done |
 
 ---
 
@@ -363,9 +363,9 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 | # | Task | Priority | Status |
 |---|---|---|---|
 | 14.1 | Add skeleton loading state (hero shimmer, curriculum shimmer, reviews shimmer) | High | Done |
-| 14.2 | Add rating distribution bar chart (★5: 60%, ★4: 25%, etc.) above review list | High | Not Started |
-| 14.3 | Make curriculum sections collapsible/expandable (accordion toggle per section) | Medium | Not Started |
-| 14.4 | Add total course duration summary ("14h 30m total · 52 lessons") in curriculum header | Medium | Not Started |
+| 14.2 | Add rating distribution bar chart (★5: 60%, ★4: 25%, etc.) above review list | High | Done |
+| 14.3 | Make curriculum sections collapsible/expandable (accordion toggle per section) | Medium | Done |
+| 14.4 | Add total course duration summary ("14h 30m total · 52 lessons") in curriculum header | Medium | Done |
 | 14.5 | Add "What you'll learn" bullet list section (instructor-populated field on Course model) | Medium | Not Started |
 | 14.6 | Add proper 404 error state with back button and "Browse Courses" CTA instead of bare red text | Medium | Done |
 | 14.7 | Add reviews pagination (show 5, load more) to avoid slow load on popular courses | Medium | Not Started |

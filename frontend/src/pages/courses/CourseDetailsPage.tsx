@@ -1,7 +1,7 @@
 import CourseStructure from '@/components/course/CourseStructure';
 import CourseFAQAccordion from '@/components/course/CourseFAQAccordion';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
@@ -9,6 +9,15 @@ import { EnrollButton } from '@/features/enrollment/components/EnrollButton';
 import { useEnrollment } from '@/features/enrollment/hooks/useEnrollment';
 import { WishlistButton } from '@/features/wishlist';
 import { useAuth } from '@/features/auth/AuthContext';
+
+function formatMinutes(totalMins: number) {
+    if (!totalMins || totalMins <= 0) return '0m';
+    const hours = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    if (hours > 0 && mins > 0) return `${hours}h ${mins}m`;
+    if (hours > 0) return `${hours}h`;
+    return `${mins}m`;
+}
 
 type CourseReview = {
     _id: string;
@@ -151,16 +160,17 @@ function CourseDetailsPage() {
                 const c = res.data.course;
                 const mappedSections: MappedSection[] = c.sections.map((sec: RawCourseDetailsSection) => {
                     const sectionLessons = c.lessons.filter((l: RawCourseDetailsLesson) => l.section === sec._id);
+                    const secDurationMins = sectionLessons.reduce((acc: number, l: RawCourseDetailsLesson) => acc + (l.durationMinutes || 0), 0);
                     return {
                         id: sec._id,
                         title: sec.title,
                         lectureCount: sectionLessons.length,
-                        duration: sectionLessons.reduce((acc: number, l: RawCourseDetailsLesson) => acc + (l.durationMinutes || 0), 0) + ' m',
+                        duration: formatMinutes(secDurationMins),
                         lectures: sectionLessons.map((l: RawCourseDetailsLesson) => {
                             const lessonItems = (c.lessonItems || []).filter((i: RawCourseDetailsLessonItem) => i.lesson === l._id);
                             return {
                                 title: l.title,
-                                duration: (l.durationMinutes || 0) + ' mins',
+                                duration: formatMinutes(l.durationMinutes || 0),
                                 items: lessonItems
                             };
                         })
@@ -191,7 +201,7 @@ function CourseDetailsPage() {
                     structure: {
                         totalSections: c.sections.length,
                         totalLectures: c.lessons.length,
-                        totalDuration: (c.durationMinutes || 0) + "m",
+                        totalDuration: formatMinutes(c.durationMinutes || 0),
                         sections: mappedSections
                     }
                 });
@@ -205,6 +215,20 @@ function CourseDetailsPage() {
                 setLoading(false);
             });
     }, [courseId]);
+
+    const ratingBreakdown = useMemo(() => {
+        const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        reviews.forEach((r) => {
+            const star = Math.min(5, Math.max(1, Math.round(r.rating)));
+            counts[star] = (counts[star] || 0) + 1;
+        });
+        const total = reviews.length;
+        return [5, 4, 3, 2, 1].map((star) => ({
+            star,
+            count: counts[star] || 0,
+            percentage: total > 0 ? Math.round(((counts[star] || 0) / total) * 100) : 0,
+        }));
+    }, [reviews]);
 
     const myReview = reviews.find((r: CourseReview) => {
         const studentId = typeof r.student === 'object' ? r.student?._id : r.student;
@@ -436,9 +460,9 @@ function CourseDetailsSkeleton() {
                         />
 
                         {/* 3. Course Description */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">Course Description</h2>
-                            <div className="space-y-4 text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700 p-6 md:p-8">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Course Description</h2>
+                            <div className="space-y-4 text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
                                 {course.description.map((paragraph: string, idx: number) => (
                                     <p key={idx}>{paragraph}</p>
                                 ))}
@@ -449,27 +473,67 @@ function CourseDetailsSkeleton() {
                         <CourseFAQAccordion courseId={courseId!} />
 
                         {/* 5. Student Reviews */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700 p-6 md:p-8">
                             <div className="flex items-center justify-between gap-4 mb-6">
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Student Reviews</h2>
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Student Reviews</h2>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                         {course.ratingCount > 0 ? `${course.rating} average from ${course.ratingCount} reviews` : 'No reviews yet'}
                                     </p>
                                 </div>
                                 {course.rating > 0 && (
-                                    <div className="flex items-center gap-1 text-orange-500 font-bold">
+                                    <div className="flex items-center gap-1 text-amber-500 font-bold text-lg">
                                         <span>{course.rating}</span>
                                         <StarIcon />
                                     </div>
                                 )}
                             </div>
 
+                            {/* Rating Distribution Bar Chart */}
+                            {reviews.length > 0 && (
+                                <div className="bg-gray-50 dark:bg-gray-900/40 rounded-2xl p-6 mb-8 border border-gray-100 dark:border-gray-700/60 grid grid-cols-1 sm:grid-cols-3 gap-6 items-center">
+                                    <div className="text-center sm:border-r border-gray-200 dark:border-gray-700 sm:pr-6">
+                                        <div className="text-4xl font-extrabold text-gray-900 dark:text-white mb-1">
+                                            {course.rating.toFixed(1)}
+                                        </div>
+                                        <div className="flex justify-center items-center gap-1 text-amber-400 text-lg mb-1">
+                                            {[1, 2, 3, 4, 5].map((s) => (
+                                                <span key={s} className={s <= Math.round(course.rating) ? "text-amber-400" : "text-gray-300 dark:text-gray-600"}>
+                                                    ★
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Course Rating • {course.ratingCount} review{course.ratingCount !== 1 ? 's' : ''}
+                                        </p>
+                                    </div>
+                                    <div className="sm:col-span-2 space-y-2">
+                                        {ratingBreakdown.map((row) => (
+                                            <div key={row.star} className="flex items-center gap-3 text-xs">
+                                                <span className="w-12 font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                                                    <span>{row.star}</span>
+                                                    <span className="text-amber-400">★</span>
+                                                </span>
+                                                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                                    <div
+                                                        className="bg-amber-400 h-2 rounded-full transition-all duration-500"
+                                                        style={{ width: `${row.percentage}%` }}
+                                                    />
+                                                </div>
+                                                <span className="w-10 text-right text-gray-400 dark:text-gray-500 font-mono">
+                                                    {row.percentage}%
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Review form — only for enrolled students */}
                             {!enrollmentLoading && isEnrolled ? (
-                                <form onSubmit={handleReviewSubmit} className="border border-gray-100 dark:border-gray-700 rounded-lg p-4 mb-6 space-y-4">
+                                <form onSubmit={handleReviewSubmit} className="border border-gray-100 dark:border-gray-700 rounded-2xl p-5 mb-6 space-y-4 bg-gray-50/50 dark:bg-gray-900/30">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="font-semibold text-sm text-gray-900">
+                                        <h3 className="font-semibold text-sm text-gray-900 dark:text-white">
                                             {myReview ? 'Update Your Review' : 'Leave a Review'}
                                         </h3>
                                         {myReview && (
@@ -510,7 +574,7 @@ function CourseDetailsSkeleton() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="review-comment">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" htmlFor="review-comment">
                                             Your review
                                         </label>
                                         <textarea
@@ -521,53 +585,53 @@ function CourseDetailsSkeleton() {
                                             minLength={5}
                                             maxLength={1000}
                                             required
-                                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                             placeholder="Share what helped you most."
                                         />
                                     </div>
                                     <button
                                         type="submit"
                                         disabled={submittingReview}
-                                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors shadow-xs"
                                     >
-                                        {submittingReview ? 'Submitting...' : myReview ? 'Update Review' : 'Submit review'}
+                                        {submittingReview ? 'Submitting...' : myReview ? 'Update Review' : 'Submit Review'}
                                     </button>
                                 </form>
                             ) : !enrollmentLoading && !isEnrolled ? (
-                                <div className="border border-dashed border-gray-200 rounded-lg p-4 mb-6 text-sm text-gray-500 text-center">
+                                <div className="border border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-5 mb-6 text-sm text-gray-500 dark:text-gray-400 text-center">
                                     {user ? 'Enroll in this course to leave a review.' : 'Log in and enroll to leave a review.'}
                                 </div>
                             ) : null}
 
                             <div className="space-y-4">
                                 {reviews.length === 0 && (
-                                    <p className="text-sm text-gray-500">Students who enroll can leave the first review.</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Students who enroll can leave the first review.</p>
                                 )}
                                 {reviews.map((review) => {
                                     const isAuthor = review.student?._id === user?.id || (typeof review.student === 'string' && review.student === user?.id);
                                     return (
-                                        <div key={review._id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                                        <div key={review._id} className="border-b border-gray-100 dark:border-gray-700/60 pb-4 last:border-0 last:pb-0">
                                             <div className="flex items-center justify-between gap-3 mb-2">
-                                                <span className="font-medium text-gray-900">{review.student?.name || 'Student'}</span>
-                                                <span className="flex items-center gap-1 text-sm font-semibold text-orange-500">
+                                                <span className="font-semibold text-gray-900 dark:text-white">{review.student?.name || 'Student'}</span>
+                                                <span className="flex items-center gap-1 text-sm font-semibold text-amber-500">
                                                     {review.rating} <StarIcon />
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-700 leading-relaxed">{review.comment}</p>
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{review.comment}</p>
                                             <div className="flex items-center justify-between mt-2">
-                                                <p className="text-xs text-gray-400">
+                                                <p className="text-xs text-gray-400 dark:text-gray-500">
                                                     {new Date(review.createdAt).toLocaleDateString()}
                                                 </p>
                                                 {isAuthor && (
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            setReviewRating(review.rating);
-                                                            setReviewComment(review.comment);
+                                                             setReviewRating(review.rating);
+                                                             setReviewComment(review.comment);
                                                         }}
-                                                        className="text-xs text-blue-600 hover:underline font-semibold"
+                                                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
                                                     >
-                                                        Edit
+                                                        Edit Review
                                                     </button>
                                                 )}
                                             </div>
@@ -584,7 +648,7 @@ function CourseDetailsSkeleton() {
                         <div className="sticky top-4 space-y-6">
 
                             {/* Course Card */}
-                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                                 {/* Thumbnail */}
                                 <div className="relative aspect-video">
                                     <img
@@ -598,19 +662,23 @@ function CourseDetailsSkeleton() {
                                 <div className="p-6">
                                     {/* Price */}
                                     <div className="flex items-center gap-3 mb-6">
-                                        <span className="text-3xl font-bold text-gray-900">${course.price}</span>
-                                        <span className="text-lg text-gray-400 line-through">${course.oldPrice}</span>
+                                        <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                                            {course.price > 0 ? `$${course.price}` : 'Free'}
+                                        </span>
+                                        {course.oldPrice && (
+                                            <span className="text-lg text-gray-400 line-through">${course.oldPrice}</span>
+                                        )}
                                     </div>
 
                                     {/* Stats Summary */}
-                                    <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
+                                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-6">
                                         <div className="flex items-center gap-1.5">
                                             <StarIcon />
-                                            <span>{course.rating || 'N/A'}</span>
+                                            <span>{course.rating > 0 ? course.rating.toFixed(1) : 'N/A'}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <ClockIcon />
-                                            <span>{course.totalHours} hours</span>
+                                            <span>{course.structure.totalDuration}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <BookIcon />
@@ -634,26 +702,24 @@ function CourseDetailsSkeleton() {
                                     </div>
 
                                     {/* Course Quick Stats */}
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 mb-3">Course includes</h3>
+                                    <div className="pt-4 border-t border-gray-100 dark:border-gray-700/60">
+                                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Course includes</h3>
                                         <ul className="space-y-2.5">
-                                            <li className="flex items-center gap-2.5 text-sm text-gray-600">
-                                                <span className="text-blue-500 mt-0.5">📚</span>
+                                            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
+                                                <span className="text-indigo-500">📚</span>
                                                 <span>{course.totalLessons} lesson{course.totalLessons !== 1 ? 's' : ''}</span>
                                             </li>
-                                            {course.totalHours > 0 && (
-                                                <li className="flex items-center gap-2.5 text-sm text-gray-600">
-                                                    <span className="text-blue-500 mt-0.5">⏱️</span>
-                                                    <span>{course.totalHours} hour{course.totalHours !== 1 ? 's' : ''} of content</span>
-                                                </li>
-                                            )}
-                                            <li className="flex items-center gap-2.5 text-sm text-gray-600">
-                                                <span className="text-blue-500 mt-0.5">🎯</span>
+                                            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
+                                                <span className="text-indigo-500">⏱️</span>
+                                                <span>{course.structure.totalDuration} on-demand content</span>
+                                            </li>
+                                            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
+                                                <span className="text-indigo-500">🎯</span>
                                                 <span className="capitalize">{course.level ?? 'All'} level</span>
                                             </li>
-                                            <li className="flex items-center gap-2.5 text-sm text-gray-600">
-                                                <span className="text-blue-500 mt-0.5">♾️</span>
-                                                <span>Lifetime access</span>
+                                            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
+                                                <span className="text-indigo-500">♾️</span>
+                                                <span>Full lifetime access</span>
                                             </li>
                                         </ul>
                                     </div>
