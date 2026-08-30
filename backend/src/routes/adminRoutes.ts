@@ -9,6 +9,8 @@ import {
   updateCourseStatus,
   getEnrollments,
   getAuditLogs,
+  getFinancialReports,
+  exportFinancialsCsv,
 } from "../controllers/admin/adminController";
 
 const router = Router();
@@ -17,6 +19,9 @@ const router = Router();
 router.use(protect, authorize("admin"));
 
 router.get("/stats", getStats);
+
+router.get("/financial-reports", getFinancialReports);
+router.get("/financial-reports/export-csv", exportFinancialsCsv);
 
 router.get("/users", getUsers);
 router.patch("/users/:userId/status", toggleUserStatus);
