@@ -188,6 +188,249 @@ export async function getEnrollments(req: Request, res: Response) {
   }
 }
 
+import Order from "../../models/Order";
+import Coupon from "../../models/Coupon";
+
+export async function getFinancialReports(req: Request, res: Response) {
+  try {
+    const { range = "30d", startDate: customStart, endDate: customEnd } = req.query as {
+      range?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+
+    let start: Date | null = null;
+    let end: Date = customEnd ? new Date(customEnd) : new Date();
+
+    const now = new Date();
+    if (range === "today") {
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (range === "7d") {
+      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (range === "30d") {
+      start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    } else if (range === "90d") {
+      start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    } else if (range === "1y") {
+      start = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    } else if (range === "custom" && customStart) {
+      start = new Date(customStart);
+    }
+
+    const orderFilter: Record<string, unknown> = {
+      paymentStatus: "completed",
+    };
+
+    if (start) {
+      orderFilter.createdAt = { $gte: start, $lte: end };
+    }
+
+    const orders = await Order.find(orderFilter)
+      .populate("student", "name email")
+      .populate({
+        path: "items.course",
+        select: "title instructor price",
+        populate: { path: "instructor", select: "name email" },
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Summary calculations
+    let grossVolume = 0;
+    let totalDiscount = 0;
+    let totalSubtotal = 0;
+    const paymentMethodsCount: Record<string, { count: number; volume: number }> = {};
+    const coursesMap: Record<string, { title: string; unitsSold: number; revenue: number; instructorName: string }> = {};
+    const instructorsMap: Record<string, { name: string; email: string; unitsSold: number; grossRevenue: number }> = {};
+    const timeSeriesMap: Record<string, { date: string; revenue: number; count: number; discounts: number }> = {};
+
+    for (const order of orders) {
+      const orderTotal = Number(order.totalAmount) || 0;
+      const orderDiscount = Number(order.discountTotal) || 0;
+      const orderSub = Number(order.subtotal) || orderTotal + orderDiscount;
+
+      grossVolume += orderTotal;
+      totalDiscount += orderDiscount;
+      totalSubtotal += orderSub;
+
+      // Payment method breakdown
+      const method = order.paymentMethod || "card";
+      if (!paymentMethodsCount[method]) {
+        paymentMethodsCount[method] = { count: 0, volume: 0 };
+      }
+      paymentMethodsCount[method].count += 1;
+      paymentMethodsCount[method].volume += orderTotal;
+
+      // Time series (grouped by YYYY-MM-DD)
+      const dayKey = new Date(order.createdAt).toISOString().split("T")[0];
+      if (!timeSeriesMap[dayKey]) {
+        timeSeriesMap[dayKey] = { date: dayKey, revenue: 0, count: 0, discounts: 0 };
+      }
+      timeSeriesMap[dayKey].revenue += orderTotal;
+      timeSeriesMap[dayKey].count += 1;
+      timeSeriesMap[dayKey].discounts += orderDiscount;
+
+      // Course and Instructor rankings
+      for (const item of order.items) {
+        const itemPrice = Number(item.finalPrice) || 0;
+        const courseIdStr = item.course ? ((item.course as any)._id?.toString() || item.course.toString()) : "unknown";
+        const courseTitle = item.title || (item.course as any)?.title || "Untitled Course";
+
+        let instructorName = "SkillKart Instructor";
+        let instructorEmail = "";
+        let instructorId = "platform";
+
+        if (item.course && typeof item.course === "object" && (item.course as any).instructor) {
+          const inst = (item.course as any).instructor;
+          if (typeof inst === "object" && inst._id) {
+            instructorId = inst._id.toString();
+            instructorName = inst.name || "Instructor";
+            instructorEmail = inst.email || "";
+          }
+        }
+
+        // Aggregate Course
+        if (!coursesMap[courseIdStr]) {
+          coursesMap[courseIdStr] = { title: courseTitle, unitsSold: 0, revenue: 0, instructorName };
+        }
+        coursesMap[courseIdStr].unitsSold += 1;
+        coursesMap[courseIdStr].revenue += itemPrice;
+
+        // Aggregate Instructor
+        if (!instructorsMap[instructorId]) {
+          instructorsMap[instructorId] = { name: instructorName, email: instructorEmail, unitsSold: 0, grossRevenue: 0 };
+        }
+        instructorsMap[instructorId].unitsSold += 1;
+        instructorsMap[instructorId].grossRevenue += itemPrice;
+      }
+    }
+
+    const totalOrdersCount = orders.length;
+    const averageOrderValue = totalOrdersCount > 0 ? Math.round((grossVolume / totalOrdersCount) * 100) / 100 : 0;
+    const platformCommission = Math.round(grossVolume * 0.20 * 100) / 100;
+    const instructorPayouts = Math.round(grossVolume * 0.80 * 100) / 100;
+
+    // Sort time series chronologically
+    const timeSeries = Object.values(timeSeriesMap).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Sort top courses by revenue
+    const topCourses = Object.entries(coursesMap)
+      .map(([id, data]) => ({ courseId: id, ...data, revenue: Math.round(data.revenue * 100) / 100 }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 6);
+
+    // Sort top instructors by gross revenue
+    const topInstructors = Object.entries(instructorsMap)
+      .map(([id, data]) => ({
+        instructorId: id,
+        ...data,
+        grossRevenue: Math.round(data.grossRevenue * 100) / 100,
+        estimatedPayout: Math.round(data.grossRevenue * 0.80 * 100) / 100,
+      }))
+      .sort((a, b) => b.grossRevenue - a.grossRevenue)
+      .slice(0, 6);
+
+    // Format recent transactions
+    const recentTransactions = orders.slice(0, 15).map((o) => ({
+      _id: o._id,
+      orderNumber: o.orderNumber,
+      createdAt: o.createdAt,
+      customerName: (o.student as any)?.name || (o.paymentMetadata as any)?.billingDetails?.name || "Student",
+      customerEmail: (o.student as any)?.email || (o.paymentMetadata as any)?.billingDetails?.email || "",
+      itemsCount: o.items.length,
+      coursesSummary: o.items.map((i) => i.title).join(", "),
+      subtotal: o.subtotal,
+      discountTotal: o.discountTotal,
+      totalAmount: o.totalAmount,
+      paymentMethod: o.paymentMethod,
+      paymentStatus: o.paymentStatus,
+      transactionId: o.transactionId,
+    }));
+
+    return res.json({
+      range,
+      startDate: start,
+      endDate: end,
+      metrics: {
+        grossVolume: Math.round(grossVolume * 100) / 100,
+        totalSubtotal: Math.round(totalSubtotal * 100) / 100,
+        totalDiscount: Math.round(totalDiscount * 100) / 100,
+        platformCommission,
+        instructorPayouts,
+        totalOrdersCount,
+        averageOrderValue,
+      },
+      timeSeries,
+      topCourses,
+      topInstructors,
+      paymentMethodsBreakdown: paymentMethodsCount,
+      recentTransactions,
+    });
+  } catch (error) {
+    console.error("Error in getFinancialReports:", error);
+    return res.status(500).json({ message: "Failed to generate financial reports" });
+  }
+}
+
+export async function exportFinancialsCsv(req: Request, res: Response) {
+  try {
+    const orders = await Order.find({ paymentStatus: "completed" })
+      .populate("student", "name email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const headers = [
+      "Order Number",
+      "Date",
+      "Customer Name",
+      "Customer Email",
+      "Courses Purchased",
+      "Original Price ($)",
+      "Discount ($)",
+      "Total Paid ($)",
+      "Payment Method",
+      "Status",
+      "Transaction ID",
+    ];
+
+    const escapeCsv = (str: string | number | undefined | null) => {
+      if (str === undefined || str === null) return '""';
+      const s = String(str).replace(/"/g, '""');
+      return `"${s}"`;
+    };
+
+    const csvRows = [headers.join(",")];
+
+    for (const o of orders) {
+      const coursesStr = o.items.map((i) => i.title).join(" | ");
+      const row = [
+        escapeCsv(o.orderNumber),
+        escapeCsv(new Date(o.createdAt).toISOString()),
+        escapeCsv((o.student as any)?.name || (o.paymentMetadata as any)?.billingDetails?.name || "Student"),
+        escapeCsv((o.student as any)?.email || (o.paymentMetadata as any)?.billingDetails?.email || ""),
+        escapeCsv(coursesStr),
+        escapeCsv((o.subtotal || 0).toFixed(2)),
+        escapeCsv((o.discountTotal || 0).toFixed(2)),
+        escapeCsv((o.totalAmount || 0).toFixed(2)),
+        escapeCsv(o.paymentMethod || "card"),
+        escapeCsv(o.paymentStatus),
+        escapeCsv(o.transactionId || ""),
+      ];
+      csvRows.push(row.join(","));
+    }
+
+    const csvContent = csvRows.join("\n");
+    const filename = `skillkart-financial-report-${new Date().toISOString().split("T")[0]}.csv`;
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    return res.status(200).send(csvContent);
+  } catch (error) {
+    console.error("Error exporting financial CSV:", error);
+    return res.status(500).json({ message: "Failed to export financial CSV" });
+  }
+}
+
 export async function getAuditLogs(req: Request, res: Response) {
   try {
     const { action, targetType } = req.query as { action?: string; targetType?: string };
@@ -208,4 +451,6 @@ export async function getAuditLogs(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+
 

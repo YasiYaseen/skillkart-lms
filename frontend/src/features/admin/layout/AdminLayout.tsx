@@ -39,6 +39,15 @@ const NAV_ITEMS = [
         ),
     },
     {
+        label: 'Financials & Reports',
+        path: '/admin/reports',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6H2.25m0 0v-.75A.75.75 0 013 4.5h.75m0 0v.75m0 0h16.5m0 0v-.75A.75.75 0 0019.5 4.5h-.75m0 0v.75M3.75 12v.75A.75.75 0 013 13.5H2.25m0 0v-.75A.75.75 0 013 12h.75m0 0v.75m16.5 0v-.75A.75.75 0 0019.5 12h-.75m0 0v.75m-16.5 6v.75A.75.75 0 013 19.5H2.25m0 0v-.75A.75.75 0 013 18h.75m0 0v.75m16.5 0v-.75A.75.75 0 0019.5 18h-.75m0 0v.75" />
+            </svg>
+        ),
+    },
+    {
         label: 'Audit Logs',
         path: '/admin/audit-logs',
         icon: (
