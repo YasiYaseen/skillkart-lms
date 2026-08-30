@@ -27,6 +27,7 @@ import {
     UserManagement,
     CourseModeration,
     EnrollmentList,
+    AuditLogs,
 } from '@features/admin';
 
 /**
@@ -81,6 +82,7 @@ function App() {
                             <Route path="/admin/users" element={<UserManagement />} />
                             <Route path="/admin/courses" element={<CourseModeration />} />
                             <Route path="/admin/enrollments" element={<EnrollmentList />} />
+                            <Route path="/admin/audit-logs" element={<AuditLogs />} />
                         </Route>
                     </Route>
                 </Routes>
