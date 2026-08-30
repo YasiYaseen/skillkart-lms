@@ -7,6 +7,7 @@ export interface Course {
     title: string;
     instructor: string;
     thumbnail: string;
+    tags?: string[];
     rating?: number;
     reviewCount?: number;
     price: number;
@@ -36,6 +37,7 @@ function CourseCard({ course, className = '', showWishlist = true }: CourseCardP
         title,
         instructor,
         thumbnail,
+        tags = [],
         rating = 0,
         reviewCount = 0,
         price,
@@ -63,6 +65,19 @@ function CourseCard({ course, className = '', showWishlist = true }: CourseCardP
                 <h3 className="course-card-title">{title}</h3>
                 <p className="course-card-instructor">{instructor}</p>
 
+                {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 my-1.5">
+                        {tags.slice(0, 3).map((t, idx) => (
+                            <span
+                                key={idx}
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600"
+                            >
+                                #{t}
+                            </span>
+                        ))}
+                    </div>
+                )}
+
                 {enrollmentCount > 0 && (
                     <p className="course-card-enrollment">
                         {enrollmentCount.toLocaleString()} {enrollmentCount === 1 ? 'student' : 'students'}
@@ -79,5 +94,6 @@ function CourseCard({ course, className = '', showWishlist = true }: CourseCardP
         </Link>
     );
 }
+
 
 export default CourseCard;

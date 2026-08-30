@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { SearchBar, CourseCard, Button, Course } from '../../components/common';
 import { api } from '@/lib/api';
 
@@ -13,20 +13,40 @@ const LEVEL_OPTIONS = [
 const SORT_OPTIONS = [
     { label: 'Latest', value: 'latest' },
     { label: 'Most Popular', value: 'popular' },
+    { label: 'Highest Rated', value: 'highest-rated' },
     { label: 'Free First', value: 'free' },
 ];
 
+const DEFAULT_POPULAR_TAGS = ['React', 'JavaScript', 'Node.js', 'Python', 'Full Stack', 'Web Development', 'Design', 'AI'];
+
 /**
  * CourseList Page
- * Displays grid of available courses with search, level filter, and sort functionality
+ * Displays grid of available courses with multi-attribute search (title, description, instructor, tags),
+ * tag pills, level filters, and sort functionality.
  */
 function CourseList() {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [level, setLevel] = useState('');
-    const [sort, setSort] = useState('latest');
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const [searchQuery, setSearchQuery] = useState(
+        searchParams.get('search') || searchParams.get('q') || ''
+    );
+    const [level, setLevel] = useState(searchParams.get('level') || '');
+    const [selectedTag, setSelectedTag] = useState(searchParams.get('tag') || '');
+    const [sort, setSort] = useState(searchParams.get('sort') || 'latest');
     const [courses, setCourses] = useState<Course[]>([]);
+    const [availableTags, setAvailableTags] = useState<string[]>(DEFAULT_POPULAR_TAGS);
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(8);
+
+    // Sync state with URL params
+    const updateQueryParams = useCallback((newSearch: string, newLevel: string, newTag: string, newSort: string) => {
+        const nextParams: Record<string, string> = {};
+        if (newSearch) nextParams.search = newSearch;
+        if (newLevel) nextParams.level = newLevel;
+        if (newTag) nextParams.tag = newTag;
+        if (newSort && newSort !== 'latest') nextParams.sort = newSort;
+        setSearchParams(nextParams, { replace: true });
+    }, [setSearchParams]);
 
     const fetchCourses = useCallback(async () => {
         try {
@@ -34,14 +54,17 @@ function CourseList() {
             const params = new URLSearchParams();
             if (searchQuery) params.set('q', searchQuery);
             if (level) params.set('level', level);
+            if (selectedTag) params.set('tag', selectedTag);
             if (sort && sort !== 'latest') params.set('sort', sort);
 
             const res = await api.get(`/courses?${params.toString()}`);
-            const mappedCourses = res.data.courses.map((c: any) => ({
+            const data = res.data;
+            const mappedCourses = (data.courses || []).map((c: any) => ({
                 id: c._id,
                 title: c.title,
                 instructor: c.instructor?.name || 'Unknown Instructor',
                 thumbnail: c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop',
+                tags: c.tags || [],
                 rating: c.averageRating || 0,
                 reviewCount: c.reviewCount || 0,
                 price: c.price || 0,
@@ -49,12 +72,18 @@ function CourseList() {
                 enrollmentCount: c.enrollmentCount || 0,
             }));
             setCourses(mappedCourses);
+
+            if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+                // Merge unique tags
+                const merged = Array.from(new Set([...DEFAULT_POPULAR_TAGS, ...data.tags]));
+                setAvailableTags(merged);
+            }
         } catch (err) {
             console.error('Failed to fetch courses:', err);
         } finally {
             setLoading(false);
         }
-    }, [searchQuery, level, sort]);
+    }, [searchQuery, level, selectedTag, sort]);
 
     useEffect(() => {
         fetchCourses();
@@ -65,49 +94,100 @@ function CourseList() {
     const hasMore = visibleCount < courses.length;
 
     const handleLoadMore = () => {
-        setVisibleCount(prev => prev + 4);
+        setVisibleCount((prev) => prev + 4);
     };
 
     const handleSearch = (query: string) => {
         setSearchQuery(query);
         setVisibleCount(8);
+        updateQueryParams(query, level, selectedTag, sort);
     };
 
     const handleLevelChange = (newLevel: string) => {
         setLevel(newLevel);
         setVisibleCount(8);
+        updateQueryParams(searchQuery, newLevel, selectedTag, sort);
+    };
+
+    const handleTagChange = (newTag: string) => {
+        setSelectedTag(newTag);
+        setVisibleCount(8);
+        updateQueryParams(searchQuery, level, newTag, sort);
     };
 
     const handleSortChange = (newSort: string) => {
         setSort(newSort);
         setVisibleCount(8);
+        updateQueryParams(searchQuery, level, selectedTag, newSort);
     };
 
-    const activeFiltersCount = [level, searchQuery, sort !== 'latest' ? sort : ''].filter(Boolean).length;
+    const handleClearAll = () => {
+        setLevel('');
+        setSelectedTag('');
+        setSort('latest');
+        setSearchQuery('');
+        setSearchParams({}, { replace: true });
+    };
+
+    const activeFiltersCount = [
+        level,
+        selectedTag,
+        searchQuery,
+        sort !== 'latest' ? sort : '',
+    ].filter(Boolean).length;
 
     return (
         <div className="container">
             {/* Page Header */}
-            <div className="page-header flex items-start justify-between">
+            <div className="page-header flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div>
-                    <h1 className="page-title">Course List</h1>
-
+                    <h1 className="page-title">Explore Courses</h1>
                     <nav className="breadcrumb mt-2">
                         <Link to="/">Home</Link>
                         <span className="breadcrumb-separator">/</span>
-                        <span>Course List</span>
+                        <span>Courses</span>
                     </nav>
                 </div>
 
-                {/* Right Side: Search */}
-                <div className="w-80">
+                {/* Search Bar matching title, instructor, description, tags */}
+                <div className="w-full md:w-96">
                     <SearchBar
                         value={searchQuery}
                         onChange={setSearchQuery}
                         onSubmit={handleSearch}
-                        placeholder="Search for courses"
+                        placeholder="Search courses, topics, or instructors..."
                     />
                 </div>
+            </div>
+
+            {/* Topic / Tag Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto py-2 mb-4 scrollbar-none">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 mr-1">
+                  Topics:
+                </span>
+                <button
+                    onClick={() => handleTagChange('')}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all shrink-0 ${
+                        selectedTag === ''
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                >
+                    All Topics
+                </button>
+                {availableTags.map((tag) => (
+                    <button
+                        key={tag}
+                        onClick={() => handleTagChange(selectedTag === tag ? '' : tag)}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all shrink-0 ${
+                            selectedTag === tag
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        #{tag}
+                    </button>
+                ))}
             </div>
 
             {/* Filter & Sort Bar */}
@@ -116,7 +196,7 @@ function CourseList() {
                 <div className="filter-group">
                     <span className="filter-label">Level:</span>
                     <div className="filter-pills">
-                        {LEVEL_OPTIONS.map(opt => (
+                        {LEVEL_OPTIONS.map((opt) => (
                             <button
                                 key={opt.value}
                                 id={`filter-level-${opt.value || 'all'}`}
@@ -133,7 +213,7 @@ function CourseList() {
                 <div className="filter-group">
                     <span className="filter-label">Sort by:</span>
                     <div className="filter-pills">
-                        {SORT_OPTIONS.map(opt => (
+                        {SORT_OPTIONS.map((opt) => (
                             <button
                                 key={opt.value}
                                 id={`sort-${opt.value}`}
@@ -154,9 +234,9 @@ function CourseList() {
                             {activeFiltersCount > 0 && (
                                 <button
                                     className="clear-filters-btn"
-                                    onClick={() => { setLevel(''); setSort('latest'); setSearchQuery(''); }}
+                                    onClick={handleClearAll}
                                 >
-                                    Clear filters
+                                    Clear filters ({activeFiltersCount})
                                 </button>
                             )}
                         </span>
@@ -165,26 +245,32 @@ function CourseList() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12 text-gray-500">Loading courses...</div>
+                <div className="text-center py-16 text-gray-500 animate-pulse">Loading matching courses...</div>
             ) : (
                 <>
                     {/* Course Grid */}
                     <div className="course-grid">
-                        {displayedCourses.map(course => (
+                        {displayedCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
                         ))}
                     </div>
 
                     {/* Empty State */}
                     {displayedCourses.length === 0 && (
-                        <div className="text-center py-12 text-gray-500">
-                            <p>No courses found{searchQuery ? ` matching "${searchQuery}"` : ''}
-                                {level ? ` for ${level} level` : ''}.</p>
+                        <div className="text-center py-16 bg-gray-50 rounded-2xl border border-gray-100 p-8 my-6">
+                            <div className="text-4xl mb-3">🔍</div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">No courses found</h3>
+                            <p className="text-sm text-gray-500 max-w-md mx-auto">
+                                We couldn't find any courses matching
+                                {searchQuery ? ` "${searchQuery}"` : ''}
+                                {selectedTag ? ` in topic #${selectedTag}` : ''}
+                                {level ? ` for ${level} level` : ''}.
+                            </p>
                             <button
-                                className="clear-filters-btn mt-3"
-                                onClick={() => { setLevel(''); setSort('latest'); setSearchQuery(''); }}
+                                className="clear-filters-btn mt-4 inline-block font-semibold text-blue-600 hover:text-blue-700"
+                                onClick={handleClearAll}
                             >
-                                Clear all filters
+                                Clear all filters & search
                             </button>
                         </div>
                     )}

@@ -7,8 +7,10 @@ import LessonItem from "../../models/LessonItem";
 import Enrollment from "../../models/Enrollment";
 import LessonProgress from "../../models/LessonProgress";
 import Review from "../../models/Review";
+import User from "../../models/User";
 import { getCourseDurationMinutes, isCourseManager } from "./shared";
 import { createCourseSchema } from "../../validators/course.validator";
+
 
 async function getCourseRatingSummary(courseId: string) {
   const [summary] = await Review.aggregate<{ averageRating: number; reviewCount: number }>([
@@ -53,6 +55,7 @@ export async function createCourse(req: Request, res: Response) {
       title: data.title,
       description: data.description,
       thumbnailUrl: data.thumbnailUrl || undefined,
+      tags: data.tags || [],
       level: data.level || "beginner",
       isPaid: data.isPaid,
       price: data.isPaid ? data.price : null,
@@ -73,12 +76,15 @@ export async function createCourse(req: Request, res: Response) {
 
 export async function getCourses(req: Request, res: Response) {
   try {
-    const { q, level, mine, sort } = req.query as {
+    const { q, search, level, tag, mine, sort } = req.query as {
       q?: string;
+      search?: string;
       level?: string;
+      tag?: string;
       mine?: string;
       sort?: string;
     };
+    const searchQuery = (q || search || "").trim();
     const filter: Record<string, unknown> = {};
 
     if (mine === "true") {
@@ -98,14 +104,52 @@ export async function getCourses(req: Request, res: Response) {
       filter.level = level;
     }
 
-    if (q) {
-      filter.$text = { $search: q };
+    if (tag) {
+      filter.tags = { $in: [new RegExp(`^${tag.trim()}$`, "i")] };
+    }
+
+    if (searchQuery) {
+      // Find instructors matching the search term
+      const matchingUsers = await User.find({
+        name: { $regex: searchQuery, $options: "i" },
+      }).select("_id");
+      const matchingInstructorIds = matchingUsers.map((u) => u._id);
+
+      const searchRegex = new RegExp(searchQuery, "i");
+      const searchConditions: Record<string, unknown>[] = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { tags: { $in: [searchRegex] } },
+      ];
+
+      if (matchingInstructorIds.length > 0) {
+        searchConditions.push({ instructor: { $in: matchingInstructorIds } });
+      }
+
+      filter.$or = searchConditions;
     }
 
     const courses = await Course.find(filter)
       .populate("instructor", "name email")
       .sort({ createdAt: -1 })
       .lean();
+
+    // Also get all distinct tags across published courses for filter chips
+    const allPublishedCourses = await Course.find({
+      status: "published",
+      isActive: { $ne: false },
+      isApproved: { $ne: false },
+    })
+      .select("tags")
+      .lean();
+
+    const tagSet = new Set<string>();
+    allPublishedCourses.forEach((c) => {
+      (c.tags || []).forEach((t) => {
+        if (t && t.trim()) tagSet.add(t.trim());
+      });
+    });
+    const availableTags = Array.from(tagSet);
 
     const enriched = await Promise.all(
       courses.map(async (course) => {
@@ -121,17 +165,20 @@ export async function getCourses(req: Request, res: Response) {
 
     // Sort after enrichment so we can sort by computed fields
     if (sort === "popular") {
-      enriched.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
+      enriched.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0) || (b.enrollmentCount ?? 0) - (a.enrollmentCount ?? 0));
     } else if (sort === "free") {
       enriched.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+    } else if (sort === "highest-rated") {
+      enriched.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
     }
     // default: already sorted by createdAt desc from DB
 
-    return res.json({ courses: enriched });
+    return res.json({ courses: enriched, tags: availableTags });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
 
 export async function getCourseById(req: Request, res: Response) {
   try {
@@ -216,12 +263,13 @@ export async function updateCourse(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const allowed = ["title", "description", "thumbnailUrl", "level", "isPaid", "price", "status"];
+    const allowed = ["title", "description", "thumbnailUrl", "tags", "level", "isPaid", "price", "status"];
     for (const field of allowed) {
       if (field in req.body) {
         (course as unknown as Record<string, unknown>)[field] = req.body[field];
       }
     }
+
 
     if (!course.isPaid) {
       course.price = null;

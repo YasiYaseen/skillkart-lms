@@ -48,7 +48,8 @@ Useful after the MVP is stable.
 
 | Advanced Instructor Analytics | Done | [docs/features/later/advanced-instructor-analytics.md](features/later/advanced-instructor-analytics.md) |
 
-| Advanced Search | Not Started | [docs/features/later/advanced-search.md](features/later/advanced-search.md) |
+| Advanced Search | Done | [docs/features/later/advanced-search.md](features/later/advanced-search.md) |
+
 | Notes and Bookmarks | Not Started | [docs/features/later/notes-bookmarks.md](features/later/notes-bookmarks.md) |
 | Email Notifications | Not Started | [docs/features/later/email-notifications.md](features/later/email-notifications.md) |
 

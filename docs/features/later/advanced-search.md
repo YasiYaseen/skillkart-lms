@@ -1,8 +1,8 @@
 # Advanced Search
 
-Status: Not Started
+Status: Done
 Priority: Later
-Owner: Unassigned
+Owner: Implemented
 
 ## Goal
 Improve course discovery beyond basic title search.
@@ -13,7 +13,7 @@ Improve course discovery beyond basic title search.
 - Search by course description
 
 ## Acceptance Checklist
-- [ ] Search matches instructor name
-- [ ] Search matches tags
-- [ ] Search matches description
-- [ ] Search works together with existing filters
+- [x] Search matches instructor name
+- [x] Search matches tags
+- [x] Search matches description
+- [x] Search works together with existing filters

@@ -7,6 +7,7 @@ export interface ICourse extends Document {
   title: string;
   description: string;
   thumbnailUrl?: string;
+  tags?: string[];
   level: CourseLevel;
   isPaid: boolean;
   price: number | null;
@@ -18,6 +19,7 @@ export interface ICourse extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
 
 const CourseSchema = new Schema<ICourse>(
   {
@@ -42,6 +44,11 @@ const CourseSchema = new Schema<ICourse>(
     thumbnailUrl: {
       type: String,
       trim: true,
+    },
+    tags: {
+      type: [String],
+      default: [],
+      index: true,
     },
     level: {
       type: String,
@@ -83,7 +90,8 @@ CourseSchema.pre("save", function normalizePaidPricing() {
   }
 });
 
-CourseSchema.index({ title: "text", description: "text" });
+CourseSchema.index({ title: "text", description: "text", tags: "text" });
 CourseSchema.index({ instructor: 1, status: 1 });
 
 export default model<ICourse>("Course", CourseSchema);
+
