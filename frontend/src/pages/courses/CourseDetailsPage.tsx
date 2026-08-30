@@ -96,6 +96,7 @@ function CourseDetailsPage() {
                     totalHours: Math.round((c.durationMinutes || 0) / 60),
                     totalLessons: c.lessons.length,
                     level: c.level || 'beginner',
+                    tags: c.tags || [],
                     lastUpdated: c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : '',
                     description: c.description ? [c.description] : [],
                     structure: {
@@ -190,6 +191,22 @@ function CourseDetailsPage() {
                             <div className="text-sm text-gray-700">
                                 Course by <a href="#" className="text-blue-600 underline font-medium">{course.instructor}</a>
                             </div>
+
+                            {course.tags && course.tags.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-1.5 mt-4">
+                                    <span className="text-xs font-medium text-gray-400 mr-1">Tags:</span>
+                                    {course.tags.map((t: string) => (
+                                        <button
+                                            key={t}
+                                            type="button"
+                                            onClick={() => navigate(`/courses?tag=${encodeURIComponent(t)}`)}
+                                            className="text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-100 dark:border-blue-900/30 transition-all cursor-pointer"
+                                        >
+                                            #{t}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* 2. Course Structure */}

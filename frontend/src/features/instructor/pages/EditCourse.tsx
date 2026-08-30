@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
@@ -12,7 +12,7 @@ const LEVEL_OPTIONS = [
 
 /**
  * EditCourse Page
- * Allows instructors to update course details (title, description, level, price, thumbnail)
+ * Allows instructors to update course details (title, description, level, tags, price, thumbnail)
  */
 function EditCourse() {
     const { courseId } = useParams<{ courseId: string }>();
@@ -24,6 +24,8 @@ function EditCourse() {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [level, setLevel] = useState('beginner');
+    const [tags, setTags] = useState<string[]>([]);
+    const [tagInput, setTagInput] = useState('');
     const [isPaid, setIsPaid] = useState(false);
     const [price, setPrice] = useState<number | ''>('');
     const [thumbnailUrl, setThumbnailUrl] = useState('');
@@ -31,11 +33,12 @@ function EditCourse() {
     useEffect(() => {
         if (!courseId) return;
         api.get(`/courses/${courseId}`)
-            .then(res => {
+            .then((res) => {
                 const c = res.data.course;
                 setTitle(c.title || '');
                 setDescription(c.description || '');
                 setLevel(c.level || 'beginner');
+                setTags(c.tags || []);
                 setIsPaid(c.isPaid || false);
                 setPrice(c.price ?? '');
                 setThumbnailUrl(c.thumbnailUrl || '');
@@ -47,6 +50,25 @@ function EditCourse() {
             .finally(() => setLoading(false));
     }, [courseId, navigate]);
 
+    const handleAddTag = () => {
+        const trimmed = tagInput.trim().replace(/^#/, '');
+        if (trimmed && !tags.includes(trimmed)) {
+            setTags([...tags, trimmed]);
+            setTagInput('');
+        }
+    };
+
+    const handleRemoveTag = (tagToRemove: string) => {
+        setTags(tags.filter((t) => t !== tagToRemove));
+    };
+
+    const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            handleAddTag();
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!courseId) return;
@@ -57,6 +79,7 @@ function EditCourse() {
                 title,
                 description,
                 level,
+                tags,
                 isPaid,
                 price: isPaid ? Number(price) : 0,
                 thumbnailUrl: thumbnailUrl || undefined,
@@ -93,7 +116,7 @@ function EditCourse() {
                 </button>
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Edit Course</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Update your course details</p>
+                    <p className="text-sm text-gray-500 mt-0.5">Update your course details and tags</p>
                 </div>
             </div>
 
@@ -111,7 +134,7 @@ function EditCourse() {
                         minLength={3}
                         maxLength={140}
                         value={title}
-                        onChange={e => setTitle(e.target.value)}
+                        onChange={(e) => setTitle(e.target.value)}
                         className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="e.g. Master ReactJS from scratch"
                     />
@@ -128,7 +151,7 @@ function EditCourse() {
                         minLength={20}
                         rows={5}
                         value={description}
-                        onChange={e => setDescription(e.target.value)}
+                        onChange={(e) => setDescription(e.target.value)}
                         className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Describe what students will learn..."
                     />
@@ -142,13 +165,61 @@ function EditCourse() {
                     <select
                         id="edit-level"
                         value={level}
-                        onChange={e => setLevel(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                        onChange={(e) => setLevel(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                        {LEVEL_OPTIONS.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        {LEVEL_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </option>
                         ))}
                     </select>
+                </div>
+
+                {/* Tags */}
+                <div>
+                    <label htmlFor="edit-tags" className="block text-sm font-medium text-gray-700 mb-2">
+                        Course Tags
+                    </label>
+                    <div className="flex gap-2">
+                        <input
+                            id="edit-tags"
+                            type="text"
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onKeyDown={handleTagKeyDown}
+                            placeholder="e.g. React, TypeScript (press Enter to add)"
+                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleAddTag}
+                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                        >
+                            Add Tag
+                        </button>
+                    </div>
+
+                    {tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                            {tags.map((t) => (
+                                <span
+                                    key={t}
+                                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100"
+                                >
+                                    #{t}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveTag(t)}
+                                        className="text-blue-500 hover:text-red-500 ml-0.5 text-sm leading-none"
+                                        title="Remove tag"
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Pricing */}
@@ -158,7 +229,7 @@ function EditCourse() {
                             id="edit-ispaid"
                             type="checkbox"
                             checked={isPaid}
-                            onChange={e => setIsPaid(e.target.checked)}
+                            onChange={(e) => setIsPaid(e.target.checked)}
                             className="w-4 h-4 text-blue-600 rounded"
                         />
                         <label htmlFor="edit-ispaid" className="text-sm font-medium text-gray-700 cursor-pointer">
@@ -180,7 +251,7 @@ function EditCourse() {
                                     step="0.01"
                                     required={isPaid}
                                     value={price}
-                                    onChange={e => setPrice(Number(e.target.value))}
+                                    onChange={(e) => setPrice(Number(e.target.value))}
                                     className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="29.99"
                                 />
@@ -206,7 +277,7 @@ function EditCourse() {
                                 src={thumbnailUrl}
                                 alt="Thumbnail preview"
                                 className="w-full h-full object-cover"
-                                onError={e => (e.currentTarget.style.display = 'none')}
+                                onError={(e) => (e.currentTarget.style.display = 'none')}
                             />
                         </div>
                     )}
@@ -218,7 +289,7 @@ function EditCourse() {
                         type="submit"
                         disabled={saving}
                         id="save-course-btn"
-                        className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-xs"
                     >
                         {saving ? 'Saving...' : 'Save Changes'}
                     </button>

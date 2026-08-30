@@ -1,8 +1,8 @@
 # Course Tags
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Add tags to improve course grouping and discovery.
@@ -13,6 +13,6 @@ Add tags to improve course grouping and discovery.
 - Tags can support search later
 
 ## Acceptance Checklist
-- [ ] Course supports tags
-- [ ] Instructor can edit tags
-- [ ] Tags display on course cards and detail page
+- [x] Course supports tags
+- [x] Instructor can edit tags
+- [x] Tags display on course cards and detail page

@@ -1,9 +1,15 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { QuizEditorModal } from '../components/QuizEditorModal';
 import { FileUpload } from '@components/common';
+
+const LEVEL_OPTIONS = [
+    { label: 'Beginner', value: 'beginner' },
+    { label: 'Intermediate', value: 'intermediate' },
+    { label: 'Advanced', value: 'advanced' },
+];
 
 function CreateCourse() {
     const navigate = useNavigate();
@@ -15,8 +21,11 @@ function CreateCourse() {
     // Course details state
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [level, setLevel] = useState('beginner');
+    const [tags, setTags] = useState<string[]>([]);
+    const [tagInput, setTagInput] = useState('');
     const [price, setPrice] = useState<number | ''>(0);
-    const [thumbnail, setThumbnail] = useState<string | null>(null); // To store placeholder URL
+    const [thumbnail, setThumbnail] = useState<string | null>(null);
     const [creatingCourse, setCreatingCourse] = useState(false);
 
     // Curriculum state
@@ -34,6 +43,25 @@ function CreateCourse() {
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
     const [quizLessonId, setQuizLessonId] = useState<string | null>(null);
 
+    const handleAddTag = () => {
+        const trimmed = tagInput.trim().replace(/^#/, '');
+        if (trimmed && !tags.includes(trimmed)) {
+            setTags([...tags, trimmed]);
+            setTagInput('');
+        }
+    };
+
+    const handleRemoveTag = (tagToRemove: string) => {
+        setTags(tags.filter((t) => t !== tagToRemove));
+    };
+
+    const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            handleAddTag();
+        }
+    };
+
     const handleCreateCourse = async (e: React.FormEvent) => {
         e.preventDefault();
         setCreatingCourse(true);
@@ -42,8 +70,9 @@ function CreateCourse() {
                 title,
                 description,
                 price: Number(price),
-                level: 'beginner',
-                thumbnailUrl: thumbnail || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop'
+                level,
+                tags,
+                thumbnailUrl: thumbnail || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop',
             };
             const res = await api.post('/courses', payload);
             setCourseId(res.data.course._id);
@@ -60,11 +89,14 @@ function CreateCourse() {
         e.preventDefault();
         if (!courseId) return;
         try {
-            const res = await api.post(`/courses/${courseId}/sections`, { title: newSectionTitle, order: sections.length + 1 });
+            const res = await api.post(`/courses/${courseId}/sections`, {
+                title: newSectionTitle,
+                order: sections.length + 1,
+            });
             setSections([...sections, { ...res.data.section, lessons: [] }]);
             setNewSectionTitle('');
             toast.success('Section added');
-        } catch (err) {
+        } catch {
             toast.error('Failed to add section');
         }
     };
@@ -72,18 +104,21 @@ function CreateCourse() {
     const handleAddLesson = async (e: React.FormEvent, sectionId: string) => {
         e.preventDefault();
         try {
-            const sec = sections.find(s => s._id === sectionId);
+            const sec = sections.find((s) => s._id === sectionId);
             const res = await api.post(`/sections/${sectionId}/lessons`, {
                 title: newLessonTitle,
                 durationMinutes: Number(newLessonDuration),
-                order: sec.lessons.length + 1
+                order: sec.lessons.length + 1,
             });
-            const updatedSection = { ...sec, lessons: [...sec.lessons, { ...res.data.lesson, items: [] }] };
-            setSections(sections.map(s => s._id === sectionId ? updatedSection : s));
+            const updatedSection = {
+                ...sec,
+                lessons: [...sec.lessons, { ...res.data.lesson, items: [] }],
+            };
+            setSections(sections.map((s) => (s._id === sectionId ? updatedSection : s)));
             setNewLessonTitle('');
             setActiveSectionId(null);
             toast.success('Lesson added');
-        } catch (err) {
+        } catch {
             toast.error('Failed to add lesson');
         }
     };
@@ -91,16 +126,11 @@ function CreateCourse() {
     const handleAddItem = async (e: React.FormEvent, sectionId: string, lessonId: string) => {
         e.preventDefault();
         try {
-            const sec = sections.find(s => s._id === sectionId);
+            const sec = sections.find((s) => s._id === sectionId);
             const lesson = sec.lessons.find((l: any) => l._id === lessonId);
 
-            // Build content object by type
             let content: Record<string, string>;
-            if (newItemType === 'video') {
-                content = { url: newItemContent };
-            } else if (newItemType === 'link') {
-                content = { url: newItemContent };
-            } else if (newItemType === 'pdf') {
+            if (newItemType === 'video' || newItemType === 'link' || newItemType === 'pdf') {
                 content = { url: newItemContent };
             } else {
                 content = { text: newItemContent };
@@ -109,25 +139,27 @@ function CreateCourse() {
             const res = await api.post(`/lessons/${lessonId}/items`, {
                 type: newItemType,
                 content,
-                order: (lesson.items?.length || 0) + 1
+                order: (lesson.items?.length || 0) + 1,
             });
-            
-            // update items locally
+
             const createdItem = res.data.lessonItem || res.data.item;
             const updatedItems = createdItem
                 ? [...(lesson.items || []), createdItem]
                 : [...(lesson.items || [])];
             const updatedLesson = { ...lesson, items: updatedItems };
-            const updatedSection = { ...sec, lessons: sec.lessons.map((l: any) => l._id === lessonId ? updatedLesson : l) };
+            const updatedSection = {
+                ...sec,
+                lessons: sec.lessons.map((l: any) => (l._id === lessonId ? updatedLesson : l)),
+            };
 
-            setSections(sections.map(s => s._id === sectionId ? updatedSection : s));
+            setSections(sections.map((s) => (s._id === sectionId ? updatedSection : s)));
             setNewItemContent('');
             setActiveLessonId(null);
             toast.success('Item added to lesson');
-        } catch (err) {
+        } catch {
             toast.error('Failed to add item');
         }
-    }
+    };
 
     const handlePublish = async () => {
         if (!courseId) return;
@@ -146,8 +178,17 @@ function CreateCourse() {
                 <h1 className="text-2xl font-bold text-gray-900">Create New Course</h1>
                 {step === 2 && (
                     <div className="space-x-4">
-                        <button onClick={() => navigate('/instructor/courses')} className="text-gray-500 hover:text-gray-700">Save as Draft</button>
-                        <button onClick={handlePublish} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50" disabled={sections.length === 0}>
+                        <button
+                            onClick={() => navigate('/instructor/courses')}
+                            className="text-gray-500 hover:text-gray-700 font-medium"
+                        >
+                            Save as Draft
+                        </button>
+                        <button
+                            onClick={handlePublish}
+                            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                            disabled={sections.length === 0}
+                        >
                             Publish Course
                         </button>
                     </div>
@@ -161,34 +202,126 @@ function CreateCourse() {
             </div>
 
             {step === 1 && (
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-white p-6 md:p-8 rounded-xl border border-gray-200 shadow-sm">
                     <h2 className="text-xl font-bold mb-6">Course Essentials</h2>
                     <form onSubmit={handleCreateCourse} className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                            <input type="text" required value={title} onChange={e => setTitle(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" placeholder="e.g. Master ReactJS from scratch" />
+                            <input
+                                type="text"
+                                required
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="e.g. Master ReactJS from scratch"
+                            />
                         </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                            <textarea required rows={4} value={description} onChange={e => setDescription(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" placeholder="Course details..."></textarea>
+                            <textarea
+                                required
+                                rows={4}
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Course details..."
+                            ></textarea>
                         </div>
+
+                        {/* Level & Tags Row */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty Level</label>
+                                <select
+                                    value={level}
+                                    onChange={(e) => setLevel(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {LEVEL_OPTIONS.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Course Tags</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={tagInput}
+                                        onChange={(e) => setTagInput(e.target.value)}
+                                        onKeyDown={handleTagKeyDown}
+                                        placeholder="e.g. React, JavaScript (press Enter)"
+                                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAddTag}
+                                        className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                        Add Tag
+                                    </button>
+                                </div>
+                                {tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2.5">
+                                        {tags.map((t) => (
+                                            <span
+                                                key={t}
+                                                className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100"
+                                            >
+                                                #{t}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveTag(t)}
+                                                    className="text-blue-500 hover:text-red-500 ml-0.5"
+                                                >
+                                                    ×
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="flex gap-6 flex-wrap">
                             <div className="w-48">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
-                                <input type="number" required min="0" value={price} onChange={e => setPrice(Number(e.target.value))} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
+                                <input
+                                    type="number"
+                                    required
+                                    min="0"
+                                    value={price}
+                                    onChange={(e) => setPrice(Number(e.target.value))}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
                             </div>
                             <div className="flex-1 min-w-[200px]">
-                                <FileUpload 
-                                    label="Course Thumbnail" 
-                                    accept="image/jpeg, image/png, image/webp" 
+                                <FileUpload
+                                    label="Course Thumbnail"
+                                    accept="image/jpeg, image/png, image/webp"
                                     maxSizeMB={5}
-                                    onUploadSuccess={(url) => setThumbnail(import.meta.env.VITE_API_BASE_URL + url)} 
+                                    onUploadSuccess={(url) => setThumbnail(import.meta.env.VITE_API_BASE_URL + url)}
                                 />
-                                {thumbnail && <img src={thumbnail} alt="Preview" className="mt-2 h-20 w-32 object-cover rounded border border-gray-200" />}
+                                {thumbnail && (
+                                    <img
+                                        src={thumbnail}
+                                        alt="Preview"
+                                        className="mt-2 h-20 w-32 object-cover rounded border border-gray-200"
+                                    />
+                                )}
                             </div>
                         </div>
+
                         <div className="pt-4 flex justify-end">
-                            <button type="submit" disabled={creatingCourse} className="bg-gray-900 text-white px-8 py-3 rounded-lg font-semibold flex items-center justify-center min-w-[150px] disabled:opacity-50">
+                            <button
+                                type="submit"
+                                disabled={creatingCourse}
+                                className="bg-gray-900 text-white px-8 py-3 rounded-lg font-semibold flex items-center justify-center min-w-[150px] disabled:opacity-50 shadow-xs"
+                            >
                                 {creatingCourse ? 'Saving...' : 'Save & Continue'}
                             </button>
                         </div>
@@ -198,112 +331,158 @@ function CreateCourse() {
 
             {step === 2 && (
                 <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-gray-900">Curriculum</h2>
-                    
-                    {/* Render sections */}
+                    {/* Add section block */}
+                    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h2 className="text-lg font-bold mb-4">Add Curriculum Section</h2>
+                        <form onSubmit={handleAddSection} className="flex gap-4">
+                            <input
+                                type="text"
+                                required
+                                value={newSectionTitle}
+                                onChange={(e) => setNewSectionTitle(e.target.value)}
+                                placeholder="e.g. Introduction & Fundamentals"
+                                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button
+                                type="submit"
+                                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-blue-700"
+                            >
+                                Add Section
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Render existing sections */}
                     <div className="space-y-4">
                         {sections.map((sec, sIdx) => (
-                            <div key={sec._id} className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden">
-                                <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-                                    <h3 className="font-bold text-gray-800">Section {sIdx + 1}: {sec.title}</h3>
-                                    <button onClick={() => setActiveSectionId(activeSectionId === sec._id ? null : sec._id)} className="text-blue-600 text-sm font-medium hover:text-blue-800">
-                                        + Add Lesson
+                            <div key={sec._id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                                    <h3 className="font-bold text-gray-800 text-sm">
+                                        Section {sIdx + 1}: {sec.title}
+                                    </h3>
+                                    <button
+                                        onClick={() => setActiveSectionId(activeSectionId === sec._id ? null : sec._id)}
+                                        className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                                    >
+                                        {activeSectionId === sec._id ? 'Cancel' : '+ Add Lesson'}
                                     </button>
                                 </div>
-                                
-                                <div className="px-6 py-4 space-y-3">
-                                    {sec.lessons?.map((les: any, lIdx: number) => (
-                                        <div key={les._id} className="border border-gray-100 rounded-lg p-3 bg-gray-50 flex flex-col gap-2">
-                                            <div className="flex justify-between items-center">
-                                                <div className="font-medium text-gray-700 text-sm flex gap-2"><span className="text-gray-400">{lIdx + 1}.</span> {les.title} ({les.durationMinutes} min)</div>
-                                                <div className="flex gap-3 items-center">
-                                                    <button onClick={() => setQuizLessonId(les._id)} className="text-xs font-semibold text-purple-600">Manage Quiz</button>
-                                                    <button onClick={() => setActiveLessonId(activeLessonId === les._id ? null : les._id)} className="text-xs font-semibold text-blue-600">Add Content</button>
-                                                </div>
-                                            </div>
 
-                                            {/* Render Items */}
-                                            {les.items?.length > 0 && (
-                                                <div className="pl-6 space-y-2 mt-2 border-t border-gray-200 pt-2 text-xs">
-                                                    {les.items.filter(Boolean).map((it: any) => (
-                                                        <div key={it._id} className="text-gray-500 bg-white p-2 rounded border border-gray-200 flex justify-between items-center gap-2">
-                                                            <span className="font-semibold uppercase text-gray-400 shrink-0">[{it.type}]</span>
-                                                            <span className="truncate text-gray-600">{it.content?.url || it.content?.text || '—'}</span>
-                                                        </div>
-                                                    ))}
+                                <div className="p-6">
+                                    {/* Lessons list */}
+                                    <div className="space-y-3 mb-4">
+                                        {sec.lessons.map((les: any, lIdx: number) => (
+                                            <div key={les._id} className="p-4 border border-gray-100 rounded-lg bg-gray-50/50">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="font-semibold text-sm text-gray-700">
+                                                        Lesson {lIdx + 1}: {les.title} ({les.durationMinutes} mins)
+                                                    </span>
+                                                    <div className="space-x-3">
+                                                        <button
+                                                            onClick={() => setActiveLessonId(activeLessonId === les._id ? null : les._id)}
+                                                            className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded hover:bg-gray-50 font-medium"
+                                                        >
+                                                            {activeLessonId === les._id ? 'Cancel Item' : '+ Add Content'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setQuizLessonId(les._id)}
+                                                            className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1.5 rounded hover:bg-purple-100 font-medium"
+                                                        >
+                                                            ⚡ Quiz
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            )}
 
-                                            {activeLessonId === les._id && (
-                                                <form onSubmit={(e) => handleAddItem(e, sec._id, les._id)} className="mt-3 bg-white p-3 border border-gray-200 rounded space-y-2">
-                                                    <div className="flex gap-2">
-                                                        <select required className="border border-gray-300 rounded p-2 text-sm" value={newItemType} onChange={e => { setNewItemType(e.target.value); setNewItemContent(''); }}>
-                                                            <option value="video">🎬 Video URL</option>
-                                                            <option value="text">📝 Text / Notes</option>
-                                                            <option value="link">🔗 External Link</option>
-                                                            <option value="pdf">📄 PDF URL</option>
-                                                        </select>
-                                                        {newItemType === 'pdf' ? (
-                                                            <div className="flex-1">
-                                                                <FileUpload 
-                                                                    label="Upload PDF"
-                                                                    accept="application/pdf"
-                                                                    maxSizeMB={15}
-                                                                    onUploadSuccess={(url) => setNewItemContent(import.meta.env.VITE_API_BASE_URL + url)}
-                                                                />
-                                                                {newItemContent && <p className="text-xs text-green-600 mt-1">File uploaded successfully.</p>}
+                                                {/* Lesson items preview */}
+                                                {les.items && les.items.length > 0 && (
+                                                    <div className="mt-2 pl-4 border-l-2 border-blue-200 space-y-1">
+                                                        {les.items.map((item: any) => (
+                                                            <div key={item._id} className="text-xs text-gray-600 flex items-center gap-2">
+                                                                <span className="uppercase font-mono text-[10px] bg-gray-200 px-1.5 py-0.5 rounded">
+                                                                    {item.type}
+                                                                </span>
+                                                                <span className="truncate">
+                                                                    {item.type === 'text' ? item.content.text : item.content.url}
+                                                                </span>
                                                             </div>
-                                                        ) : (
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Add item inline form */}
+                                                {activeLessonId === les._id && (
+                                                    <form onSubmit={(e) => handleAddItem(e, sec._id, les._id)} className="mt-4 pt-3 border-t border-gray-200 space-y-3">
+                                                        <div className="flex gap-4">
+                                                            <select
+                                                                value={newItemType}
+                                                                onChange={(e) => setNewItemType(e.target.value)}
+                                                                className="border border-gray-300 rounded px-3 py-1.5 text-xs bg-white"
+                                                            >
+                                                                <option value="video">Video URL</option>
+                                                                <option value="pdf">PDF URL</option>
+                                                                <option value="link">External Link</option>
+                                                                <option value="text">Text Article</option>
+                                                            </select>
                                                             <input
+                                                                type="text"
                                                                 required
-                                                                type={['video','link'].includes(newItemType) ? 'url' : 'text'}
-                                                                placeholder={
-                                                                    newItemType === 'video' ? 'YouTube / video URL...' :
-                                                                    newItemType === 'link'  ? 'https://...' :
-                                                                    'Write lesson notes or description...'
-                                                                }
+                                                                placeholder={newItemType === 'text' ? 'Article content...' : 'Resource URL...'}
                                                                 value={newItemContent}
-                                                                onChange={e => setNewItemContent(e.target.value)}
-                                                                className="flex-1 border border-gray-300 p-2 text-sm rounded"
+                                                                onChange={(e) => setNewItemContent(e.target.value)}
+                                                                className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-xs"
                                                             />
-                                                        )}
-                                                    </div>
-                                                    <div className="flex justify-end gap-2">
-                                                        <button type="button" onClick={() => setActiveLessonId(null)} className="text-gray-500 text-sm px-3 py-1.5 hover:text-gray-700">Cancel</button>
-                                                        <button type="submit" className="bg-blue-600 text-white text-sm px-4 py-1.5 rounded font-medium">Add Item</button>
-                                                    </div>
-                                                </form>
-                                            )}
-                                        </div>
-                                    ))}
-                                    
+                                                            <button
+                                                                type="submit"
+                                                                className="bg-gray-800 text-white text-xs px-4 py-1.5 rounded font-medium hover:bg-gray-900"
+                                                            >
+                                                                Save Item
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
                                     {/* Add Lesson form */}
                                     {activeSectionId === sec._id && (
-                                        <form onSubmit={(e) => handleAddLesson(e, sec._id)} className="flex gap-2 items-center mt-2 border-2 border-dashed border-gray-200 p-4 rounded-lg bg-white">
-                                            <input required type="text" placeholder="Lesson Title" value={newLessonTitle} onChange={e => setNewLessonTitle(e.target.value)} className="flex-1 border border-gray-300 p-2 rounded-lg text-sm" />
-                                            <input required type="number" placeholder="Duration (min)" min="1" value={newLessonDuration} onChange={e => setNewLessonDuration(Number(e.target.value))} className="w-32 border border-gray-300 p-2 rounded-lg text-sm" />
-                                            <button type="submit" className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium">Add</button>
-                                            <button type="button" onClick={() => setActiveSectionId(null)} className="text-gray-500 hover:text-gray-700 px-2">Cancel</button>
+                                        <form onSubmit={(e) => handleAddLesson(e, sec._id)} className="p-4 border-2 border-dashed border-gray-200 rounded-lg flex gap-4 items-center">
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="Lesson Title..."
+                                                value={newLessonTitle}
+                                                onChange={(e) => setNewLessonTitle(e.target.value)}
+                                                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+                                            />
+                                            <input
+                                                type="number"
+                                                required
+                                                min="1"
+                                                placeholder="Mins"
+                                                value={newLessonDuration}
+                                                onChange={(e) => setNewLessonDuration(Number(e.target.value))}
+                                                className="w-20 border border-gray-300 rounded px-3 py-2 text-sm"
+                                            />
+                                            <button
+                                                type="submit"
+                                                className="bg-blue-600 text-white text-sm px-4 py-2 rounded font-medium hover:bg-blue-700"
+                                            >
+                                                Save Lesson
+                                            </button>
                                         </form>
                                     )}
                                 </div>
                             </div>
                         ))}
                     </div>
-
-                    {/* Add Section form */}
-                    <form onSubmit={handleAddSection} className="bg-white border-2 border-dashed border-gray-300 p-6 rounded-xl flex gap-4 items-center">
-                        <input required type="text" placeholder="Enter new section title..." value={newSectionTitle} onChange={e => setNewSectionTitle(e.target.value)} className="flex-1 border border-gray-300 px-4 py-3 rounded-lg" />
-                        <button type="submit" className="bg-gray-900 text-white px-6 py-3 font-semibold rounded-lg hover:bg-gray-800">Add Section</button>
-                    </form>
                 </div>
             )}
 
-            <QuizEditorModal 
-                isOpen={!!quizLessonId} 
-                onClose={() => setQuizLessonId(null)} 
-                lessonId={quizLessonId} 
-            />
+            {/* Quiz Editor Modal */}
+            {quizLessonId && (
+                <QuizEditorModal lessonId={quizLessonId} onClose={() => setQuizLessonId(null)} />
+            )}
         </div>
     );
 }
