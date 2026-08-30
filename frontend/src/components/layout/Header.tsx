@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { GraduationCapIcon } from '@assets/icons';
 import Button from '@components/common/Button';
@@ -7,12 +7,29 @@ import ThemeToggle from '@components/common/ThemeToggle';
 import { AuthModals } from '@features/auth';
 import { useAuth } from '@features/auth/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { api } from '@/lib/api';
 
 function Header() {
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
+  const [maintenance, setMaintenance] = useState<{ mode: boolean; message: string } | null>(null);
 
   const { user, logout } = useAuth();
   const { cart, removeFromCart, cartTotal, cartCount } = useCart();
+
+  useEffect(() => {
+    api.get('/settings/public')
+      .then((res) => {
+        if (res.data?.maintenanceMode) {
+          setMaintenance({
+            mode: res.data.maintenanceMode,
+            message: res.data.maintenanceMessage || 'SkillKart is currently undergoing scheduled platform upgrades.',
+          });
+        }
+      })
+      .catch(() => {
+        // Non-blocking
+      });
+  }, []);
 
   const handleLoginClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -34,6 +51,12 @@ function Header() {
 
   return (
     <>
+      {maintenance?.mode && (
+        <div className="bg-linear-to-r from-rose-600 to-red-700 text-white px-4 py-2 text-xs font-semibold text-center flex items-center justify-center gap-2 shadow-sm z-50">
+          <span>⚠️</span>
+          <span>{maintenance.message}</span>
+        </div>
+      )}
       <header className="header">
         <div className="container header-inner">
 

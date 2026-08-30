@@ -12,6 +12,11 @@ import {
   getFinancialReports,
   exportFinancialsCsv,
 } from "../controllers/admin/adminController";
+import {
+  getAdminSettings,
+  updateAdminSettings,
+  testEmailDiagnostics,
+} from "../controllers/admin/adminSettingsController";
 
 const router = Router();
 
@@ -22,6 +27,10 @@ router.get("/stats", getStats);
 
 router.get("/financial-reports", getFinancialReports);
 router.get("/financial-reports/export-csv", exportFinancialsCsv);
+
+router.get("/settings", getAdminSettings);
+router.put("/settings", updateAdminSettings);
+router.post("/settings/test-email", testEmailDiagnostics);
 
 router.get("/users", getUsers);
 router.patch("/users/:userId/status", toggleUserStatus);

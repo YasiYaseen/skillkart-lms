@@ -36,6 +36,7 @@ import {
     EnrollmentList,
     AuditLogs,
     FinancialReports,
+    SystemSettings,
 } from '@features/admin';
 
 /**
@@ -100,6 +101,7 @@ function App() {
                             <Route path="/admin/enrollments" element={<EnrollmentList />} />
                             <Route path="/admin/reports" element={<FinancialReports />} />
                             <Route path="/admin/audit-logs" element={<AuditLogs />} />
+                            <Route path="/admin/settings" element={<SystemSettings />} />
                         </Route>
                     </Route>
                 </Routes>

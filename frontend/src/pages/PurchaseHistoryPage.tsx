@@ -287,9 +287,9 @@ export default function PurchaseHistoryPage() {
               <div>
                 <span className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Billed To:</span>
                 <p className="font-semibold text-gray-900 dark:text-white">
-                  {(selectedReceipt.student as any)?.name || user?.name || 'Enrolled Student'}
+                  {(typeof selectedReceipt.student === 'object' && selectedReceipt.student?.name) || user?.name || 'Enrolled Student'}
                 </p>
-                <p className="text-gray-500">{(selectedReceipt.student as any)?.email || user?.email}</p>
+                <p className="text-gray-500">{(typeof selectedReceipt.student === 'object' && selectedReceipt.student?.email) || user?.email}</p>
               </div>
 
               <div className="sm:text-right">

@@ -15,7 +15,7 @@ export interface CouponValidationResult {
 }
 
 export interface OrderItem {
-  course: string | { _id: string; title: string; thumbnail?: string; instructor?: any };
+  course: string | { _id: string; title: string; thumbnail?: string; instructor?: { _id: string; name: string } | string };
   title: string;
   originalPrice: number;
   discountAmount: number;

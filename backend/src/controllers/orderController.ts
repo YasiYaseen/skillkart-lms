@@ -5,6 +5,7 @@ import Course from "../models/Course";
 import Coupon, { type ICoupon } from "../models/Coupon";
 import Enrollment from "../models/Enrollment";
 import Notification from "../models/Notification";
+import SystemSettings from "../models/SystemSettings";
 import { PaymentService } from "../services/paymentService";
 import { checkoutSchema } from "../validators/orderValidator";
 
@@ -21,6 +22,13 @@ export async function checkout(req: Request, res: Response) {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const settings = await SystemSettings.findOne({ isSingleton: true }).lean();
+    if (settings?.maintenanceMode) {
+      return res.status(503).json({
+        message: settings.maintenanceMessage || "Platform is currently undergoing scheduled maintenance. Please try again shortly.",
+      });
     }
 
     const parsed = checkoutSchema.safeParse(req.body);
@@ -268,8 +276,12 @@ export async function getOrderReceipt(req: Request, res: Response) {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    const isOwnerOrAdmin =
-      req.user.role === "admin" || (order.student as any)?._id?.toString() === req.user.id;
+    const studentIdStr =
+      order.student && typeof order.student === "object" && "_id" in order.student
+        ? String(order.student._id)
+        : String(order.student || "");
+
+    const isOwnerOrAdmin = req.user.role === "admin" || studentIdStr === req.user.id;
 
     if (!isOwnerOrAdmin) {
       return res.status(403).json({ message: "Access denied" });

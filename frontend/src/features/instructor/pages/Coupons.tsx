@@ -86,8 +86,10 @@ export function Coupons() {
       toast.success(`Coupon "${code.toUpperCase()}" created successfully!`);
       setShowModal(false);
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to create coupon');
+    } catch (err: unknown) {
+      const errObj = err as { response?: { data?: { message?: string } } };
+      const errorMsg = errObj?.response?.data?.message || 'Failed to create coupon';
+      toast.error(errorMsg);
     } finally {
       setSaving(false);
     }
@@ -336,7 +338,7 @@ export function Coupons() {
                   </label>
                   <select
                     value={discountType}
-                    onChange={(e) => setDiscountType(e.target.value as any)}
+                    onChange={(e) => setDiscountType(e.target.value as 'percentage' | 'fixed')}
                     className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
                     <option value="percentage">Percentage (% OFF)</option>

@@ -1,12 +1,32 @@
 import type { Request, Response } from "express";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import User from "../../models/User";
 import Course from "../../models/Course";
 import Enrollment from "../../models/Enrollment";
 import Notification from "../../models/Notification";
+import Order from "../../models/Order";
+import Coupon from "../../models/Coupon";
 
 import { recordAuditLog } from "../../services/auditService";
 import AuditLog from "../../models/AuditLog";
+
+interface PopulatedStudent {
+  _id?: Types.ObjectId | string;
+  name?: string;
+  email?: string;
+}
+
+interface PopulatedInstructor {
+  _id?: Types.ObjectId | string;
+  name?: string;
+  email?: string;
+}
+
+interface PopulatedCourse {
+  _id?: Types.ObjectId | string;
+  title?: string;
+  instructor?: PopulatedInstructor;
+}
 
 export async function getStats(req: Request, res: Response) {
   try {
@@ -188,9 +208,6 @@ export async function getEnrollments(req: Request, res: Response) {
   }
 }
 
-import Order from "../../models/Order";
-import Coupon from "../../models/Coupon";
-
 export async function getFinancialReports(req: Request, res: Response) {
   try {
     const { range = "30d", startDate: customStart, endDate: customEnd } = req.query as {
@@ -273,16 +290,17 @@ export async function getFinancialReports(req: Request, res: Response) {
       // Course and Instructor rankings
       for (const item of order.items) {
         const itemPrice = Number(item.finalPrice) || 0;
-        const courseIdStr = item.course ? ((item.course as any)._id?.toString() || item.course.toString()) : "unknown";
-        const courseTitle = item.title || (item.course as any)?.title || "Untitled Course";
+        const populatedCourse = (item.course && typeof item.course === "object" ? item.course : null) as PopulatedCourse | null;
+        const courseIdStr = populatedCourse?._id ? populatedCourse._id.toString() : (item.course ? item.course.toString() : "unknown");
+        const courseTitle = item.title || populatedCourse?.title || "Untitled Course";
 
         let instructorName = "SkillKart Instructor";
         let instructorEmail = "";
         let instructorId = "platform";
 
-        if (item.course && typeof item.course === "object" && (item.course as any).instructor) {
-          const inst = (item.course as any).instructor;
-          if (typeof inst === "object" && inst._id) {
+        if (populatedCourse?.instructor && typeof populatedCourse.instructor === "object") {
+          const inst = populatedCourse.instructor;
+          if (inst._id) {
             instructorId = inst._id.toString();
             instructorName = inst.name || "Instructor";
             instructorEmail = inst.email || "";
@@ -331,21 +349,28 @@ export async function getFinancialReports(req: Request, res: Response) {
       .slice(0, 6);
 
     // Format recent transactions
-    const recentTransactions = orders.slice(0, 15).map((o) => ({
-      _id: o._id,
-      orderNumber: o.orderNumber,
-      createdAt: o.createdAt,
-      customerName: (o.student as any)?.name || (o.paymentMetadata as any)?.billingDetails?.name || "Student",
-      customerEmail: (o.student as any)?.email || (o.paymentMetadata as any)?.billingDetails?.email || "",
-      itemsCount: o.items.length,
-      coursesSummary: o.items.map((i) => i.title).join(", "),
-      subtotal: o.subtotal,
-      discountTotal: o.discountTotal,
-      totalAmount: o.totalAmount,
-      paymentMethod: o.paymentMethod,
-      paymentStatus: o.paymentStatus,
-      transactionId: o.transactionId,
-    }));
+    const recentTransactions = orders.slice(0, 15).map((o) => {
+      const student = (o.student && typeof o.student === "object" ? o.student : null) as PopulatedStudent | null;
+      const billing = o.paymentMetadata && typeof o.paymentMetadata === "object" && "billingDetails" in o.paymentMetadata
+        ? (o.paymentMetadata.billingDetails as { name?: string; email?: string } | undefined)
+        : undefined;
+
+      return {
+        _id: o._id,
+        orderNumber: o.orderNumber,
+        createdAt: o.createdAt,
+        customerName: student?.name || billing?.name || "Student",
+        customerEmail: student?.email || billing?.email || "",
+        itemsCount: o.items.length,
+        coursesSummary: o.items.map((i) => i.title).join(", "),
+        subtotal: o.subtotal,
+        discountTotal: o.discountTotal,
+        totalAmount: o.totalAmount,
+        paymentMethod: o.paymentMethod,
+        paymentStatus: o.paymentStatus,
+        transactionId: o.transactionId,
+      };
+    });
 
     return res.json({
       range,
@@ -403,11 +428,16 @@ export async function exportFinancialsCsv(req: Request, res: Response) {
 
     for (const o of orders) {
       const coursesStr = o.items.map((i) => i.title).join(" | ");
+      const student = (o.student && typeof o.student === "object" ? o.student : null) as PopulatedStudent | null;
+      const billing = o.paymentMetadata && typeof o.paymentMetadata === "object" && "billingDetails" in o.paymentMetadata
+        ? (o.paymentMetadata.billingDetails as { name?: string; email?: string } | undefined)
+        : undefined;
+
       const row = [
         escapeCsv(o.orderNumber),
         escapeCsv(new Date(o.createdAt).toISOString()),
-        escapeCsv((o.student as any)?.name || (o.paymentMetadata as any)?.billingDetails?.name || "Student"),
-        escapeCsv((o.student as any)?.email || (o.paymentMetadata as any)?.billingDetails?.email || ""),
+        escapeCsv(student?.name || billing?.name || "Student"),
+        escapeCsv(student?.email || billing?.email || ""),
         escapeCsv(coursesStr),
         escapeCsv((o.subtotal || 0).toFixed(2)),
         escapeCsv((o.discountTotal || 0).toFixed(2)),

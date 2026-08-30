@@ -53,15 +53,25 @@ export default function CartPage() {
   const [checkingOut, setCheckingOut] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<OrderRecord | null>(null);
 
+interface RecommendedCourse {
+  _id: string;
+  title: string;
+  thumbnailUrl?: string;
+  thumbnail?: string;
+  price?: number;
+  isPaid?: boolean;
+  instructor?: { name?: string } | string;
+}
+
   // Recommendations / Upsells state
-  const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
+  const [recommendedCourses, setRecommendedCourses] = useState<RecommendedCourse[]>([]);
 
   useEffect(() => {
     // Load top recommended courses for upsell strip
     api.get('/courses?limit=4')
       .then((res) => {
-        const list = res.data.courses || [];
-        setRecommendedCourses(list.filter((c: any) => !cart.some((it) => it.courseId === c._id)));
+        const list: RecommendedCourse[] = res.data.courses || [];
+        setRecommendedCourses(list.filter((c) => !cart.some((it) => it.courseId === c._id)));
       })
       .catch(() => {});
   }, [cart]);
@@ -88,8 +98,10 @@ export default function CartPage() {
         setCouponInput(res.coupon.code);
         toast.success(`Coupon "${res.coupon.code}" applied! You saved $${res.discountTotal.toFixed(2)}`);
       }
-    } catch (err: any) {
-      setCouponError(err.response?.data?.message || 'Invalid or expired coupon code.');
+    } catch (err: unknown) {
+      const errObj = err as { response?: { data?: { message?: string } } };
+      const errorMsg = errObj?.response?.data?.message || 'Invalid or expired coupon code.';
+      setCouponError(errorMsg);
       setAppliedCoupon(null);
     } finally {
       setValidatingCoupon(false);
@@ -146,8 +158,10 @@ export default function CartPage() {
       setCompletedOrder(res.order);
       clearCart();
       toast.success('🎉 Purchase complete! You are now enrolled.');
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Checkout failed. Please try again.');
+    } catch (err: unknown) {
+      const errObj = err as { response?: { data?: { message?: string } } };
+      const errorMsg = errObj?.response?.data?.message || 'Checkout failed. Please try again.';
+      toast.error(errorMsg);
     } finally {
       setCheckingOut(false);
     }
@@ -406,32 +420,37 @@ export default function CartPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {recommendedCourses.slice(0, 2).map((c) => (
-                      <div
-                        key={c._id}
-                        className="p-3.5 rounded-xl border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
-                      >
-                        <div className="truncate flex-1">
-                          <h5 className="font-semibold text-xs text-gray-900 dark:text-white truncate">{c.title}</h5>
-                          <span className="text-xs font-bold text-indigo-600 font-mono">${c.price > 0 ? `$${c.price.toFixed(2)}` : 'FREE'}</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            addToCart({
-                              courseId: c._id,
-                              title: c.title,
-                              price: c.price,
-                              thumbnailUrl: c.thumbnail,
-                              instructorName: c.instructor?.name || 'Instructor',
-                            });
-                            toast.success(`"${c.title}" added to your cart!`);
-                          }}
-                          className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 rounded-lg text-xs font-bold transition-colors shrink-0"
+                    {recommendedCourses.slice(0, 2).map((c) => {
+                      const coursePrice = typeof c.price === 'number' ? c.price : 0;
+                      return (
+                        <div
+                          key={c._id}
+                          className="p-3.5 rounded-xl border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
                         >
-                          + Add
-                        </button>
-                      </div>
-                    ))}
+                          <div className="truncate flex-1">
+                            <h5 className="font-semibold text-xs text-gray-900 dark:text-white truncate">{c.title}</h5>
+                            <span className="text-xs font-bold text-indigo-600 font-mono">
+                              {coursePrice > 0 ? `$${coursePrice.toFixed(2)}` : 'FREE'}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              addToCart({
+                                courseId: c._id,
+                                title: c.title,
+                                price: coursePrice,
+                                thumbnailUrl: c.thumbnailUrl || c.thumbnail,
+                                instructorName: 'Instructor',
+                              });
+                              toast.success(`"${c.title}" added to your cart!`);
+                            }}
+                            className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 rounded-lg text-xs font-bold transition-colors shrink-0"
+                          >
+                            + Add
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
