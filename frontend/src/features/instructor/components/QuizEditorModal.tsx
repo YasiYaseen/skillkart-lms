@@ -131,14 +131,14 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
             {loadingExisting ? (
                 <div className="py-12 flex flex-col items-center justify-center space-y-2">
                     <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-xs text-gray-500">Loading quiz questions...</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Loading quiz questions...</span>
                 </div>
             ) : (
             <form onSubmit={handleSave} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
                 
                 {/* Passing Percentage */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Passing Percentage (%)
                     </label>
                     <input
@@ -156,7 +156,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                     {questions.map((q, qIdx) => (
                         <div key={qIdx} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                             <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-semibold text-gray-800">Question {qIdx + 1}</h4>
+                                <h4 className="font-semibold text-gray-800 dark:text-gray-200">Question {qIdx + 1}</h4>
                                 {questions.length > 1 && (
                                     <button
                                         type="button"
@@ -179,7 +179,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                                 />
 
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                         Options (Select correct answer using radio button)
                                     </label>
                                     {q.options.map((opt, oIdx) => (
@@ -241,7 +241,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg"
                         >
                             Cancel
                         </button>

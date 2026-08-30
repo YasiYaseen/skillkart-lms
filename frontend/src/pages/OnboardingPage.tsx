@@ -107,8 +107,8 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-10">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome{firstName ? `, ${firstName}` : ''}!</h1>
-        <p className="text-gray-500 mt-2">Let&apos;s set up your profile in three quick steps.</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome{firstName ? `, ${firstName}` : ''}!</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">Let&apos;s set up your profile in three quick steps.</p>
       </div>
 
       <div className="flex items-center gap-3 mb-8">
@@ -140,8 +140,8 @@ export default function OnboardingPage() {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm w-full max-w-2xl p-8">
         {step === 0 && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">What best describes you?</h2>
-            <p className="text-gray-500 text-sm mb-6">You can change this later in your profile settings.</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">What best describes you?</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">You can change this later in your profile settings.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(['student', 'instructor'] as const).map((role) => (
                 <button
@@ -152,8 +152,8 @@ export default function OnboardingPage() {
                     form.role === role ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="font-semibold text-gray-900 capitalize">{role}</div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="font-semibold text-gray-900 dark:text-white capitalize">{role}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {role === 'student' ? 'I want to learn and grow my skills' : 'I want to teach and mentor learners'}
                   </div>
                 </button>
@@ -164,11 +164,11 @@ export default function OnboardingPage() {
 
         {step === 1 && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Tell us about yourself</h2>
-            <p className="text-gray-500 text-sm mb-6">This helps us personalize your experience.</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Tell us about yourself</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">This helps us personalize your experience.</p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Headline <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -183,7 +183,7 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bio</label>
                 <textarea
                   value={form.bio}
                   onChange={(e) => updateForm({ bio: e.target.value })}
@@ -221,8 +221,8 @@ export default function OnboardingPage() {
 
         {step === 2 && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">What topics interest you?</h2>
-            <p className="text-gray-500 text-sm mb-6">Choose at least one to personalize recommendations.</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">What topics interest you?</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Choose at least one to personalize recommendations.</p>
             <div className="flex flex-wrap gap-2">
               {INTEREST_OPTIONS.map((interest) => {
                 const selected = form.interests.includes(interest);
@@ -253,7 +253,7 @@ export default function OnboardingPage() {
             type="button"
             onClick={() => setStep((prev) => prev - 1)}
             disabled={step === 0}
-            className="text-sm text-gray-500 hover:text-gray-800 font-medium disabled:opacity-30 transition-colors"
+            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white font-medium disabled:opacity-30 transition-colors"
           >
             Back
           </button>

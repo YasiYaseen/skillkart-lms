@@ -122,9 +122,9 @@ export default function AuditLogs() {
       {/* Logs Table */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Loading audit logs...</div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">Loading audit logs...</div>
         ) : logs.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">
+          <div className="p-12 text-center text-gray-500 dark:text-gray-400">
             <ShieldCheckIcon className="w-12 h-12 mx-auto text-gray-400 mb-2" />
             <p className="font-semibold text-gray-700 dark:text-gray-300">No audit logs found</p>
             <p className="text-xs text-gray-400 mt-1">Actions taken by administrators will be recorded here.</p>
@@ -152,7 +152,7 @@ export default function AuditLogs() {
                           <div className="font-semibold text-gray-900 dark:text-white">
                             {log.admin?.name || "Unknown Admin"}
                           </div>
-                          <div className="text-gray-500 text-[11px]">{log.admin?.email}</div>
+                          <div className="text-gray-500 dark:text-gray-400 text-[11px]">{log.admin?.email}</div>
                         </td>
 
                         <td className="py-3.5 px-4">
@@ -173,7 +173,7 @@ export default function AuditLogs() {
                           <div className="text-[10px] text-gray-400 font-mono">{log.targetId}</div>
                         </td>
 
-                        <td className="py-3.5 px-4 font-mono text-gray-500">
+                        <td className="py-3.5 px-4 font-mono text-gray-500 dark:text-gray-400">
                           {log.ipAddress || "—"}
                         </td>
 
@@ -201,7 +201,7 @@ export default function AuditLogs() {
                         <tr className="bg-gray-50/80 dark:bg-gray-900/50">
                           <td colSpan={6} className="p-4">
                             <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
-                              <div className="text-[11px] font-semibold text-gray-500 mb-1">
+                              <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1">
                                 Event Payload & Details:
                               </div>
                               <pre className="text-[11px] font-mono text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap">

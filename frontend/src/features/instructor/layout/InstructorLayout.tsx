@@ -1,5 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { GraduationCapIcon } from '@assets/icons';
+import { useAuth } from '@/features/auth/AuthContext';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 
 // Sidebar nav items
 const NAV_ITEMS = [
@@ -62,8 +64,7 @@ const NAV_ITEMS = [
         path: '/instructor/coupons',
         icon: (
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.386a11.954 11.954 0 0 0 4.887-4.887c.486-.827.313-1.908-.386-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
             </svg>
         ),
     },
@@ -87,38 +88,42 @@ const NAV_ITEMS = [
     },
 ];
 
-
-interface InstructorLayoutProps {
-}
-
-function InstructorLayout({  }: InstructorLayoutProps) {
+export function InstructorLayout() {
     const location = useLocation();
+    const { user } = useAuth();
 
     return (
-        <div className="min-h-screen flex flex-col bg-white">
+        <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
             {/* Top Header */}
-            <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6 bg-white sticky top-0 z-50">
-                <Link to="/" className="flex items-center gap-2 text-xl font-bold text-gray-900">
-                    <span className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <header className="h-16 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 bg-white dark:bg-gray-900 sticky top-0 z-50 transition-colors">
+                <Link to="/" className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
+                    <span className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-xs">
                         <GraduationCapIcon className="w-[18px] h-[18px] text-white" />
                     </span>
                     SkillKart
                 </Link>
 
                 <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-600">Hi Richard</span>
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                        </svg>
+                    <ThemeToggle />
+                    <div className="flex items-center gap-2.5 pl-2 border-l border-gray-200 dark:border-gray-700">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            {user?.name || 'Instructor'}
+                        </span>
+                        {user?.avatar ? (
+                            <img src={user.avatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
+                        ) : (
+                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center border border-blue-200 dark:border-blue-800">
+                                {user?.name ? user.name.charAt(0).toUpperCase() : 'I'}
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
 
             <div className="flex flex-1">
                 {/* Sidebar */}
-                <aside className="w-56 border-r border-gray-200 bg-white flex-shrink-0 hidden md:block">
-                    <nav className="py-6">
+                <aside className="w-56 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 hidden md:block transition-colors">
+                    <nav className="py-6 space-y-1">
                         {NAV_ITEMS.map((item) => {
                             const isActive = location.pathname === item.path;
                             return (
@@ -126,10 +131,10 @@ function InstructorLayout({  }: InstructorLayoutProps) {
                                     key={item.path}
                                     to={item.path}
                                     className={`
-                                        flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors
+                                        flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-3
                                         ${isActive
-                                            ? 'text-blue-600 bg-blue-50 border-l-3 border-blue-600'
-                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-l-3 border-transparent'
+                                            ? 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 border-blue-600 dark:border-blue-500 font-semibold'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 border-transparent'
                                         }
                                     `}
                                 >
@@ -142,29 +147,21 @@ function InstructorLayout({  }: InstructorLayoutProps) {
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 p-8 bg-white overflow-auto">
+                <main className="flex-1 p-6 md:p-8 bg-gray-50 dark:bg-gray-950 overflow-auto transition-colors">
                     <Outlet />
                 </main>
             </div>
 
             {/* Footer */}
-            <footer className="border-t border-gray-200 py-6 px-6 mt-auto">
-                <div className="flex items-center justify-between">
+            <footer className="border-t border-gray-200 dark:border-gray-800 py-4 px-6 bg-white dark:bg-gray-900 mt-auto transition-colors">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                            <GraduationCapIcon className="w-3 h-3 text-white" />
+                        <span className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                            <GraduationCapIcon className="w-2.5 h-2.5 text-white" />
                         </span>
-                        <span className="text-sm font-semibold text-gray-900">SkillKart</span>
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">SkillKart Instructor Hub</span>
                     </div>
-                    <p className="text-xs text-gray-500">All rights reserved. Copyright SkillKart</p>
-                    <div className="flex gap-4">
-                        <a href="#" className="text-gray-400 hover:text-gray-600">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" /></svg>
-                        </a>
-                        <a href="#" className="text-gray-400 hover:text-gray-600">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" /></svg>
-                        </a>
-                    </div>
+                    <p>&copy; {new Date().getFullYear()} SkillKart. All rights reserved.</p>
                 </div>
             </footer>
         </div>

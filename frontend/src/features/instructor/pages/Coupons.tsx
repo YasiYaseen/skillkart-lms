@@ -132,7 +132,7 @@ export function Coupons() {
   const sampleFinal = Math.max(0, sampleOriginal - sampleDiscount);
 
   if (loading) {
-    return <div className="text-gray-500 py-16 text-center">Loading coupons manager...</div>;
+    return <div className="text-gray-500 dark:text-gray-400 py-16 text-center">Loading coupons manager...</div>;
   }
 
   return (
@@ -148,7 +148,7 @@ export function Coupons() {
 
         <button
           onClick={openCreateModal}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-colors shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
+          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-colors shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
         >
           <span>+ Create Promo Coupon</span>
         </button>
@@ -157,7 +157,7 @@ export function Coupons() {
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold">
             🏷️
           </div>
           <div>
@@ -190,16 +190,16 @@ export function Coupons() {
       {/* Coupons Table */}
       {coupons.length === 0 ? (
         <div className="text-center py-16 px-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
-          <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
+          <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
             🏷️
           </div>
           <h3 className="text-base font-semibold text-gray-900 dark:text-white">No promo coupons created</h3>
-          <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
             Create your first promo code (e.g. 50% off or $20 off) for your students.
           </p>
           <button
             onClick={openCreateModal}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 transition-colors"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-500 transition-colors"
           >
             Create First Coupon
           </button>
@@ -224,13 +224,13 @@ export function Coupons() {
                   <tr key={coupon._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
                     <td className="px-5 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-extrabold text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/60">
+                        <span className="font-mono font-extrabold text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/60">
                           {coupon.code}
                         </span>
                         <button
                           onClick={() => handleCopyCode(coupon.code)}
                           title="Copy Code to Clipboard"
-                          className="text-gray-400 hover:text-indigo-600 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                          className="text-gray-400 hover:text-blue-600 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                         >
                           📋
                         </button>
@@ -256,7 +256,7 @@ export function Coupons() {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-gray-500 text-[11px]">
+                    <td className="px-5 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 text-[11px]">
                       {coupon.expiresAt ? (
                         new Date(coupon.expiresAt) < new Date() ? (
                           <span className="text-rose-500 font-bold">Expired</span>
@@ -310,7 +310,7 @@ export function Coupons() {
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200"
               >
                 ✕
               </button>
@@ -327,7 +327,7 @@ export function Coupons() {
                   placeholder="e.g. SKILL50"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono uppercase tracking-wider focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono uppercase tracking-wider focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
               </div>
 
@@ -363,8 +363,8 @@ export function Coupons() {
               </div>
 
               {/* Live Preview Calculation Pill */}
-              <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-xs">
-                <span className="text-indigo-900 dark:text-indigo-200">
+              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 flex items-center justify-between text-xs">
+                <span className="text-blue-900 dark:text-blue-200">
                   💡 <strong>Simulator Preview:</strong> A $100 course will cost{' '}
                   <strong className="text-emerald-600 dark:text-emerald-400 font-mono">${sampleFinal.toFixed(2)}</strong> for students (saves ${sampleDiscount.toFixed(2)})
                 </span>

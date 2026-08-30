@@ -200,14 +200,14 @@ export function CourseGenerator() {
           <button
             type="button"
             onClick={handleApplyDefaultSkillkart}
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+            className="px-4 py-2 text-xs font-semibold rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 transition-colors"
           >
             🛡️ Load SkillKart Platform Defaults
           </button>
           <button
             type="button"
             onClick={handleApplySampleInstructor}
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-colors"
+            className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 transition-colors"
           >
             👨‍🏫 Load Sample Instructor
           </button>
@@ -241,24 +241,24 @@ export function CourseGenerator() {
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
             <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-emerald-100 dark:border-gray-700 text-center">
-              <p className="text-xs text-gray-500">Courses Created</p>
-              <p className="text-xl font-bold text-emerald-600">{lastResult.coursesCreated}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Courses Created</p>
+              <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{lastResult.coursesCreated}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-emerald-100 dark:border-gray-700 text-center">
-              <p className="text-xs text-gray-500">Skipped (Existed)</p>
-              <p className="text-xl font-bold text-gray-600">{lastResult.coursesSkipped}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Skipped (Existed)</p>
+              <p className="text-xl font-bold text-gray-600 dark:text-gray-400">{lastResult.coursesSkipped}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-emerald-100 dark:border-gray-700 text-center">
-              <p className="text-xs text-gray-500">Sections Added</p>
-              <p className="text-xl font-bold text-blue-600">{lastResult.totalSectionsCreated}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Sections Added</p>
+              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{lastResult.totalSectionsCreated}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-emerald-100 dark:border-gray-700 text-center">
-              <p className="text-xs text-gray-500">Lessons Added</p>
-              <p className="text-xl font-bold text-indigo-600">{lastResult.totalLessonsCreated}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Lessons Added</p>
+              <p className="text-xl font-bold text-blue-700 dark:text-blue-300">{lastResult.totalLessonsCreated}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-emerald-100 dark:border-gray-700 text-center">
-              <p className="text-xs text-gray-500">Quizzes Configured</p>
-              <p className="text-xl font-bold text-purple-600">{lastResult.totalQuizzesCreated}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Quizzes Configured</p>
+              <p className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{lastResult.totalQuizzesCreated}</p>
             </div>
           </div>
 
@@ -278,7 +278,7 @@ export function CourseGenerator() {
                       {detail.status === 'created' ? 'CREATED' : 'ALREADY EXISTS'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-gray-500">
+                  <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400">
                     <span>{detail.sectionsCount} sections</span>
                     <span>{detail.lessonsCount} lessons</span>
                     <Link
@@ -447,7 +447,7 @@ export function CourseGenerator() {
                 <button
                   type="button"
                   onClick={clearAllPresets}
-                  className="text-xs text-gray-500 hover:underline font-semibold"
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:underline font-semibold"
                 >
                   Clear All
                 </button>

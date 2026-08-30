@@ -181,7 +181,7 @@ export function EarningsAndPayouts() {
     return (
       <div className="py-24 flex flex-col items-center justify-center space-y-3">
         <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-gray-500">Loading instructor earnings & balance...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading instructor earnings & balance...</p>
       </div>
     );
   }
@@ -302,7 +302,7 @@ export function EarningsAndPayouts() {
             <h3 className="text-sm font-bold text-gray-900 dark:text-white">
               Course-by-Course Revenue Breakdown
             </h3>
-            <p className="text-xs text-gray-500">Earnings distribution across your published courses.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Earnings distribution across your published courses.</p>
           </div>
           <span className="text-xs text-gray-400 font-mono">
             {data?.courseBreakdown.length || 0} Courses Active
@@ -373,7 +373,7 @@ export function EarningsAndPayouts() {
             <h3 className="text-sm font-bold text-gray-900 dark:text-white">
               Payout & Withdrawal History
             </h3>
-            <p className="text-xs text-gray-500">Record of requested and disbursed funds.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Record of requested and disbursed funds.</p>
           </div>
         </div>
 
@@ -396,7 +396,7 @@ export function EarningsAndPayouts() {
                     <td className="px-4 py-3.5 font-mono font-bold text-gray-900 dark:text-white">
                       {p.referenceNumber}
                     </td>
-                    <td className="px-4 py-3.5 text-gray-500">
+                    <td className="px-4 py-3.5 text-gray-500 dark:text-gray-400">
                       {new Date(p.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3.5 uppercase font-mono text-[10px]">
@@ -444,14 +444,14 @@ export function EarningsAndPayouts() {
                 <h3 className="text-base font-bold text-gray-900 dark:text-white">
                   Request Earnings Payout
                 </h3>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Available Balance: <strong className="text-blue-600 font-mono">${summary.availableBalance.toFixed(2)}</strong>
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPayoutModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 ✕
               </button>
@@ -639,7 +639,7 @@ export function EarningsAndPayouts() {
                 <button
                   type="button"
                   onClick={() => setShowPayoutModal(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold"
+                  className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold"
                 >
                   Cancel
                 </button>

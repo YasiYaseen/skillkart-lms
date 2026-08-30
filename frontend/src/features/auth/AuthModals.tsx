@@ -94,14 +94,14 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                     {isForgot
                         ? 'Reset your password'
                         : isLogin
                         ? 'Sign in to LMS'
                         : 'Create your account'}
                 </h2>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
                     {isForgot
                         ? 'Enter your email address and we will send you a link to reset your password.'
                         : isLogin
@@ -128,10 +128,10 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                     {/* Divider */}
                     <div className="relative mb-6">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-200"></div>
+                            <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white px-2 text-gray-500">or</span>
+                            <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">or</span>
                         </div>
                     </div>
                 </>
@@ -140,10 +140,10 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
             {/* Forgot Password Success Message */}
             {isForgot && forgotSuccess ? (
                 <div className="space-y-4">
-                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
-                        <div className="text-emerald-600 text-2xl mb-1">✉️</div>
-                        <p className="text-sm font-semibold text-emerald-900 mb-1">Check your inbox</p>
-                        <p className="text-xs text-emerald-700">
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-center">
+                        <div className="text-emerald-600 dark:text-emerald-400 text-2xl mb-1">✉️</div>
+                        <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200 mb-1">Check your inbox</p>
+                        <p className="text-xs text-emerald-700 dark:text-emerald-300">
                             If <span className="font-semibold">{email}</span> is registered, we've sent password reset instructions.
                         </p>
                     </div>
@@ -184,7 +184,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                     {!isForgot && (
                         <div>
                             <div className="flex items-center justify-between mb-1">
-                                <label className="text-sm font-medium text-gray-700">Password</label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
                                 {isLogin && (
                                     <button
                                         type="button"
@@ -221,7 +221,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
             )}
 
             {/* Footer */}
-            <div className="mt-6 text-center text-sm text-gray-600">
+            <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
                 {isForgot ? (
                     <button
                         onClick={() => {
@@ -229,7 +229,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                             setMode('login');
                         }}
                         type="button"
-                        className="font-semibold text-gray-900 hover:underline hover:text-blue-600 inline-flex items-center gap-1"
+                        className="font-semibold text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 inline-flex items-center gap-1"
                     >
                         ← Back to sign in
                     </button>
@@ -239,7 +239,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                         <button
                             onClick={() => setMode('register')}
                             type="button"
-                            className="font-semibold text-gray-900 hover:underline hover:text-blue-600"
+                            className="font-semibold text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400"
                         >
                             Sign up
                         </button>
@@ -250,7 +250,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                         <button
                             onClick={() => setMode('login')}
                             type="button"
-                            className="font-semibold text-gray-900 hover:underline hover:text-blue-600"
+                            className="font-semibold text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400"
                         >
                             Sign in
                         </button>

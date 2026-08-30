@@ -123,13 +123,13 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
       {/* Header & View Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
         <div>
-          <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+          <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <span>📝 Personal Study Notes</span>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
               {notes.length} {notes.length === 1 ? 'note' : 'notes'}
             </span>
           </h3>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Personal notes are private to your account and help retain key concepts.
           </p>
         </div>
@@ -164,7 +164,7 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
       {/* Note Creation Form (Always enabled for current lesson) */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
         <div className="flex items-center justify-between mb-3">
-          <label htmlFor="new-note-text" className="text-sm font-semibold text-gray-800">
+          <label htmlFor="new-note-text" className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             Add a Note {lessonTitle && <span className="text-gray-400 font-normal">for {lessonTitle}</span>}
           </label>
           <span className="text-xs text-gray-400 font-mono">
@@ -185,7 +185,7 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
           />
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400 hidden sm:inline">
-              Tip: Press <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 border border-gray-200">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 border border-gray-200">Enter</kbd> to save quickly
+              Tip: Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">Enter</kbd> to save quickly
             </span>
             <button
               type="submit"
@@ -210,10 +210,10 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
           <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
             ✏️
           </div>
-          <h4 className="text-base font-bold text-gray-900 mb-1">
+          <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">
             {viewMode === 'lesson' ? 'No notes for this lesson yet' : 'No notes recorded in this course yet'}
           </h4>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto">
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
             Take notes while watching or reading lessons to reinforce your understanding.
           </p>
         </div>
@@ -289,7 +289,7 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-800 transition-colors"
+                        className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
                       >
                         Cancel
                       </button>
@@ -304,7 +304,7 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                  <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
                     {note.content}
                   </div>
                 )}

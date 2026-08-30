@@ -139,7 +139,7 @@ export function BulkLessonUploadModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
@@ -290,7 +290,7 @@ export function BulkLessonUploadModal({
 
         {/* Modal Footer */}
         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 flex items-center justify-between">
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             {lessons.filter((l) => l.title.trim()).length} lessons ready to add
           </div>
           <div className="flex items-center gap-3">

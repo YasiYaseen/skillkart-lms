@@ -63,7 +63,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
           onClick={() => onChange({ method: 'card' })}
           className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition-all ${
             formState.method === 'card'
-              ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 shadow-xs'
+              ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shadow-xs'
               : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-gray-300'
           }`}
         >
@@ -76,7 +76,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
           onClick={() => onChange({ method: 'express' })}
           className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition-all ${
             formState.method === 'express'
-              ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 shadow-xs'
+              ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shadow-xs'
               : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-gray-300'
           }`}
         >
@@ -89,7 +89,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
           onClick={() => onChange({ method: 'paypal' })}
           className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition-all ${
             formState.method === 'paypal'
-              ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 shadow-xs'
+              ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shadow-xs'
               : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-gray-300'
           }`}
         >
@@ -102,7 +102,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
           onClick={() => onChange({ method: 'upi' })}
           className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition-all ${
             formState.method === 'upi'
-              ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 shadow-xs'
+              ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shadow-xs'
               : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-gray-300'
           }`}
         >
@@ -115,10 +115,10 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
       {formState.method === 'card' && (
         <div className="space-y-6">
           {/* Visual Realistic Credit Card */}
-          <div className="relative mx-auto max-w-sm w-full h-48 rounded-3xl p-6 text-white bg-linear-to-tr from-indigo-900 via-indigo-700 to-purple-800 shadow-2xl overflow-hidden flex flex-col justify-between border border-white/20 transition-transform duration-300 hover:scale-[1.02]">
+          <div className="relative mx-auto max-w-sm w-full h-48 rounded-3xl p-6 text-white bg-linear-to-tr from-slate-950 via-slate-900 to-blue-900 shadow-2xl overflow-hidden flex flex-col justify-between border border-white/20 transition-transform duration-300 hover:scale-[1.02]">
             {/* Holographic background wave */}
             <div className="absolute -top-12 -right-12 w-44 h-44 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
-            <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-purple-500/20 rounded-full blur-lg pointer-events-none"></div>
+            <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-blue-500/20 rounded-full blur-lg pointer-events-none"></div>
 
             {/* Top row: Chip & Network */}
             <div className="flex items-center justify-between z-10">
@@ -126,7 +126,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
                 <div className="w-8 h-5 border border-amber-600/40 rounded-xs grid grid-cols-2 gap-0.5 opacity-60"></div>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-xs font-bold tracking-widest text-indigo-200">SKILLKART PAY</span>
+                <span className="text-xs font-bold tracking-widest text-blue-200">SKILLKART PAY</span>
                 <span className="text-lg">💳</span>
               </div>
             </div>
@@ -235,7 +235,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
         <div className="p-6 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-center space-y-4">
           <div className="space-y-1">
             <h4 className="font-bold text-sm text-gray-900 dark:text-white">Express 1-Click Fast Checkout</h4>
-            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+            <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
               Select your preferred digital wallet for instant authorization.
             </p>
           </div>
@@ -275,7 +275,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
           <div className="space-y-1">
             <div className="text-3xl">🅿️</div>
             <h4 className="font-bold text-sm text-gray-900 dark:text-white">Pay with PayPal</h4>
-            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+            <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
               Safe, fast checkout with your PayPal balance or linked bank accounts.
             </p>
           </div>
@@ -303,27 +303,27 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
         <div className="p-6 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 space-y-4">
           <div className="text-center space-y-1">
             <h4 className="font-bold text-sm text-gray-900 dark:text-white">Instant UPI & Net Banking</h4>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Scan the QR code from your phone or enter your UPI ID.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-2">
             {/* Interactive QR Mockup */}
-            <div className="bg-white p-3.5 rounded-2xl border border-gray-200 shadow-md text-center space-y-2">
-              <div className="w-32 h-32 bg-gray-900 rounded-xl p-2 flex items-center justify-center mx-auto text-white font-mono text-[10px] grid grid-cols-4 gap-1">
+            <div className="bg-white dark:bg-gray-900 p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md text-center space-y-2">
+              <div className="w-32 h-32 bg-gray-900 dark:bg-gray-950 rounded-xl p-2 flex items-center justify-center mx-auto text-white font-mono text-[10px] grid grid-cols-4 gap-1 border border-gray-800">
                 {Array.from({ length: 16 }).map((_, i) => (
                   <div
                     key={i}
                     className={`rounded-xs ${
                       i % 3 === 0 || i === 0 || i === 3 || i === 12 || i === 15
                         ? 'bg-white'
-                        : 'bg-indigo-400 opacity-80'
+                        : 'bg-blue-500 opacity-80'
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-[10px] font-bold text-gray-600 block">Scan to Pay ${totalAmount.toFixed(2)}</span>
+              <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 block">Scan to Pay ${totalAmount.toFixed(2)}</span>
             </div>
 
             {/* UPI ID input & app icons */}
@@ -335,14 +335,14 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
                 <input
                   type="text"
                   placeholder="username@okhdfcbank"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
               </div>
 
-              <div className="flex items-center gap-2 justify-center pt-1 text-[11px] text-gray-500">
-                <span className="px-2 py-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold">GPay</span>
-                <span className="px-2 py-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold">PhonePe</span>
-                <span className="px-2 py-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold">Paytm</span>
+              <div className="flex items-center gap-2 justify-center pt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold text-gray-700 dark:text-gray-300">GPay</span>
+                <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold text-gray-700 dark:text-gray-300">PhonePe</span>
+                <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold text-gray-700 dark:text-gray-300">Paytm</span>
               </div>
             </div>
           </div>

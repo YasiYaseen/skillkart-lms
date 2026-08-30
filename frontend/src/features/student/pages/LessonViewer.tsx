@@ -228,7 +228,7 @@ function LessonViewer() {
         }
     };
 
-    if (loading) return <div className="text-center py-20 text-gray-500">Loading lesson...</div>;
+    if (loading) return <div className="text-center py-20 text-gray-500 dark:text-gray-400">Loading lesson...</div>;
     if (!course) return <div className="text-center py-20 text-red-500">Course not found</div>;
 
     return (
@@ -242,7 +242,7 @@ function LessonViewer() {
                     <span>{showMobileSidebar ? '✕ Close Curriculum' : '☰ Course Curriculum'}</span>
                     <span className="text-gray-400 font-normal">({progressPercentage}%)</span>
                 </button>
-                <Link to={`/courses/${courseId}`} className="text-xs text-gray-500 hover:underline">
+                <Link to={`/courses/${courseId}`} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">
                     ← Course Info
                 </Link>
             </div>
@@ -336,8 +336,8 @@ function LessonViewer() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Select a lesson</h3>
-                        <p className="text-gray-500">Choose a lesson from the curriculum sidebar to continue your learning journey.</p>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Select a lesson</h3>
+                        <p className="text-gray-500 dark:text-gray-400">Choose a lesson from the curriculum sidebar to continue your learning journey.</p>
                     </div>
                 ) : (
                     <div className="max-w-4xl mx-auto">
@@ -504,7 +504,7 @@ function LessonViewer() {
                             <div className="p-6 md:p-8 space-y-8">
                                 {activeItems.length === 0 ? (
                                     <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl">
-                                        <p className="text-gray-500">No content available for this lesson yet.</p>
+                                        <p className="text-gray-500 dark:text-gray-400">No content available for this lesson yet.</p>
                                     </div>
                                 ) : (
                                     activeItems.map((item) => {
@@ -541,7 +541,7 @@ function LessonViewer() {
                                                     <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
                                                         <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-200 bg-white">
                                                             <span className="text-red-500 text-xl">📄</span>
-                                                            <span className="font-semibold text-gray-700 text-sm">PDF Resource</span>
+                                                            <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm">PDF Resource</span>
                                                             <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-sm text-blue-600 hover:underline font-medium">Open in new tab ↗</a>
                                                         </div>
                                                         <iframe src={url} className="w-full h-[65vh] min-h-[400px] border-0" title="PDF viewer" />

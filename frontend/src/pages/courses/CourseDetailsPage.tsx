@@ -406,7 +406,7 @@ function CourseDetailsSkeleton() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-12">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 pb-12 transition-colors">
             <div className="container py-10">
 
                 {/* Main Grid Layout */}
@@ -417,26 +417,26 @@ function CourseDetailsSkeleton() {
 
                         {/* 1. Top Section Info */}
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
                                 {course.title}
                             </h1>
-                            <p className="text-lg text-gray-600 mb-4">
+                            <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
                                 {course.subtitle}
                             </p>
 
                             <div className="flex items-center flex-wrap gap-4 text-sm mb-4">
                                 {course.rating > 0 && (
                                     <div className="flex items-center gap-1">
-                                        <span className="font-bold text-orange-500 flex items-center gap-0.5">
+                                        <span className="font-bold text-amber-500 flex items-center gap-0.5">
                                             {course.rating} <StarIcon />
                                         </span>
-                                        <span className="text-blue-600 underline cursor-pointer">
+                                        <span className="text-blue-600 dark:text-blue-400 underline cursor-pointer">
                                             ({course.ratingCount} ratings)
                                         </span>
                                     </div>
                                 )}
                                 {course.studentCount > 0 && (
-                                    <div className="text-gray-600">
+                                    <div className="text-gray-600 dark:text-gray-400">
                                         {course.studentCount} students
                                     </div>
                                 )}
@@ -833,7 +833,7 @@ function CourseDetailsSkeleton() {
                                             isInCart(courseId) ? (
                                                 <button
                                                     onClick={() => navigate('/cart')}
-                                                    className="w-full py-2.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl font-bold text-xs hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+                                                    className="w-full py-2.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl font-bold text-xs hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center gap-2"
                                                 >
                                                     <span>🛒 In Cart &bull; Go to Cart →</span>
                                                 </button>

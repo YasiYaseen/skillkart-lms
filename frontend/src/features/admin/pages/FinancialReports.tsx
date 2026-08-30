@@ -140,7 +140,7 @@ export function FinancialReports() {
     return (
       <div className="py-20 flex flex-col items-center justify-center space-y-3">
         <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-gray-500">Generating platform financial reports...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Generating platform financial reports...</p>
       </div>
     );
   }
@@ -285,7 +285,7 @@ export function FinancialReports() {
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
               Revenue Volume Trend
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Daily revenue spikes and checkout frequency over the selected timeframe.
             </p>
           </div>
@@ -416,7 +416,7 @@ export function FinancialReports() {
             <h3 className="text-sm font-bold text-gray-900 dark:text-white">
               Transactions & Invoices Ledger
             </h3>
-            <p className="text-xs text-gray-500">Live feed of verified platform purchases.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Live feed of verified platform purchases.</p>
           </div>
 
           <div className="w-full sm:w-72">
@@ -452,7 +452,7 @@ export function FinancialReports() {
                     <td className="px-4 py-3.5 whitespace-nowrap font-mono font-bold text-gray-900 dark:text-white">
                       {tx.orderNumber}
                     </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap text-gray-500">
+                    <td className="px-4 py-3.5 whitespace-nowrap text-gray-500 dark:text-gray-400">
                       {new Date(tx.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3.5">
@@ -462,7 +462,7 @@ export function FinancialReports() {
                     <td className="px-4 py-3.5 max-w-xs truncate font-medium text-gray-800 dark:text-gray-200" title={tx.coursesSummary}>
                       {tx.coursesSummary}
                     </td>
-                    <td className="px-4 py-3.5 uppercase font-mono text-[11px] text-gray-500">
+                    <td className="px-4 py-3.5 uppercase font-mono text-[11px] text-gray-500 dark:text-gray-400">
                       {tx.paymentMethod}
                     </td>
                     <td className="px-4 py-3.5 font-mono font-bold text-gray-900 dark:text-white">

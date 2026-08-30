@@ -473,7 +473,7 @@ function EditCourse() {
                         href={`/courses/${courseId}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-xl transition-colors border border-indigo-200 dark:border-indigo-800 self-start sm:self-auto"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 rounded-xl transition-colors border border-blue-200 dark:border-blue-800 self-start sm:self-auto shadow-2xs"
                     >
                         <span>Preview Course</span>
                         <span>↗</span>
@@ -481,13 +481,13 @@ function EditCourse() {
                 )}
             </div>
 
-            <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-1">
+            <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-1">
                 <button
                     type="button"
                     onClick={() => setActiveTab('details')}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                         activeTab === 'details'
-                            ? 'bg-indigo-600 text-white shadow-xs'
+                            ? 'bg-blue-600 text-white shadow-xs'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                 >
@@ -499,14 +499,14 @@ function EditCourse() {
                     onClick={() => setActiveTab('curriculum')}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                         activeTab === 'curriculum'
-                            ? 'bg-indigo-600 text-white shadow-xs'
+                            ? 'bg-blue-600 text-white shadow-xs'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                 >
                     <span>📚</span>
                     <span>Curriculum & Content</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        activeTab === 'curriculum' ? 'bg-indigo-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                        activeTab === 'curriculum' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                     }`}>
                         {sections.length} sec • {totalLectures} lessons
                     </span>
@@ -516,7 +516,7 @@ function EditCourse() {
                     onClick={() => setActiveTab('faqs')}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                         activeTab === 'faqs'
-                            ? 'bg-indigo-600 text-white shadow-xs'
+                            ? 'bg-blue-600 text-white shadow-xs'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                 >
@@ -526,7 +526,7 @@ function EditCourse() {
             </div>
 
             {activeTab === 'details' && (
-                <form onSubmit={handleSaveDetails} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs p-6 md:p-8 space-y-6">
+                <form onSubmit={handleSaveDetails} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xs p-6 md:p-8 space-y-6">
                     <div>
                         <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Course Title <span className="text-red-500">*</span>
@@ -628,7 +628,7 @@ function EditCourse() {
                     {/* What You'll Learn */}
                     <div>
                         <label htmlFor="edit-learn-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                            What You'll Learn <span className="text-xs text-gray-500 font-normal">(key outcomes / skills)</span>
+                            What You'll Learn <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">(key outcomes / skills)</span>
                         </label>
                         <div className="flex gap-2">
                             <input
@@ -677,7 +677,7 @@ function EditCourse() {
                     {/* Prerequisites */}
                     <div>
                         <label htmlFor="edit-prereq-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                            Prerequisites / Requirements <span className="text-xs text-gray-500 font-normal">(what students need to know before starting)</span>
+                            Prerequisites / Requirements <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">(what students need to know before starting)</span>
                         </label>
                         <div className="flex gap-2">
                             <input
@@ -713,7 +713,7 @@ function EditCourse() {
                                         <button
                                             type="button"
                                             onClick={() => handleRemovePrereqItem(item)}
-                                            className="text-gray-500 hover:text-red-600 font-bold ml-2"
+                                            className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 font-bold ml-2"
                                         >
                                             ×
                                         </button>
@@ -750,7 +750,7 @@ function EditCourse() {
                                 </label>
                                 <div className="relative rounded-xl shadow-xs">
                                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                        <span className="text-gray-500 text-sm">$</span>
+                                        <span className="text-gray-500 dark:text-gray-400 text-sm">$</span>
                                     </div>
                                     <input
                                         id="edit-price"
@@ -1022,7 +1022,7 @@ function EditCourse() {
                                                                 setEditingLessonTitle(lesson.title);
                                                                 setEditingLessonDuration(lesson.durationMinutes);
                                                             }}
-                                                            className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-medium px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                                                             title="Edit lesson details"
                                                         >
                                                             ✏️ Edit

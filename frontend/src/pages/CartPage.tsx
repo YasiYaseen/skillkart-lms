@@ -206,14 +206,14 @@ interface RecommendedCourse {
             </div>
             <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-sm font-extrabold text-gray-900 dark:text-white">
               <span>Total Paid</span>
-              <span className="text-indigo-600 dark:text-indigo-400 font-mono text-base">${completedOrder.totalAmount.toFixed(2)} USD</span>
+              <span className="text-blue-600 dark:text-blue-400 font-mono text-base">${completedOrder.totalAmount.toFixed(2)} USD</span>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <Link
               to="/my-courses"
-              className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md"
+              className="w-full sm:w-auto px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md"
             >
               Start Learning in My Courses →
             </Link>
@@ -233,7 +233,7 @@ interface RecommendedCourse {
   if (cart.length === 0) {
     return (
       <div className="max-w-4xl mx-auto py-16 px-4 text-center space-y-6">
-        <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-3xl flex items-center justify-center mx-auto text-3xl shadow-xs">
+        <div className="w-20 h-20 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-3xl flex items-center justify-center mx-auto text-3xl shadow-xs">
           🛒
         </div>
         <div className="space-y-2">
@@ -245,7 +245,7 @@ interface RecommendedCourse {
         <div className="pt-2">
           <Link
             to="/courses"
-            className="inline-flex items-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
+            className="inline-flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
           >
             <span>Browse All Courses</span>
             <span>→</span>
@@ -264,13 +264,13 @@ interface RecommendedCourse {
             onClick={() => setCurrentStep('items')}
             className={`flex items-center gap-2 ${
               currentStep === 'items'
-                ? 'text-indigo-600 dark:text-indigo-400 font-extrabold'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
           >
             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] ${
               currentStep === 'items'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-emerald-500 text-white'
             }`}>
               {currentStep === 'payment' ? '✓' : '1'}
@@ -278,19 +278,19 @@ interface RecommendedCourse {
             <span>1. Review Cart</span>
           </button>
 
-          <div className={`flex-1 h-0.5 mx-4 ${currentStep === 'payment' ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
+          <div className={`flex-1 h-0.5 mx-4 ${currentStep === 'payment' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
 
           <button
             onClick={() => setCurrentStep('payment')}
             className={`flex items-center gap-2 ${
               currentStep === 'payment'
-                ? 'text-indigo-600 dark:text-indigo-400 font-extrabold'
-                : 'text-gray-400 hover:text-gray-600'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
             }`}
           >
             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] ${
               currentStep === 'payment'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-gray-200 dark:bg-gray-800 text-gray-500'
             }`}>
               2

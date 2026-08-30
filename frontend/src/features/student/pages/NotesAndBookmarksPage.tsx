@@ -133,27 +133,27 @@ export default function NotesAndBookmarksPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
             Study Hub & Bookmarks
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Review your bookmarked lessons and study notes across all enrolled courses.
           </p>
         </div>
 
         {/* Tab switcher */}
-        <div className="inline-flex rounded-xl bg-gray-100 p-1">
+        <div className="inline-flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 border border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={() => setActiveTab('bookmarks')}
             className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
               activeTab === 'bookmarks'
-                ? 'bg-white text-blue-700 shadow-xs'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <span>🔖 Bookmarks</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
               {bookmarks.length}
             </span>
           </button>
@@ -162,12 +162,12 @@ export default function NotesAndBookmarksPage() {
             onClick={() => setActiveTab('notes')}
             className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
               activeTab === 'notes'
-                ? 'bg-white text-blue-700 shadow-xs'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <span>📝 Study Notes</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
               {notes.length}
             </span>
           </button>
@@ -186,10 +186,10 @@ export default function NotesAndBookmarksPage() {
                 ? 'Search bookmarked lessons or courses...'
                 : 'Search study notes or lesson topics...'
             }
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs"
           />
           <svg
-            className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5"
+            className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3.5 top-3.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -207,7 +207,7 @@ export default function NotesAndBookmarksPage() {
           <select
             value={selectedCourseFilter}
             onChange={(e) => setSelectedCourseFilter(e.target.value)}
-            className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs"
           >
             <option value="all">All Courses ({courseOptions.length})</option>
             {courseOptions.map(([id, title]) => (
@@ -223,17 +223,17 @@ export default function NotesAndBookmarksPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} className="animate-pulse bg-white border border-gray-200 rounded-2xl h-44 p-6" />
+            <div key={n} className="animate-pulse bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl h-44 p-6" />
           ))}
         </div>
       ) : activeTab === 'bookmarks' ? (
         filteredBookmarks.length === 0 ? (
-          <div className="text-center py-20 bg-white border border-gray-200 rounded-3xl p-8">
-            <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+          <div className="text-center py-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-8">
+            <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
               🔖
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">No bookmarked lessons found</h3>
-            <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No bookmarked lessons found</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
               While learning, click the bookmark icon on any lesson to save it here for fast revision.
             </p>
             <Link
@@ -253,11 +253,11 @@ export default function NotesAndBookmarksPage() {
               return (
                 <div
                   key={bookmark._id}
-                  className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+                  className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-3 mb-3">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 truncate max-w-[200px]">
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50 truncate max-w-[200px]">
                         {courseTitle}
                       </span>
                       <button
@@ -272,11 +272,11 @@ export default function NotesAndBookmarksPage() {
                       </button>
                     </div>
 
-                    <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 mb-2">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-2">
                       Lesson {bookmark.lesson.order}: {bookmark.lesson.title}
                     </h3>
 
-                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
                       {bookmark.lesson.durationMinutes !== undefined && (
                         <span>⏱ {bookmark.lesson.durationMinutes} mins</span>
                       )}
@@ -284,10 +284,10 @@ export default function NotesAndBookmarksPage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                  <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
                     <Link
                       to={`/learn/${courseId}/${bookmark.lesson._id}`}
-                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
                     >
                       <span>Study Lesson</span>
                       <span>→</span>
@@ -301,12 +301,12 @@ export default function NotesAndBookmarksPage() {
       ) : (
         /* Notes Tab */
         filteredNotes.length === 0 ? (
-          <div className="text-center py-20 bg-white border border-gray-200 rounded-3xl p-8">
-            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+          <div className="text-center py-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-8">
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
               📝
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">No study notes found</h3>
-            <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No study notes found</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
               Write study notes under any lesson in the learning page to capture takeaways and code snippets.
             </p>
             <Link
@@ -327,18 +327,18 @@ export default function NotesAndBookmarksPage() {
               return (
                 <div
                   key={note._id}
-                  className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs hover:shadow-sm transition-all flex flex-col justify-between"
+                  className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:shadow-sm transition-all flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex flex-wrap items-center gap-2">
                         {courseObj && (
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-gray-100 text-gray-700 truncate max-w-[180px]">
+                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 truncate max-w-[180px]">
                             {courseObj.title}
                           </span>
                         )}
                         {lessonObj && (
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-700 truncate max-w-[200px]">
+                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50 truncate max-w-[200px]">
                             Lesson {lessonObj.order}: {lessonObj.title}
                           </span>
                         )}
@@ -353,7 +353,7 @@ export default function NotesAndBookmarksPage() {
                               setEditingContent(note.content);
                             }}
                             title="Edit note"
-                            className="text-gray-400 hover:text-blue-600 transition-colors p-1.5 rounded-lg hover:bg-blue-50"
+                            className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-800"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                               <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
@@ -363,7 +363,7 @@ export default function NotesAndBookmarksPage() {
                             type="button"
                             onClick={() => handleDeleteNote(note._id)}
                             title="Delete note"
-                            className="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50"
+                            className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-gray-800"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                               <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -380,13 +380,13 @@ export default function NotesAndBookmarksPage() {
                           onChange={(e) => setEditingContent(e.target.value)}
                           rows={4}
                           maxLength={5000}
-                          className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
+                          className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
                         />
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => setEditingNoteId(null)}
-                            className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-800 transition-colors"
+                            className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
                           >
                             Cancel
                           </button>
@@ -401,18 +401,18 @@ export default function NotesAndBookmarksPage() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed mb-4">
+                      <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed mb-4">
                         {note.content}
                       </p>
                     )}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
                     <span>{formatDate(note.createdAt)}</span>
                     {lessonObj && (
                       <Link
                         to={`/learn/${courseId}/${lessonObj._id}`}
-                        className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                        className="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
                       >
                         <span>Open Lesson</span>
                         <span>↗</span>

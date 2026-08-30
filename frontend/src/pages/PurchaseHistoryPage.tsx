@@ -58,7 +58,7 @@ export default function PurchaseHistoryPage() {
   if (loading) {
     return (
       <div className="py-20 flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading your purchase history...</p>
       </div>
     );
@@ -79,7 +79,7 @@ export default function PurchaseHistoryPage() {
 
         <Link
           to="/courses"
-          className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition-colors self-start sm:self-auto"
+          className="px-4 py-2 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 rounded-xl text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 transition-colors self-start sm:self-auto"
         >
           Explore More Courses →
         </Link>
@@ -88,7 +88,7 @@ export default function PurchaseHistoryPage() {
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold">
             🧾
           </div>
           <div>
@@ -144,7 +144,7 @@ export default function PurchaseHistoryPage() {
           </div>
           <div className="space-y-1">
             <h3 className="text-base font-bold text-gray-900 dark:text-white">No purchases found</h3>
-            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+            <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
               You have not purchased any paid courses yet. When you complete an order, your receipts will be saved here.
             </p>
           </div>
@@ -176,7 +176,7 @@ export default function PurchaseHistoryPage() {
                     <td className="px-5 py-4 whitespace-nowrap font-mono font-bold text-gray-900 dark:text-white">
                       {order.orderNumber}
                     </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-gray-500">
+                    <td className="px-5 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">
                       {new Date(order.createdAt).toLocaleDateString(undefined, {
                         month: 'short',
                         day: 'numeric',
@@ -249,7 +249,7 @@ export default function PurchaseHistoryPage() {
               </div>
               <button
                 onClick={() => setSelectedReceipt(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 ✕
               </button>
@@ -266,10 +266,10 @@ export default function PurchaseHistoryPage() {
                     SkillKart<span className="text-indigo-600">.</span>
                   </span>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1">Official Learning Tax Invoice & Receipt</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Official Learning Tax Invoice & Receipt</p>
               </div>
 
-              <div className="text-left sm:text-right text-xs text-gray-500 space-y-0.5">
+              <div className="text-left sm:text-right text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
                 <div>
                   Invoice #: <strong className="font-mono text-gray-900 dark:text-white">{selectedReceipt.orderNumber}</strong>
                 </div>
@@ -289,7 +289,7 @@ export default function PurchaseHistoryPage() {
                 <p className="font-semibold text-gray-900 dark:text-white">
                   {(typeof selectedReceipt.student === 'object' && selectedReceipt.student?.name) || user?.name || 'Enrolled Student'}
                 </p>
-                <p className="text-gray-500">{(typeof selectedReceipt.student === 'object' && selectedReceipt.student?.email) || user?.email}</p>
+                <p className="text-gray-500 dark:text-gray-400">{(typeof selectedReceipt.student === 'object' && selectedReceipt.student?.email) || user?.email}</p>
               </div>
 
               <div className="sm:text-right">
@@ -297,7 +297,7 @@ export default function PurchaseHistoryPage() {
                 <p className="font-mono text-gray-800 dark:text-gray-200 text-[11px] truncate">
                   Txn ID: {selectedReceipt.transactionId}
                 </p>
-                <p className="text-gray-500 capitalize">Method: {selectedReceipt.paymentMethod}</p>
+                <p className="text-gray-500 dark:text-gray-400 capitalize">Method: {selectedReceipt.paymentMethod}</p>
               </div>
             </div>
 
@@ -318,7 +318,7 @@ export default function PurchaseHistoryPage() {
                       <td className="p-3.5 font-semibold text-gray-900 dark:text-white">
                         {item.title}
                       </td>
-                      <td className="p-3.5 text-right font-mono text-gray-500">
+                      <td className="p-3.5 text-right font-mono text-gray-500 dark:text-gray-400">
                         ${item.originalPrice.toFixed(2)}
                       </td>
                       <td className="p-3.5 text-right font-mono text-emerald-600">
@@ -336,7 +336,7 @@ export default function PurchaseHistoryPage() {
             {/* Totals Section */}
             <div className="flex justify-end pt-2">
               <div className="w-full sm:w-64 space-y-2 text-xs">
-                <div className="flex justify-between text-gray-500">
+                <div className="flex justify-between text-gray-500 dark:text-gray-400">
                   <span>Subtotal</span>
                   <span className="font-mono">${selectedReceipt.subtotal.toFixed(2)}</span>
                 </div>
@@ -348,7 +348,7 @@ export default function PurchaseHistoryPage() {
                   </div>
                 )}
 
-                <div className="flex justify-between text-gray-500 text-[11px]">
+                <div className="flex justify-between text-gray-500 dark:text-gray-400 text-[11px]">
                   <span>Tax & Processing</span>
                   <span className="font-mono">$0.00</span>
                 </div>

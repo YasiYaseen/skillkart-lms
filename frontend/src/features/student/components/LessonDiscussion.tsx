@@ -134,11 +134,11 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
     <div className="space-y-6">
       {/* Top Question / Comment Form */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
-        <h3 className="text-base font-bold text-gray-900 mb-2 flex items-center gap-2">
+        <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
           <span>Ask a Question / Join the Discussion</span>
-          <span className="text-xs font-normal text-gray-500">({comments.length} total)</span>
+          <span className="text-xs font-normal text-gray-500 dark:text-gray-400">({comments.length} total)</span>
         </h3>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
           Have a question about this lesson or want to share feedback? Post below for peers and instructors to see.
         </p>
         <form onSubmit={handlePostComment} className="space-y-3">
@@ -175,8 +175,8 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
           <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
             💬
           </div>
-          <h4 className="text-base font-bold text-gray-900 mb-1">No comments on this lesson yet</h4>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto">
+          <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">No comments on this lesson yet</h4>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
             Be the first to start a conversation or ask a question about the learning material!
           </p>
         </div>
@@ -206,7 +206,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-gray-900">
+                        <span className="font-semibold text-sm text-gray-900 dark:text-white">
                           {comment.user?.name || 'Unknown User'}
                         </span>
                         {comment.user?.role === 'instructor' && (
@@ -239,7 +239,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                 </div>
 
                 {/* Comment Body */}
-                <div className="mt-3 text-sm text-gray-700 whitespace-pre-line leading-relaxed pl-13">
+                <div className="mt-3 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed pl-13">
                   {comment.content}
                 </div>
 
@@ -292,7 +292,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                           setReplyingToId(null);
                           setReplyContent('');
                         }}
-                        className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 transition-colors"
+                        className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
                       >
                         Cancel
                       </button>
@@ -331,7 +331,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                               />
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-xs text-gray-900">
+                                  <span className="font-semibold text-xs text-gray-900 dark:text-white">
                                     {reply.user?.name || 'Unknown User'}
                                   </span>
                                   {reply.user?.role === 'instructor' && (
@@ -365,7 +365,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                             )}
                           </div>
 
-                          <div className="mt-2 text-xs text-gray-700 whitespace-pre-line leading-relaxed pl-9.5">
+                          <div className="mt-2 text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed pl-9.5">
                             {reply.content}
                           </div>
                         </div>

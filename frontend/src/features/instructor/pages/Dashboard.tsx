@@ -68,10 +68,10 @@ function Dashboard() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 h-32" />
+                        <div key={i} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 h-32" />
                     ))}
                 </div>
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 h-64" />
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 h-64" />
             </div>
         );
     }
@@ -86,14 +86,14 @@ function Dashboard() {
                 <div className="flex items-center gap-3">
                     <Link
                         to="/instructor/create-course"
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
                     >
                         <span>+</span>
                         <span>New Course</span>
                     </Link>
                     <Link
                         to="/instructor/analytics"
-                        className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium text-sm rounded-xl transition-colors border border-indigo-100 dark:border-indigo-800/60"
+                        className="px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-medium text-sm rounded-xl transition-colors border border-blue-100 dark:border-blue-800/60"
                     >
                         View Analytics →
                     </Link>
@@ -102,28 +102,28 @@ function Dashboard() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-xs hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Enrollments</p>
-                        <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm">👥</span>
+                        <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-sm">👥</span>
                     </div>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.enrollments}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">All time student enrollments</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-xs hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Earnings</p>
-                        <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm">💰</span>
+                        <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-sm">💰</span>
                     </div>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">${stats.earnings.toFixed(2)}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Net course sales revenue</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-xs hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Courses</p>
-                        <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm">📚</span>
+                        <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-sm">📚</span>
                     </div>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.active}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{stats.draft} in draft status</p>
@@ -131,13 +131,13 @@ function Dashboard() {
             </div>
 
             {/* Most Active Students */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-xs">
-                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xs">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
                     <div>
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Most Active Students</h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Top learners progressing through your courses</p>
                     </div>
-                    <Link to="/instructor/students" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-1">
+                    <Link to="/instructor/students" className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1">
                         <span>View all students</span>
                         <span>→</span>
                     </Link>
@@ -145,20 +145,20 @@ function Dashboard() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/75 dark:bg-gray-900/50">
+                            <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/80">
                                 <th className="text-left py-3 px-6 text-gray-500 dark:text-gray-400 font-semibold">#</th>
                                 <th className="text-left py-3 px-6 text-gray-500 dark:text-gray-400 font-semibold">Student</th>
                                 <th className="text-left py-3 px-6 text-gray-500 dark:text-gray-400 font-semibold">Lessons Done</th>
                                 <th className="text-left py-3 px-6 text-gray-500 dark:text-gray-400 font-semibold">Average Progress</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60 bg-white dark:bg-gray-800">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
                             {recent.map((row, i) => (
-                                <tr key={row.id || i} className="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors">
+                                <tr key={row.id || i} className="hover:bg-gray-50/60 dark:hover:bg-gray-800/50 transition-colors">
                                     <td className="py-4 px-6 text-gray-400 dark:text-gray-500 font-mono text-xs">{i + 1}</td>
                                     <td className="py-4 px-6">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs uppercase border border-indigo-200 dark:border-indigo-800/50">
+                                            <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs uppercase border border-blue-200 dark:border-blue-800/50">
                                                 {row.name.substring(0, 2)}
                                             </div>
                                             <div>
@@ -172,7 +172,7 @@ function Dashboard() {
                                         <div className="flex items-center gap-3">
                                             <div className="w-28 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                                 <div
-                                                    className={`h-2 rounded-full transition-all ${row.averageProgressPercentage === 100 ? 'bg-emerald-500' : 'bg-indigo-600'}`}
+                                                    className={`h-2 rounded-full transition-all ${row.averageProgressPercentage === 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
                                                     style={{ width: `${Math.min(100, row.averageProgressPercentage || 0)}%` }}
                                                 />
                                             </div>

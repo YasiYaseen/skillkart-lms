@@ -169,7 +169,7 @@ export function SystemSettings() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-gray-500 font-medium text-sm">Loading platform configurations...</p>
+        <p className="text-gray-500 dark:text-gray-400 font-medium text-sm">Loading platform configurations...</p>
       </div>
     );
   }
@@ -622,7 +622,7 @@ export function SystemSettings() {
 
               {/* Live Banner Preview */}
               <div>
-                <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                <span className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                   Live Maintenance Banner Preview:
                 </span>
                 <div className="p-4 rounded-2xl bg-amber-500 text-white flex items-center justify-between gap-4 shadow-md">

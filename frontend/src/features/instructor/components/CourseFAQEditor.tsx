@@ -195,7 +195,7 @@ export default function CourseFAQEditor({ courseId }: CourseFAQEditorProps) {
       {loading ? (
         <div className="text-center py-6 text-xs text-gray-400">Loading FAQs...</div>
       ) : faqs.length === 0 && !isAdding ? (
-        <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-500 text-xs">
+        <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-xs">
           No FAQs created for this course yet. Click &quot;Add FAQ&quot; above to create one.
         </div>
       ) : (

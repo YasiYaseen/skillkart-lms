@@ -285,7 +285,7 @@ export function Assignments() {
   const totalGraded = submissions.filter((s) => s.status === 'graded').length;
 
   if (loadingCourses) {
-    return <div className="text-gray-500 py-16 text-center">Loading instructor assignments portal...</div>;
+    return <div className="text-gray-500 dark:text-gray-400 py-16 text-center">Loading instructor assignments portal...</div>;
   }
 
   return (
@@ -305,7 +305,7 @@ export function Assignments() {
             onClick={() => setActiveView('assignments')}
             className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
               activeView === 'assignments'
-                ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-xs'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -315,7 +315,7 @@ export function Assignments() {
             onClick={() => setActiveView('gradebook')}
             className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               activeView === 'gradebook'
-                ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-xs'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -330,7 +330,7 @@ export function Assignments() {
       {/* Overview Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold">
             📋
           </div>
           <div>
@@ -354,22 +354,20 @@ export function Assignments() {
             ✓
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Evaluated & Graded</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Total Graded Submissions</div>
             <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{totalGraded}</div>
           </div>
         </div>
       </div>
 
-      {/* Course Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl shadow-xs">
-        <div className="flex items-center gap-3 flex-1">
-          <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
-            Selected Course:
-          </label>
+      {/* Course Selector Bar */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+          <label className="text-xs font-bold text-gray-700 dark:text-gray-300 shrink-0">Select Course:</label>
           <select
             value={selectedCourseId}
             onChange={(e) => setSelectedCourseId(e.target.value)}
-            className="text-xs font-medium px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden max-w-md w-full"
+            className="text-xs font-medium px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden max-w-md w-full"
           >
             {courses.map((c) => (
               <option key={c._id} value={c._id}>
@@ -382,7 +380,7 @@ export function Assignments() {
         {activeView === 'assignments' && (
           <button
             onClick={openCreateModal}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-colors shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
           >
             <span>+ Create Assignment</span>
           </button>
@@ -393,19 +391,19 @@ export function Assignments() {
       {activeView === 'assignments' && (
         <div className="space-y-4">
           {loadingAssignments ? (
-            <div className="text-gray-500 py-12 text-center">Loading course assignments...</div>
+            <div className="text-gray-500 dark:text-gray-400 py-12 text-center">Loading course assignments...</div>
           ) : assignments.length === 0 ? (
             <div className="text-center py-16 px-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
-              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl">
+              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl">
                 📂
               </div>
               <h3 className="text-base font-semibold text-gray-900 dark:text-white">No assignments for this course</h3>
-              <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
                 Create practical project requirements with rubrics for your enrolled students.
               </p>
               <button
                 onClick={openCreateModal}
-                className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 transition-colors"
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors shadow-xs"
               >
                 Create First Assignment
               </button>
@@ -422,7 +420,7 @@ export function Assignments() {
                       <h3 className="text-base font-bold text-gray-900 dark:text-white">
                         {assignment.title}
                       </h3>
-                      <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+                      <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
                         {assignment.maxScore} Max Points
                       </span>
                     </div>
@@ -431,7 +429,7 @@ export function Assignments() {
                       {assignment.description}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 pt-1">
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400 pt-1">
                       <span>📥 <strong>{assignment.totalSubmissions || 0}</strong> Submissions</span>
                       <span className="text-amber-600">⏳ <strong>{assignment.pendingCount || 0}</strong> Pending Review</span>
                       <span className="text-emerald-600">✓ <strong>{assignment.gradedCount || 0}</strong> Graded</span>
@@ -487,11 +485,11 @@ export function Assignments() {
           </div>
 
           {loadingSubmissions ? (
-            <div className="text-gray-500 py-12 text-center">Loading gradebook submissions...</div>
+            <div className="text-gray-500 dark:text-gray-400 py-12 text-center">Loading gradebook submissions...</div>
           ) : filteredSubmissions.length === 0 ? (
             <div className="text-center py-16 px-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
               <h3 className="text-base font-semibold text-gray-900 dark:text-white">No submissions match the filter</h3>
-              <p className="text-xs text-gray-500 mt-1">Student submissions will show up here once turned in.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Student submissions will show up here once turned in.</p>
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xs">
@@ -572,7 +570,7 @@ export function Assignments() {
               </h3>
               <button
                 onClick={() => setShowAssignmentModal(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200"
               >
                 ✕
               </button>
@@ -756,7 +754,7 @@ export function Assignments() {
               </div>
               <button
                 onClick={() => setSelectedSubmission(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200"
               >
                 ✕
               </button>
@@ -767,7 +765,7 @@ export function Assignments() {
               <div className="flex items-center justify-between">
                 <div>
                   <strong className="text-gray-900 dark:text-white">{selectedSubmission.student?.name}</strong>
-                  <span className="text-gray-500 ml-2">({selectedSubmission.student?.email})</span>
+                  <span className="text-gray-500 dark:text-gray-400 ml-2">({selectedSubmission.student?.email})</span>
                 </div>
                 <span className="text-[11px] text-gray-400">
                   Submitted: {new Date(selectedSubmission.submittedAt).toLocaleString()}
