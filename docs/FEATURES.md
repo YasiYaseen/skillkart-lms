@@ -89,6 +89,7 @@ Polish features for the final stage if time allows.
 | Admin Audit Logs | Done | [docs/features/nice-to-have/admin-audit-logs.md](features/nice-to-have/admin-audit-logs.md) |
 | Bulk Upload Lessons | Done | [docs/features/nice-to-have/bulk-upload-lessons.md](features/nice-to-have/bulk-upload-lessons.md) |
 | Course FAQ | Done | [docs/features/nice-to-have/course-faq.md](features/nice-to-have/course-faq.md) |
+| Admin System Settings | Done | [docs/features/nice-to-have/admin-system-settings.md](features/nice-to-have/admin-system-settings.md) |
 
 ## Suggested Implementation Order
 
