@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SparklesIcon, BookOpenIcon } from "@heroicons/react/24/solid";
 import Rating from "../common/Rating";
@@ -131,10 +131,7 @@ export default function CourseRecommendations({
               </div>
 
               <div className="pt-2 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1">
-                  <Rating value={course.averageRating} readonly size="sm" />
-                  <span className="text-gray-500 text-[11px]">({course.reviewCount})</span>
-                </div>
+                <Rating value={course.averageRating || 0} count={course.reviewCount} />
                 <div className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
                   {course.isPaid && course.price ? `$${course.price.toFixed(2)}` : "Free"}
                 </div>

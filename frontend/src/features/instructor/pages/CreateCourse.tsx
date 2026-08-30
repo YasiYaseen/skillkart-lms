@@ -523,8 +523,8 @@ function CreateCourse() {
                         </div>
 
                         <div className="pt-4 flex justify-end">
-                            <Button type="submit" size="lg">
-                                Next: Build Curriculum &rarr;
+                            <Button type="submit" size="lg" disabled={creatingCourse}>
+                                {creatingCourse ? 'Creating Course...' : 'Next: Build Curriculum →'}
                             </Button>
                         </div>
                     </form>
@@ -765,7 +765,11 @@ function CreateCourse() {
 
             {/* Quiz Editor Modal */}
             {quizLessonId && (
-                <QuizEditorModal lessonId={quizLessonId} onClose={() => setQuizLessonId(null)} />
+                <QuizEditorModal
+                    isOpen={Boolean(quizLessonId)}
+                    lessonId={quizLessonId}
+                    onClose={() => setQuizLessonId(null)}
+                />
             )}
 
             {/* Bulk Lesson Upload Modal */}

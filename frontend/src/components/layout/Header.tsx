@@ -12,7 +12,7 @@ function Header() {
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
 
   const { user, logout } = useAuth();
-  const { cartCount } = useCart();
+  const { cart, removeFromCart, cartTotal, cartCount } = useCart();
 
   const handleLoginClick = (e: React.MouseEvent) => {
     e.preventDefault();

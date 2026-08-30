@@ -1,7 +1,7 @@
 import CourseStructure from '@/components/course/CourseStructure';
 import CourseFAQAccordion from '@/components/course/CourseFAQAccordion';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
@@ -691,11 +691,14 @@ function CourseDetailsSkeleton() {
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Students who enroll can leave the first review.</p>
                                 )}
                                 {reviews.map((review) => {
-                                    const isAuthor = review.student?._id === user?.id || (typeof review.student === 'string' && review.student === user?.id);
+                                    const studentObj = typeof review.student === 'object' && review.student !== null ? review.student : null;
+                                    const studentId = studentObj?._id || (typeof review.student === 'string' ? review.student : undefined);
+                                    const studentName = studentObj?.name || 'Student';
+                                    const isAuthor = studentId === user?.id;
                                     return (
                                         <div key={review._id} className="border-b border-gray-100 dark:border-gray-700/60 pb-4 last:border-0 last:pb-0">
                                             <div className="flex items-center justify-between gap-3 mb-2">
-                                                <span className="font-semibold text-gray-900 dark:text-white">{review.student?.name || 'Student'}</span>
+                                                <span className="font-semibold text-gray-900 dark:text-white">{studentName}</span>
                                                 <span className="flex items-center gap-1 text-sm font-semibold text-amber-500">
                                                     {review.rating} <StarIcon />
                                                 </span>

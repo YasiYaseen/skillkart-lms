@@ -113,7 +113,7 @@ export function BulkLessonUploadModal({
       });
 
       toast.success(res.data.message || `Successfully added ${validLessons.length} lessons`);
-      onSuccess();
+      onSuccess?.();
       onClose();
     } catch (err: unknown) {
       const errorMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;

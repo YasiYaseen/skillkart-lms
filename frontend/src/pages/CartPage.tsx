@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/features/auth/AuthContext';
 import { validateCouponCode, processCheckout, type OrderRecord } from '@/features/student/api/cart';
@@ -16,7 +16,6 @@ const POPULAR_PROMOS = [
 export default function CartPage() {
   const { cart, removeFromCart, clearCart, cartTotal, addToCart } = useCart();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   // Step state: 'items' | 'payment' | 'success'
@@ -479,6 +478,19 @@ export default function CartPage() {
                       value={billingEmail}
                       onChange={(e) => setBillingEmail(e.target.value)}
                       placeholder="your.email@example.com"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                      Country / Region
+                    </label>
+                    <input
+                      type="text"
+                      value={billingCountry}
+                      onChange={(e) => setBillingCountry(e.target.value)}
+                      placeholder="United States"
                       className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
                     />
                   </div>

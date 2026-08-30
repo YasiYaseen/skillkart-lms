@@ -420,6 +420,15 @@ function EditCourse() {
         0
     );
 
+    if (loading) {
+        return (
+            <div className="py-20 flex flex-col items-center justify-center space-y-3">
+                <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Loading course editor...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-4xl space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -777,7 +786,6 @@ function EditCourse() {
                             </div>
                         )}
                         <FileUpload
-                            endpoint="/upload/image"
                             accept="image/*"
                             onUploadSuccess={(url) => setThumbnailUrl(url)}
                         />
@@ -1092,7 +1100,6 @@ function EditCourse() {
                                                                 />
                                                                 <p className="text-[11px] text-gray-500 dark:text-gray-400">Or upload video file directly:</p>
                                                                 <FileUpload
-                                                                    endpoint="/upload/video"
                                                                     accept="video/*"
                                                                     onUploadSuccess={(url) => setNewItemContent(url)}
                                                                 />
@@ -1109,7 +1116,6 @@ function EditCourse() {
                                                                     className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                                                                 />
                                                                 <FileUpload
-                                                                    endpoint="/upload/document"
                                                                     accept=".pdf,.doc,.docx"
                                                                     onUploadSuccess={(url) => setNewItemContent(url)}
                                                                 />

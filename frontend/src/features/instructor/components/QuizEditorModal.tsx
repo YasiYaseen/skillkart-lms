@@ -128,6 +128,12 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Manage Quiz">
+            {loadingExisting ? (
+                <div className="py-12 flex flex-col items-center justify-center space-y-2">
+                    <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-xs text-gray-500">Loading quiz questions...</span>
+                </div>
+            ) : (
             <form onSubmit={handleSave} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
                 
                 {/* Passing Percentage */}
@@ -249,6 +255,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                     </div>
                 </div>
             </form>
+            )}
         </Modal>
     );
 }

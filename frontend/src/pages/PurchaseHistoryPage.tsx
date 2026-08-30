@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchOrderHistory, fetchOrderReceipt, type OrderRecord } from '@/features/student/api/cart';
 import { useAuth } from '@/features/auth/AuthContext';

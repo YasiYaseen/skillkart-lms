@@ -100,7 +100,7 @@ function Profile() {
         e.preventDefault();
         setSaving(true);
         try {
-            const res = await api.put('/users/me', {
+            await api.put('/users/me', {
                 name,
                 headline,
                 bio,

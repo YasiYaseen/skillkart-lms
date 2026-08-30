@@ -1,5 +1,3 @@
-import React, { useState } from 'react';
-
 export interface PaymentFormState {
   method: 'card' | 'express' | 'paypal' | 'upi';
   cardNumber: string;
@@ -16,8 +14,6 @@ interface PaymentCardSimulatorProps {
 }
 
 export function PaymentCardSimulator({ formState, onChange, totalAmount }: PaymentCardSimulatorProps) {
-  const [cvvFocused, setCvvFocused] = useState(false);
-
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
     const matches = v.match(/\d{4,16}/g);
@@ -226,8 +222,6 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
                 maxLength={4}
                 placeholder="888"
                 value={formState.cvv}
-                onFocus={() => setCvvFocused(true)}
-                onBlur={() => setCvvFocused(false)}
                 onChange={(e) => onChange({ cvv: e.target.value.replace(/[^0-9]/g, '') })}
                 className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
               />
