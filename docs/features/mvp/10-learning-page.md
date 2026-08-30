@@ -37,4 +37,5 @@ Provide the actual lesson-taking experience for enrolled students.
 - Learning page exists at `frontend/src/features/student/pages/LessonViewer.tsx`.
 - Lesson sidebar, content rendering, previous/next navigation, quiz rendering, and progress action exist.
 - Fixed: `getCourseById` now checks enrollment or instructor status before returning `lessonItems`, so private content is protected.
+- Performance: Split into two `useEffect` hooks — course structure is fetched once on `courseId` change, while progress is fetched on each lesson navigation. This eliminates redundant full-course API calls when navigating between lessons.
 - Feature is fully complete.

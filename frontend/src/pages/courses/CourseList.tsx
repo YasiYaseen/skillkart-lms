@@ -83,7 +83,7 @@ function CourseList() {
         setVisibleCount(8);
     };
 
-    const activeFiltersCount = [level].filter(Boolean).length;
+    const activeFiltersCount = [level, searchQuery, sort !== 'latest' ? sort : ''].filter(Boolean).length;
 
     return (
         <div className="container">

@@ -5,7 +5,9 @@ import type { FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { EnrollButton } from '@/features/enrollment/components/EnrollButton';
+import { useEnrollment } from '@/features/enrollment/hooks/useEnrollment';
 import { WishlistButton } from '@/features/wishlist';
+import { useAuth } from '@/features/auth/AuthContext';
 
 type CourseReview = {
     _id: string;
@@ -41,6 +43,8 @@ const BookIcon = () => (
 function CourseDetailsPage() {
     const { courseId } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const { isEnrolled, loading: enrollmentLoading } = useEnrollment(courseId);
     const [course, setCourse] = useState<any>(null);
     const [reviews, setReviews] = useState<CourseReview[]>([]);
     const [reviewRating, setReviewRating] = useState(5);
@@ -77,7 +81,11 @@ function CourseDetailsPage() {
                 setCourse({
                     id: c._id,
                     title: c.title,
-                    subtitle: c.level === 'beginner' ? 'Beginner friendly starting point.' : 'Advanced level material.',
+                    subtitle: c.level === 'beginner'
+                        ? 'Beginner friendly starting point.'
+                        : c.level === 'intermediate'
+                            ? 'Intermediate level course.'
+                            : 'Advanced level material.',
                     instructor: c.instructor?.name || 'Unknown Instructor',
                     rating: c.averageRating || 0,
                     ratingCount: c.reviewCount || 0,
@@ -87,9 +95,9 @@ function CourseDetailsPage() {
                     oldPrice: c.price ? (c.price * 1.5).toFixed(2) : 0,
                     totalHours: Math.round((c.durationMinutes || 0) / 60),
                     totalLessons: c.lessons.length,
+                    level: c.level || 'beginner',
                     lastUpdated: c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : '',
                     description: c.description ? [c.description] : [],
-                    whatYouWillLearn: ['Lifetime access with updates', 'Hands-on project guidance', 'Detailed instruction'],
                     structure: {
                         totalSections: c.sections.length,
                         totalLectures: c.lessons.length,
@@ -218,46 +226,53 @@ function CourseDetailsPage() {
                                 )}
                             </div>
 
-                            <form onSubmit={handleReviewSubmit} className="border border-gray-100 rounded-lg p-4 mb-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="review-rating">
-                                        Your rating
-                                    </label>
-                                    <select
-                                        id="review-rating"
-                                        value={reviewRating}
-                                        onChange={(event) => setReviewRating(Number(event.target.value))}
-                                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            {/* Review form — only for enrolled students */}
+                            {!enrollmentLoading && isEnrolled ? (
+                                <form onSubmit={handleReviewSubmit} className="border border-gray-100 rounded-lg p-4 mb-6 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="review-rating">
+                                            Your rating
+                                        </label>
+                                        <select
+                                            id="review-rating"
+                                            value={reviewRating}
+                                            onChange={(event) => setReviewRating(Number(event.target.value))}
+                                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {[5, 4, 3, 2, 1].map((rating) => (
+                                                 <option key={rating} value={rating}>{rating} stars</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="review-comment">
+                                            Your review
+                                        </label>
+                                        <textarea
+                                            id="review-comment"
+                                            value={reviewComment}
+                                            onChange={(event) => setReviewComment(event.target.value)}
+                                            rows={4}
+                                            minLength={5}
+                                            maxLength={1000}
+                                            required
+                                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Share what helped you most."
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={submittingReview}
+                                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                        {[5, 4, 3, 2, 1].map((rating) => (
-                                             <option key={rating} value={rating}>{rating} stars</option>
-                                        ))}
-                                    </select>
+                                        {submittingReview ? 'Submitting...' : 'Submit review'}
+                                    </button>
+                                </form>
+                            ) : !enrollmentLoading && !isEnrolled ? (
+                                <div className="border border-dashed border-gray-200 rounded-lg p-4 mb-6 text-sm text-gray-500 text-center">
+                                    {user ? 'Enroll in this course to leave a review.' : 'Log in and enroll to leave a review.'}
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="review-comment">
-                                        Your review
-                                    </label>
-                                    <textarea
-                                        id="review-comment"
-                                        value={reviewComment}
-                                        onChange={(event) => setReviewComment(event.target.value)}
-                                        rows={4}
-                                        minLength={5}
-                                        maxLength={1000}
-                                        required
-                                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="Share what helped you most."
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={submittingReview}
-                                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    {submittingReview ? 'Submitting...' : 'Submit review'}
-                                </button>
-                            </form>
+                            ) : null}
 
                             <div className="space-y-4">
                                 {reviews.length === 0 && (
@@ -331,16 +346,28 @@ function CourseDetailsPage() {
                                         )}
                                     </div>
 
-                                    {/* What's Included */}
+                                    {/* Course Quick Stats */}
                                     <div>
-                                        <h3 className="font-semibold text-gray-900 mb-3">What's in the course?</h3>
+                                        <h3 className="font-semibold text-gray-900 mb-3">Course includes</h3>
                                         <ul className="space-y-2.5">
-                                            {course.whatYouWillLearn.map((item: string, idx: number) => (
-                                                <li key={idx} className="flex items-start gap-2.5 text-sm text-gray-600">
-                                                    <span className="text-green-500 mt-0.5">•</span>
-                                                    <span>{item}</span>
+                                            <li className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                <span className="text-blue-500 mt-0.5">📚</span>
+                                                <span>{course.totalLessons} lesson{course.totalLessons !== 1 ? 's' : ''}</span>
+                                            </li>
+                                            {course.totalHours > 0 && (
+                                                <li className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                    <span className="text-blue-500 mt-0.5">⏱️</span>
+                                                    <span>{course.totalHours} hour{course.totalHours !== 1 ? 's' : ''} of content</span>
                                                 </li>
-                                            ))}
+                                            )}
+                                            <li className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                <span className="text-blue-500 mt-0.5">🎯</span>
+                                                <span className="capitalize">{course.level ?? 'All'} level</span>
+                                            </li>
+                                            <li className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                <span className="text-blue-500 mt-0.5">♾️</span>
+                                                <span>Lifetime access</span>
+                                            </li>
                                         </ul>
                                     </div>
 

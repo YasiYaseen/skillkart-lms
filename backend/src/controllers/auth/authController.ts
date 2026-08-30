@@ -80,7 +80,7 @@ export async function login(req: Request, res: Response) {
       throw new Error("JWT_SECRET is not defined");
     }
 
-    const token = sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const token = sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.json({
       token,

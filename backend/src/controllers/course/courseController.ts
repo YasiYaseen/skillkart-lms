@@ -34,7 +34,6 @@ export async function createCourse(req: Request, res: Response) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const parsed = createCourseSchema.safeParse(req.body);
-    // ddss
     if (!parsed.success) {
       return res.status(400).json({
         message: "Validation failed",

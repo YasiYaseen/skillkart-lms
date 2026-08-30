@@ -145,7 +145,7 @@ export function WishlistPage() {
                   <p className="text-sm text-gray-500 mb-3">By {course.instructor?.name || "Instructor"}</p>
 
                   <div className="flex items-center gap-2 mb-3">
-                    <Rating value={course.averageRating || 0} readonly size="sm" />
+                    <Rating value={course.averageRating || 0} />
                     <span className="text-xs text-gray-400 font-medium">
                       ({course.reviewCount || 0})
                     </span>

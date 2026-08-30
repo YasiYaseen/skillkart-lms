@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { useAuth } from '@/features/auth/AuthContext';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 function MyCertificatesPage() {
-    const { user } = useAuth();
     const [certificates, setCertificates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 

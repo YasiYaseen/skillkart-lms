@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
-import { BellIcon } from '@heroicons/react/24/outline'; // Need to make sure this exists or use an SVG
 
 export default function NotificationBell() {
     const { user } = useAuth();

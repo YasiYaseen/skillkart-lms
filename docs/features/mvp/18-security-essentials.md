@@ -39,3 +39,4 @@ Cover the minimum security rules needed for a safe LMS demo.
 - Unpublished courses are gated to instructors/admins only (403 for others).
 - Secrets are loaded via `dotenv` from `.env` files, never hardcoded.
 - Frontend `ProtectedRoute` silently redirects unauthorized users to home; API returns `401`/`403` with descriptive messages.
+- JWT token expiry standardised to `7d` for both registration and login to give users consistent session duration.

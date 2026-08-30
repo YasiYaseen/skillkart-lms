@@ -17,39 +17,58 @@ function LessonViewer() {
     const [quizPassed, setQuizPassed] = useState(false);
     const [loading, setLoading] = useState(true);
 
+    // Fetch course structure only once per course visit
     useEffect(() => {
-        const fetchCourseAndProgress = async () => {
+        const fetchCourse = async () => {
+            setLoading(true);
             try {
-                const [courseRes, progRes] = await Promise.all([
-                    api.get(`/courses/${courseId}`),
-                    api.get(`/me/courses/${courseId}/progress`)
-                ]);
+                const courseRes = await api.get(`/courses/${courseId}`);
                 const c = courseRes.data.course;
-                const p = progRes.data;
-
                 setCourse(c);
                 setSections(c.sections || []);
                 setLessons(c.lessons || []);
                 setItems(c.lessonItems || []);
-                setCompletedLessonIds(p.completedLessonIds || []);
-                setProgressPercentage(p.progressPercentage || 0);
-
-                if (!lessonId) {
-                    if (p.lastLessonId) {
-                        navigate(`/learn/${courseId}/${p.lastLessonId}`, { replace: true });
-                    } else if (c.lessons && c.lessons.length > 0) {
-                        navigate(`/learn/${courseId}/${c.lessons[0]._id}`, { replace: true });
-                    }
-                }
-            } catch (err) {
+            } catch {
                 toast.error('Failed to load course content');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchCourseAndProgress();
+        fetchCourse();
+    }, [courseId]);
+
+    // Fetch progress and handle lesson redirect whenever lesson context changes
+    useEffect(() => {
+        if (!courseId) return;
+
+        const fetchProgress = async () => {
+            try {
+                const progRes = await api.get(`/me/courses/${courseId}/progress`);
+                const p = progRes.data;
+                setCompletedLessonIds(p.completedLessonIds || []);
+                setProgressPercentage(p.progressPercentage || 0);
+
+                if (!lessonId) {
+                    if (p.lastLessonId) {
+                        navigate(`/learn/${courseId}/${p.lastLessonId}`, { replace: true });
+                    }
+                    // Fallback to first lesson handled after course loads (see course effect)
+                }
+            } catch {
+                // Progress fetch failing silently is acceptable (non-enrolled edge case)
+            }
+        };
+
+        fetchProgress();
     }, [courseId, lessonId, navigate]);
+
+    // Once course loads and no lessonId is set, navigate to the first lesson
+    useEffect(() => {
+        if (!lessonId && lessons.length > 0) {
+            navigate(`/learn/${courseId}/${lessons[0]._id}`, { replace: true });
+        }
+    }, [courseId, lessonId, lessons, navigate]);
 
     useEffect(() => {
         setQuizPassed(false);
