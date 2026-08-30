@@ -95,13 +95,15 @@ export async function createCourse(req: Request, res: Response) {
 
 export async function getCourses(req: Request, res: Response) {
   try {
-    const { q, search, level, tag, category, priceTier, mine, sort } = req.query as {
+    const { q, search, level, tag, category, priceTier, minRating, durationTier, mine, sort } = req.query as {
       q?: string;
       search?: string;
       level?: string;
       tag?: string;
       category?: string;
       priceTier?: string;
+      minRating?: string;
+      durationTier?: string;
       mine?: string;
       sort?: string;
     };
@@ -129,21 +131,21 @@ export async function getCourses(req: Request, res: Response) {
       filter.tags = { $in: [new RegExp(`^${tag.trim()}$`, "i")] };
     }
 
+    let activeCatDoc = null;
     if (category) {
-      let catDoc = null;
       if (isValidObjectId(category)) {
-        catDoc = await Category.findById(category);
+        activeCatDoc = await Category.findById(category);
       } else {
-        catDoc = await Category.findOne({ slug: category });
+        activeCatDoc = await Category.findOne({ slug: category });
       }
 
-      if (catDoc) {
+      if (activeCatDoc) {
         const categoryFilterConditions: Record<string, unknown>[] = [
-          { category: catDoc._id },
+          { category: activeCatDoc._id },
         ];
-        const catTags = (catDoc.tags || []).map((t) => new RegExp(`^${t.trim()}$`, "i"));
-        if (catDoc.tagQuery) {
-          catTags.push(new RegExp(`^${catDoc.tagQuery.trim()}$`, "i"));
+        const catTags = (activeCatDoc.tags || []).map((t) => new RegExp(`^${t.trim()}$`, "i"));
+        if (activeCatDoc.tagQuery) {
+          catTags.push(new RegExp(`^${activeCatDoc.tagQuery.trim()}$`, "i"));
         }
         if (catTags.length > 0) {
           categoryFilterConditions.push({ tags: { $in: catTags } });
@@ -201,24 +203,44 @@ export async function getCourses(req: Request, res: Response) {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Also get all distinct tags across published courses for filter chips
+    // All distinct platform tags
     const allPublishedCourses = await Course.find({
       status: "published",
       isActive: { $ne: false },
       isApproved: { $ne: false },
-    })
-      .select("tags")
-      .lean();
+    }).select("tags").lean();
 
-    const tagSet = new Set<string>();
+    const allPlatformTagSet = new Set<string>();
+    const tagFrequency = new Map<string, number>();
+
     allPublishedCourses.forEach((c) => {
       (c.tags || []).forEach((t) => {
-        if (t && t.trim()) tagSet.add(t.trim());
+        if (t && t.trim()) {
+          const clean = t.trim();
+          allPlatformTagSet.add(clean);
+          tagFrequency.set(clean, (tagFrequency.get(clean) || 0) + 1);
+        }
       });
     });
-    const availableTags = Array.from(tagSet);
 
-    const enriched = await Promise.all(
+    // Contextualized Tags: If a category is selected, return curated tags for that category
+    let availableTags: string[] = [];
+    if (activeCatDoc) {
+      const catSpecificTags = new Set<string>(activeCatDoc.tags || []);
+      courses.forEach((c) => {
+        (c.tags || []).forEach((t) => {
+          if (t && t.trim()) catSpecificTags.add(t.trim());
+        });
+      });
+      availableTags = Array.from(catSpecificTags);
+    } else {
+      availableTags = Array.from(tagFrequency.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 12)
+        .map(([t]) => t);
+    }
+
+    let enriched = await Promise.all(
       courses.map(async (course) => {
         const courseId = course._id.toString();
         const [durationMinutes, ratingSummary, enrollmentCount] = await Promise.all([
@@ -230,17 +252,49 @@ export async function getCourses(req: Request, res: Response) {
       })
     );
 
-    // Sort after enrichment so we can sort by computed fields
+    // Apply Rating Filter
+    if (minRating) {
+      const minR = parseFloat(minRating);
+      if (!isNaN(minR) && minR > 0) {
+        enriched = enriched.filter((c) => (c.averageRating ?? 0) >= minR);
+      }
+    }
+
+    // Apply Duration Filter
+    if (durationTier === "short") {
+      enriched = enriched.filter((c) => (c.durationMinutes ?? 0) <= 120);
+    } else if (durationTier === "medium") {
+      enriched = enriched.filter((c) => (c.durationMinutes ?? 0) > 120 && (c.durationMinutes ?? 0) <= 300);
+    } else if (durationTier === "long") {
+      enriched = enriched.filter((c) => (c.durationMinutes ?? 0) > 300);
+    }
+
+    // Sort after enrichment
     if (sort === "popular") {
       enriched.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0) || (b.enrollmentCount ?? 0) - (a.enrollmentCount ?? 0));
     } else if (sort === "free") {
       enriched.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+    } else if (sort === "price-low") {
+      enriched.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+    } else if (sort === "price-high") {
+      enriched.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
     } else if (sort === "highest-rated") {
       enriched.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
     }
-    // default: already sorted by createdAt desc from DB
 
-    return res.json({ courses: enriched, tags: availableTags });
+    return res.json({
+      courses: enriched,
+      tags: availableTags,
+      allPlatformTags: Array.from(allPlatformTagSet),
+      categoryInfo: activeCatDoc ? {
+        id: activeCatDoc._id.toString(),
+        name: activeCatDoc.name,
+        slug: activeCatDoc.slug,
+        icon: activeCatDoc.icon,
+        description: activeCatDoc.description,
+        tags: activeCatDoc.tags || [],
+      } : null,
+    });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }

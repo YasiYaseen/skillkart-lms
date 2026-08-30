@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   fetchAllUserNotes,
   deleteNote,
   updateNote,
+  createNote,
   type NoteItem,
 } from '../api/notes';
 import {
@@ -22,18 +23,36 @@ function formatDate(dateStr: string): string {
   });
 }
 
+function formatTime(seconds?: number): string {
+  if (!seconds || seconds <= 0) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
 export default function NotesAndBookmarksPage() {
-  const [activeTab, setActiveTab] = useState<'bookmarks' | 'notes'>('bookmarks');
+  const navigate = useNavigate();
+
+  // Data states
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [notes, setNotes] = useState<NoteItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter and selection states
+  const [activeMode, setActiveMode] = useState<'all' | 'notes' | 'bookmarks'>('all');
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('all');
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>('all');
 
   // Note editing state
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [isEditingNote, setIsEditingNote] = useState(false);
   const [editingContent, setEditingContent] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+
+  // New quick note modal/state
+  const [showNewNoteInput, setShowNewNoteInput] = useState(false);
+  const [newNoteContent, setNewNoteContent] = useState('');
+  const [creatingNote, setCreatingNote] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -45,6 +64,10 @@ export default function NotesAndBookmarksPage() {
         ]);
         setBookmarks(bookmarksData);
         setNotes(notesData);
+        if (notesData.length > 0) {
+          setSelectedNoteId(notesData[0]._id);
+          setEditingContent(notesData[0].content);
+        }
       } catch (error: any) {
         toast.error(error?.response?.data?.message || 'Failed to load study records');
       } finally {
@@ -55,6 +78,69 @@ export default function NotesAndBookmarksPage() {
     loadData();
   }, []);
 
+  // Compute enrolled course list with notes/bookmark metrics
+  const courseList = useMemo(() => {
+    const map = new Map<string, { id: string; title: string; notesCount: number; bookmarksCount: number }>();
+
+    bookmarks.forEach((b) => {
+      const courseObj = typeof b.course === 'object' ? b.course : null;
+      const id = courseObj ? courseObj._id : (b.course as string);
+      const title = courseObj ? courseObj.title : 'Course';
+      if (!map.has(id)) {
+        map.set(id, { id, title, notesCount: 0, bookmarksCount: 0 });
+      }
+      map.get(id)!.bookmarksCount++;
+    });
+
+    notes.forEach((n) => {
+      const courseObj = typeof n.course === 'object' ? n.course : null;
+      const id = courseObj ? courseObj._id : (n.course as string);
+      const title = courseObj ? courseObj.title : 'Course';
+      if (!map.has(id)) {
+        map.set(id, { id, title, notesCount: 0, bookmarksCount: 0 });
+      }
+      map.get(id)!.notesCount++;
+    });
+
+    return Array.from(map.values());
+  }, [bookmarks, notes]);
+
+  // Filtered bookmarks
+  const filteredBookmarks = useMemo(() => {
+    return bookmarks.filter((b) => {
+      const courseObj = typeof b.course === 'object' ? b.course : null;
+      const courseId = courseObj ? courseObj._id : (b.course as string);
+      const matchesCourse = selectedCourseId === 'all' || courseId === selectedCourseId;
+      const matchesSearch =
+        !searchTerm.trim() ||
+        b.lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (courseObj && courseObj.title.toLowerCase().includes(searchTerm.toLowerCase()));
+      return matchesCourse && matchesSearch;
+    });
+  }, [bookmarks, selectedCourseId, searchTerm]);
+
+  // Filtered notes
+  const filteredNotes = useMemo(() => {
+    return notes.filter((n) => {
+      const courseObj = typeof n.course === 'object' ? n.course : null;
+      const lessonObj = typeof n.lesson === 'object' ? n.lesson : null;
+      const courseId = courseObj ? courseObj._id : (n.course as string);
+      const matchesCourse = selectedCourseId === 'all' || courseId === selectedCourseId;
+      const matchesSearch =
+        !searchTerm.trim() ||
+        n.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (lessonObj && lessonObj.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (courseObj && courseObj.title.toLowerCase().includes(searchTerm.toLowerCase()));
+      return matchesCourse && matchesSearch;
+    });
+  }, [notes, selectedCourseId, searchTerm]);
+
+  // Active selected note
+  const activeSelectedNote = useMemo(() => {
+    return notes.find((n) => n._id === selectedNoteId) || filteredNotes[0] || null;
+  }, [notes, selectedNoteId, filteredNotes]);
+
+  // Bookmark handlers
   const handleRemoveBookmark = async (lessonId: string) => {
     try {
       await toggleLessonBookmark(lessonId);
@@ -65,26 +151,31 @@ export default function NotesAndBookmarksPage() {
     }
   };
 
+  // Note handlers
   const handleDeleteNote = async (noteId: string) => {
     try {
       await deleteNote(noteId);
       setNotes((prev) => prev.filter((n) => n._id !== noteId));
+      if (selectedNoteId === noteId) {
+        const remaining = notes.filter((n) => n._id !== noteId);
+        setSelectedNoteId(remaining.length > 0 ? remaining[0]._id : null);
+      }
       toast.success('Note deleted');
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to delete note');
     }
   };
 
-  const handleSaveNoteEdit = async (noteId: string) => {
-    if (!editingContent.trim() || savingNote) return;
+  const handleSaveNoteEdit = async () => {
+    if (!activeSelectedNote || !editingContent.trim() || savingNote) return;
     try {
       setSavingNote(true);
-      const updated = await updateNote(noteId, editingContent.trim());
+      const updated = await updateNote(activeSelectedNote._id, editingContent.trim());
       setNotes((prev) =>
-        prev.map((n) => (n._id === noteId ? { ...n, content: updated.content, updatedAt: updated.updatedAt } : n))
+        prev.map((n) => (n._id === activeSelectedNote._id ? { ...n, content: updated.content, updatedAt: updated.updatedAt } : n))
       );
-      setEditingNoteId(null);
-      toast.success('Note updated');
+      setIsEditingNote(false);
+      toast.success('Note saved successfully');
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to update note');
     } finally {
@@ -92,339 +183,418 @@ export default function NotesAndBookmarksPage() {
     }
   };
 
-  // Get distinct course list for filter
-  const courseOptions = Array.from(
-    new Map(
-      [
-        ...bookmarks.map((b) => (typeof b.course === 'object' ? b.course : null)),
-        ...notes.map((n) => (typeof n.course === 'object' ? n.course : null)),
-      ]
-        .filter(Boolean)
-        .map((c) => [c!._id, c!.title])
-    )
-  );
+  // Export Notes to Markdown file
+  const handleExportNotes = () => {
+    if (filteredNotes.length === 0) {
+      toast.info('No notes available to export');
+      return;
+    }
+    const currentCourse = courseList.find((c) => c.id === selectedCourseId);
+    const title = currentCourse ? currentCourse.title : 'All Courses';
+    let mdContent = `# 📚 SkillKart Study Notes - ${title}\n\nGenerated on ${new Date().toLocaleDateString()}\n\n---\n\n`;
 
-  const filteredBookmarks = bookmarks.filter((b) => {
-    const courseObj = typeof b.course === 'object' ? b.course : null;
-    const matchesCourse =
-      selectedCourseFilter === 'all' || (courseObj && courseObj._id === selectedCourseFilter);
-    const matchesSearch =
-      !searchTerm.trim() ||
-      b.lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (courseObj && courseObj.title.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesCourse && matchesSearch;
-  });
+    filteredNotes.forEach((n, idx) => {
+      const c = typeof n.course === 'object' ? n.course : null;
+      const l = typeof n.lesson === 'object' ? n.lesson : null;
+      mdContent += `### ${idx + 1}. ${l ? `Lesson ${l.order}: ${l.title}` : 'General Note'}\n`;
+      if (c) mdContent += `*Course: ${c.title}*\n`;
+      if (n.videoTimestamp) mdContent += `*Timestamp: ${formatTime(n.videoTimestamp)}*\n`;
+      mdContent += `\n${n.content}\n\n---\n\n`;
+    });
 
-  const filteredNotes = notes.filter((n) => {
-    const courseObj = typeof n.course === 'object' ? n.course : null;
-    const lessonObj = typeof n.lesson === 'object' ? n.lesson : null;
-    const matchesCourse =
-      selectedCourseFilter === 'all' || (courseObj && courseObj._id === selectedCourseFilter);
-    const matchesSearch =
-      !searchTerm.trim() ||
-      n.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lessonObj && lessonObj.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (courseObj && courseObj.title.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesCourse && matchesSearch;
-  });
+    const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `SkillKart_Study_Notes_${title.replace(/\s+/g, '_')}.md`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('Study notes exported as Markdown!');
+  };
 
   return (
-    <div className="container py-10 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div className="container py-8 max-w-[1440px] mx-auto space-y-6">
+      {/* 1. Header Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-800">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-            Study Hub & Bookmarks
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span>🧠</span>
+            <span>Study Hub & Knowledge Studio</span>
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Review your bookmarked lessons and study notes across all enrolled courses.
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Your centralized learning second-brain. Organize notes, revisit bookmarked moments, and export study guides.
           </p>
         </div>
 
-        {/* Tab switcher */}
-        <div className="inline-flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 border border-gray-200 dark:border-gray-700">
+        {/* Global Action: Export Markdown Study Notes */}
+        <div className="flex items-center gap-3">
           <button
-            type="button"
-            onClick={() => setActiveTab('bookmarks')}
-            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
-              activeTab === 'bookmarks'
-                ? 'bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 shadow-xs'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
+            onClick={handleExportNotes}
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
+            title="Download notes as markdown"
           >
-            <span>🔖 Bookmarks</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
-              {bookmarks.length}
-            </span>
+            <span>📥</span>
+            <span>Export Notes (.md)</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('notes')}
-            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
-              activeTab === 'notes'
-                ? 'bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 shadow-xs'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
+
+          <Link
+            to="/my-courses"
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
-            <span>📝 Study Notes</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
-              {notes.length}
-            </span>
-          </button>
+            Go to My Courses →
+          </Link>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-8">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={
-              activeTab === 'bookmarks'
-                ? 'Search bookmarked lessons or courses...'
-                : 'Search study notes or lesson topics...'
-            }
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs"
-          />
-          <svg
-            className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3.5 top-3.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      {/* 2. Main 2-Pane Notion-Style Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT PANE: Course & Record Navigator (4 cols on lg) */}
+        <aside className="lg:col-span-4 bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-4 shadow-2xs space-y-4">
+          {/* Quick Search */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search notes, topics, or lessons..."
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
-          </svg>
-        </div>
-
-        {courseOptions.length > 0 && (
-          <select
-            value={selectedCourseFilter}
-            onChange={(e) => setSelectedCourseFilter(e.target.value)}
-            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs"
-          >
-            <option value="all">All Courses ({courseOptions.length})</option>
-            {courseOptions.map(([id, title]) => (
-              <option key={id} value={id}>
-                {title}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} className="animate-pulse bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl h-44 p-6" />
-          ))}
-        </div>
-      ) : activeTab === 'bookmarks' ? (
-        filteredBookmarks.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-8">
-            <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-              🔖
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No bookmarked lessons found</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
-              While learning, click the bookmark icon on any lesson to save it here for fast revision.
-            </p>
-            <Link
-              to="/my-courses"
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-xs"
-            >
-              Go to My Courses →
-            </Link>
+            <span className="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBookmarks.map((bookmark) => {
-              const courseObj = typeof bookmark.course === 'object' ? bookmark.course : null;
-              const courseId = courseObj ? courseObj._id : bookmark.course;
-              const courseTitle = courseObj ? courseObj.title : 'Course';
 
-              return (
-                <div
-                  key={bookmark._id}
-                  className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+          {/* Mode Selector (All / Notes / Bookmarks) */}
+          <div className="grid grid-cols-3 gap-1 p-1 bg-gray-100 dark:bg-gray-800/80 rounded-xl border border-gray-200/60 dark:border-gray-700/60 text-xs font-semibold">
+            <button
+              onClick={() => setActiveMode('all')}
+              className={`py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                activeMode === 'all'
+                  ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              All ({notes.length + bookmarks.length})
+            </button>
+            <button
+              onClick={() => setActiveMode('notes')}
+              className={`py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                activeMode === 'notes'
+                  ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              📝 Notes ({notes.length})
+            </button>
+            <button
+              onClick={() => setActiveMode('bookmarks')}
+              className={`py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                activeMode === 'bookmarks'
+                  ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              🔖 Saved ({bookmarks.length})
+            </button>
+          </div>
+
+          {/* Course Scope Filter */}
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Courses</p>
+            <div className="space-y-1 max-h-48 overflow-y-auto pr-1 no-scrollbar">
+              <button
+                onClick={() => setSelectedCourseId('all')}
+                className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-medium text-left transition-all cursor-pointer ${
+                  selectedCourseId === 'all'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                <span>🌐 All Enrolled Courses</span>
+                <span className="text-[10px] text-gray-400 font-mono">
+                  {notes.length + bookmarks.length}
+                </span>
+              </button>
+
+              {courseList.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCourseId(c.id)}
+                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-medium text-left transition-all cursor-pointer ${
+                    selectedCourseId === c.id
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
                 >
-                  <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50 truncate max-w-[200px]">
-                        {courseTitle}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveBookmark(bookmark.lesson._id)}
-                        title="Remove bookmark"
-                        className="text-amber-500 hover:text-red-500 transition-colors p-1"
+                  <span className="truncate pr-2">{c.title}</span>
+                  <span className="text-[10px] text-gray-400 font-mono shrink-0">
+                    {c.notesCount + c.bookmarksCount}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes & Bookmarks Item Feed (Master List) */}
+          <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              {activeMode === 'bookmarks' ? 'Saved Lessons' : 'Study Notes Feed'}
+            </p>
+
+            {loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : activeMode === 'bookmarks' ? (
+              // Bookmarks in list
+              filteredBookmarks.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-6">No saved bookmarks match criteria.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+                  {filteredBookmarks.map((b) => {
+                    const c = typeof b.course === 'object' ? b.course : null;
+                    return (
+                      <div
+                        key={b._id}
+                        className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-700/60 hover:border-indigo-300 transition-all flex items-center justify-between gap-2"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path fillRule="evenodd" d="M6.32 2.577a49.255 49.255 0 0 1 11.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 0 1-1.085.67L12 18.089l-7.165 3.58A.75.75 0 0 1 3.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93Z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <h3 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-2">
-                      Lesson {bookmark.lesson.order}: {bookmark.lesson.title}
-                    </h3>
-
-                    <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
-                      {bookmark.lesson.durationMinutes !== undefined && (
-                        <span>⏱ {bookmark.lesson.durationMinutes} mins</span>
-                      )}
-                      <span>Saved on {formatDate(bookmark.createdAt)}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                    <Link
-                      to={`/learn/${courseId}/${bookmark.lesson._id}`}
-                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-                    >
-                      <span>Study Lesson</span>
-                      <span>→</span>
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )
-      ) : (
-        /* Notes Tab */
-        filteredNotes.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-8">
-            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-              📝
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No study notes found</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
-              Write study notes under any lesson in the learning page to capture takeaways and code snippets.
-            </p>
-            <Link
-              to="/my-courses"
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-xs"
-            >
-              Go to My Courses →
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredNotes.map((note) => {
-              const courseObj = typeof note.course === 'object' ? note.course : null;
-              const lessonObj = typeof note.lesson === 'object' ? note.lesson : null;
-              const courseId = courseObj ? courseObj._id : note.course;
-              const isEditing = editingNoteId === note._id;
-
-              return (
-                <div
-                  key={note._id}
-                  className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:shadow-sm transition-all flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {courseObj && (
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 truncate max-w-[180px]">
-                            {courseObj.title}
-                          </span>
-                        )}
-                        {lessonObj && (
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50 truncate max-w-[200px]">
-                            Lesson {lessonObj.order}: {lessonObj.title}
-                          </span>
-                        )}
-                      </div>
-
-                      {!isEditing && (
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingNoteId(note._id);
-                              setEditingContent(note.content);
-                            }}
-                            title="Edit note"
-                            className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-800"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteNote(note._id)}
-                            title="Delete note"
-                            className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-gray-800"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                            </svg>
-                          </button>
+                        <div className="truncate">
+                          <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
+                            Lesson {b.lesson.order}: {b.lesson.title}
+                          </p>
+                          <p className="text-[10px] text-gray-400 truncate">{c?.title || 'Course'}</p>
                         </div>
-                      )}
+                        <Link
+                          to={`/courses/${c?._id || b.course}`}
+                          className="px-2 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-bold shrink-0 hover:bg-indigo-700"
+                        >
+                          Study →
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : (
+              // Notes in list
+              filteredNotes.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-6">No study notes match criteria.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+                  {filteredNotes.map((n) => {
+                    const isSelected = activeSelectedNote?._id === n._id;
+                    const c = typeof n.course === 'object' ? n.course : null;
+                    const l = typeof n.lesson === 'object' ? n.lesson : null;
+
+                    return (
+                      <button
+                        key={n._id}
+                        onClick={() => {
+                          setSelectedNoteId(n._id);
+                          setEditingContent(n.content);
+                          setIsEditingNote(false);
+                        }}
+                        className={`w-full p-2.5 rounded-xl text-left transition-all cursor-pointer border ${
+                          isSelected
+                            ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-300 dark:border-indigo-800 shadow-2xs'
+                            : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 truncate">
+                            {l ? `Lesson ${l.order}: ${l.title}` : 'General Note'}
+                          </span>
+                          <span className="text-[9px] text-gray-400">{formatDate(n.updatedAt)}</span>
+                        </div>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                          {n.content}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            )}
+          </div>
+        </aside>
+
+        {/* RIGHT PANE: Interactive Notion-Style Study Pad / Detail Workspace (8 cols on lg) */}
+        <main className="lg:col-span-8 space-y-6">
+          {activeMode === 'bookmarks' ? (
+            // Full Bookmark Shelf
+            <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <span>🔖</span>
+                  <span>Bookmarked Lessons & Key Timestamps ({filteredBookmarks.length})</span>
+                </h2>
+              </div>
+
+              {filteredBookmarks.length === 0 ? (
+                <div className="text-center py-16 space-y-3">
+                  <div className="text-4xl">🔖</div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">No bookmarks yet</h3>
+                  <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                    While watching course lessons, click the bookmark icon to save lessons here for rapid exam revision.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {filteredBookmarks.map((b) => {
+                    const c = typeof b.course === 'object' ? b.course : null;
+                    return (
+                      <div
+                        key={b._id}
+                        className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-200/70 dark:border-gray-700/70 p-4 space-y-3 flex flex-col justify-between hover:shadow-xs transition-shadow"
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 truncate max-w-[180px]">
+                              {c?.title || 'Course'}
+                            </span>
+                            <button
+                              onClick={() => handleRemoveBookmark(b.lesson._id)}
+                              className="text-amber-500 hover:text-red-500 text-xs p-1"
+                              title="Remove bookmark"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                            Lesson {b.lesson.order}: {b.lesson.title}
+                          </h4>
+                          <p className="text-[11px] text-gray-400">
+                            Bookmarked on {formatDate(b.createdAt)}
+                          </p>
+                        </div>
+
+                        <Link
+                          to={`/courses/${c?._id || b.course}`}
+                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl text-center shadow-2xs transition-colors"
+                        >
+                          Open Lesson Video →
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            // Interactive Markdown Study Pad & Note Editor
+            <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-2xs space-y-4">
+              {activeSelectedNote ? (
+                <>
+                  {/* Note Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100 dark:border-gray-800">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                          {typeof activeSelectedNote.course === 'object' && activeSelectedNote.course
+                            ? activeSelectedNote.course.title
+                            : 'Course Note'}
+                        </span>
+                        <span>•</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          {typeof activeSelectedNote.lesson === 'object' && activeSelectedNote.lesson
+                            ? `Lesson ${activeSelectedNote.lesson.order}: ${activeSelectedNote.lesson.title}`
+                            : 'Lesson'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Last updated {formatDate(activeSelectedNote.updatedAt)}
+                        {activeSelectedNote.videoTimestamp ? ` • Timestamp: ${formatTime(activeSelectedNote.videoTimestamp)}` : ''}
+                      </p>
                     </div>
 
-                    {isEditing ? (
-                      <div className="space-y-3 mt-2">
-                        <textarea
-                          value={editingContent}
-                          onChange={(e) => setEditingContent(e.target.value)}
-                          rows={4}
-                          maxLength={5000}
-                          className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
-                        />
-                        <div className="flex items-center justify-end gap-2">
+                    {/* Actions: Edit / Delete */}
+                    <div className="flex items-center gap-2">
+                      {isEditingNote ? (
+                        <>
                           <button
-                            type="button"
-                            onClick={() => setEditingNoteId(null)}
-                            className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+                            onClick={handleSaveNoteEdit}
+                            disabled={savingNote}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                          >
+                            {savingNote ? 'Saving...' : '💾 Save Changes'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsEditingNote(false);
+                              setEditingContent(activeSelectedNote.content);
+                            }}
+                            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-200 cursor-pointer"
                           >
                             Cancel
                           </button>
+                        </>
+                      ) : (
+                        <>
                           <button
-                            type="button"
-                            onClick={() => handleSaveNoteEdit(note._id)}
-                            disabled={savingNote || !editingContent.trim()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                            onClick={() => setIsEditingNote(true)}
+                            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
                           >
-                            {savingNote ? 'Saving...' : 'Save Changes'}
+                            <span>✏️</span>
+                            <span>Edit Note</span>
                           </button>
-                        </div>
-                      </div>
+                          <button
+                            onClick={() => handleDeleteNote(activeSelectedNote._id)}
+                            className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Note Body: Editable or View mode */}
+                  <div className="min-h-[320px] py-2">
+                    {isEditingNote ? (
+                      <textarea
+                        value={editingContent}
+                        onChange={(e) => setEditingContent(e.target.value)}
+                        rows={12}
+                        className="w-full p-4 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white font-mono leading-relaxed focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Write your study notes in markdown..."
+                      />
                     ) : (
-                      <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed mb-4">
-                        {note.content}
-                      </p>
+                      <div className="prose dark:prose-invert max-w-none text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap font-sans">
+                        {activeSelectedNote.content}
+                      </div>
                     )}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-                    <span>{formatDate(note.createdAt)}</span>
-                    {lessonObj && (
+                  {/* Footer Jump to Lesson */}
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs">
+                    <span className="text-gray-400">
+                      Word count: {activeSelectedNote.content.split(/\s+/).filter(Boolean).length} words
+                    </span>
+
+                    {typeof activeSelectedNote.course === 'object' && activeSelectedNote.course && (
                       <Link
-                        to={`/learn/${courseId}/${lessonObj._id}`}
-                        className="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                        to={`/courses/${activeSelectedNote.course._id}`}
+                        className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1"
                       >
-                        <span>Open Lesson</span>
-                        <span>↗</span>
+                        <span>Jump to Lesson Video</span>
+                        <span>→</span>
                       </Link>
                     )}
                   </div>
+                </>
+              ) : (
+                <div className="text-center py-20 space-y-4">
+                  <div className="text-4xl">📝</div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">No note selected</h3>
+                  <p className="text-xs text-gray-500 max-w-md mx-auto">
+                    Select a note from the left panel or take notes while watching lessons in the course player.
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        )
-      )}
+              )}
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

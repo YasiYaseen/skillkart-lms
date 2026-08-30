@@ -107,20 +107,20 @@
 
     .container {
         width: 100%;
-        max-width: 1280px;
+        max-width: 1680px;
         margin: 0 auto;
-        padding: 0 24px;
+        padding: 0 16px;
     }
 
     @media (min-width: 768px) {
         .container {
-            padding: 0 40px;
+            padding: 0 24px;
         }
     }
 
     @media (min-width: 1024px) {
         .container {
-            padding: 0 80px;
+            padding: 0 32px;
         }
     }
 
@@ -892,4 +892,15 @@
         background-color: #1f2937;
         color: #f8fafc;
     }
+}
+
+/* Hide native scrollbars utility */
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0px;
+    height: 0px;
 }

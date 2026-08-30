@@ -101,7 +101,7 @@ export function LearnerHome() {
     const newCourses = (feed?.newReleases || []).map(mapRawCourse);
 
     return (
-        <div className="container py-8 space-y-12 px-4 max-w-7xl">
+        <div className="container py-8 space-y-12">
             {/* 1. Dynamic Hero Welcome & Search Hub */}
             <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white p-7 md:p-10 border border-indigo-800/40 shadow-2xl">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
