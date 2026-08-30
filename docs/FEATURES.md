@@ -44,7 +44,8 @@ Useful after the MVP is stable.
 | --- | --- | --- |
 | Wishlist | Done | [docs/features/later/wishlist.md](features/later/wishlist.md) |
 | Announcements | Done | [docs/features/later/announcements.md](features/later/announcements.md) |
-| Discussion or Comments | Not Started | [docs/features/later/discussion-comments.md](features/later/discussion-comments.md) |
+| Discussion or Comments | Done | [docs/features/later/discussion-comments.md](features/later/discussion-comments.md) |
+
 | Advanced Instructor Analytics | Not Started | [docs/features/later/advanced-instructor-analytics.md](features/later/advanced-instructor-analytics.md) |
 | Advanced Search | Not Started | [docs/features/later/advanced-search.md](features/later/advanced-search.md) |
 | Notes and Bookmarks | Not Started | [docs/features/later/notes-bookmarks.md](features/later/notes-bookmarks.md) |

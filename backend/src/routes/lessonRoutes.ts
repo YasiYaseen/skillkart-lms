@@ -2,6 +2,11 @@ import { Router } from "express";
 import { updateLesson } from "../controllers/course/lessonController";
 import { createLessonItem } from "../controllers/course/lessonItemController";
 import { updateLessonProgress } from "../controllers/course/progressController";
+import {
+  getLessonComments,
+  createLessonComment,
+  deleteLessonComment,
+} from "../controllers/course/commentController";
 import { protect } from "../middleware/authMiddleware";
 import { authorize } from "../middleware/roleMiddleware";
 import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
@@ -18,4 +23,10 @@ router.post(
   updateLessonProgress
 );
 
+// Lesson Comments / Discussion
+router.get("/:lessonId/comments", protect, getLessonComments);
+router.post("/:lessonId/comments", protect, requireOnboardingCompleted, createLessonComment);
+router.delete("/:lessonId/comments/:commentId", protect, requireOnboardingCompleted, deleteLessonComment);
+
 export default router;
+

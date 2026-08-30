@@ -10,3 +10,6 @@
 
 export { default as MyCourses } from './pages/MyCourses';
 export { default as LessonViewer } from './pages/LessonViewer';
+export { LessonDiscussion } from './components/LessonDiscussion';
+export { CourseAnnouncements } from './components/CourseAnnouncements';
+

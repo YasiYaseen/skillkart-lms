@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { LessonQuiz } from '@/components/LessonQuiz';
 import { CourseAnnouncements } from '@/features/student/components/CourseAnnouncements';
+import { LessonDiscussion } from '@/features/student/components/LessonDiscussion';
 
 function LessonViewer() {
     const { courseId, lessonId } = useParams();
@@ -17,7 +18,8 @@ function LessonViewer() {
     const [progressPercentage, setProgressPercentage] = useState<number>(0);
     const [quizPassed, setQuizPassed] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'lesson' | 'announcements'>('lesson');
+    const [activeTab, setActiveTab] = useState<'lesson' | 'discussion' | 'announcements'>('lesson');
+
 
     // Fetch course structure only once per course visit
     useEffect(() => {
@@ -185,6 +187,19 @@ function LessonViewer() {
                                 Lesson Content
                             </button>
                             <button
+                                onClick={() => setActiveTab('discussion')}
+                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 ${
+                                    activeTab === 'discussion'
+                                        ? 'border-blue-600 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                                </svg>
+                                Discussion
+                            </button>
+                            <button
                                 onClick={() => setActiveTab('announcements')}
                                 className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 ${
                                     activeTab === 'announcements'
@@ -199,10 +214,19 @@ function LessonViewer() {
                             </button>
                         </div>
 
+                        {/* Discussion tab */}
+                        {activeTab === 'discussion' && (
+                            <LessonDiscussion
+                                lessonId={lessonId!}
+                                courseInstructorId={course?.instructor?._id || course?.instructor}
+                            />
+                        )}
+
                         {/* Announcements tab */}
                         {activeTab === 'announcements' && (
                             <CourseAnnouncements courseId={courseId!} />
                         )}
+
 
                         {/* Lesson Content tab */}
                         {activeTab === 'lesson' && (

@@ -1,8 +1,8 @@
 # Discussion or Comments
 
-Status: Not Started
+Status: Done
 Priority: Later
-Owner: Unassigned
+Owner: Implemented
 
 ## Goal
 Allow basic course or lesson discussion between students and instructors.
@@ -13,7 +13,7 @@ Allow basic course or lesson discussion between students and instructors.
 - Admin can moderate comments
 
 ## Acceptance Checklist
-- [ ] Enrolled student can add comment
-- [ ] Instructor can reply to comments
-- [ ] Admin can remove inappropriate comments
-- [ ] Comments are linked to the correct lesson
+- [x] Enrolled student can add comment
+- [x] Instructor can reply to comments
+- [x] Admin can remove inappropriate comments
+- [x] Comments are linked to the correct lesson
