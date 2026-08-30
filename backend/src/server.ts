@@ -17,6 +17,7 @@ import adminRoutes from "./routes/adminRoutes";
 import wishlistRoutes from "./routes/wishlistRoutes";
 import instructorRoutes from "./routes/instructorRoutes";
 import noteRoutes from "./routes/noteRoutes";
+import assignmentRoutes from "./routes/assignmentRoutes";
 
 import path from "path";
 
@@ -53,6 +54,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/instructor", instructorRoutes);
 app.use("/api/notes", noteRoutes);
+app.use("/api/assignments", assignmentRoutes);
 
 
 // Health check

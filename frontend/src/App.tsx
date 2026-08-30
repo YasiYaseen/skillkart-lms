@@ -20,6 +20,7 @@ import {
     StudentsEnrolled,
     Announcements,
     Analytics,
+    Assignments,
 } from '@features/instructor';
 import {
     AdminLayout,
@@ -70,6 +71,7 @@ function App() {
                             <Route path="/instructor/courses/:courseId/edit" element={<EditCourse />} />
                             <Route path="/instructor/students" element={<StudentsEnrolled />} />
                             <Route path="/instructor/announcements" element={<Announcements />} />
+                            <Route path="/instructor/assignments" element={<Assignments />} />
                             <Route path="/instructor/analytics" element={<Analytics />} />
                         </Route>
                     </Route>
