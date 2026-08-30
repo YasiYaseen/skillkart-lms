@@ -797,7 +797,7 @@ function CourseDetailsSkeleton() {
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="space-y-3 mb-6">
+                                    <div className="space-y-2.5 mb-6">
                                         {courseId && (
                                             <EnrollButton
                                                 courseId={courseId}
@@ -806,13 +806,32 @@ function CourseDetailsSkeleton() {
                                                 onEnrolled={() => navigate(`/learn/${courseId}`)}
                                             />
                                         )}
+                                        {courseId && !isEnrolled && course.price > 0 && (
+                                            <button
+                                                onClick={() => {
+                                                    if (!isInCart(courseId)) {
+                                                        addToCart({
+                                                            courseId,
+                                                            title: course.title,
+                                                            price: course.price,
+                                                            thumbnailUrl: course.thumbnail,
+                                                            instructorName: course.instructor,
+                                                        });
+                                                    }
+                                                    navigate('/cart?step=payment');
+                                                }}
+                                                className="w-full py-3 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5"
+                                            >
+                                                <span>⚡ Buy Now (Instant Checkout)</span>
+                                            </button>
+                                        )}
                                         {courseId && !isEnrolled && (
                                             isInCart(courseId) ? (
                                                 <button
                                                     onClick={() => navigate('/cart')}
-                                                    className="w-full py-3 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl font-bold text-xs hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+                                                    className="w-full py-2.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl font-bold text-xs hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
                                                 >
-                                                    <span>🛒 In Cart &bull; Go to Checkout →</span>
+                                                    <span>🛒 In Cart &bull; Go to Cart →</span>
                                                 </button>
                                             ) : (
                                                 <button
@@ -826,7 +845,7 @@ function CourseDetailsSkeleton() {
                                                         });
                                                         toast.success('Course added to your cart!');
                                                     }}
-                                                    className="w-full py-3 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-xl font-bold text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                                                    className="w-full py-2.5 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-xl font-bold text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                                                 >
                                                     <span>🛒 Add to Cart</span>
                                                 </button>
@@ -835,6 +854,10 @@ function CourseDetailsSkeleton() {
                                         {courseId && (
                                             <WishlistButton courseId={courseId} variant="button" />
                                         )}
+
+                                        <p className="text-[11px] text-gray-400 text-center pt-1 font-medium">
+                                            🛡️ 30-Day Money-Back Guarantee &bull; Lifetime Access
+                                        </p>
                                     </div>
 
                                     {/* Course Quick Stats */}

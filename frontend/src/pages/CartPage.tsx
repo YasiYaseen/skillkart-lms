@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/features/auth/AuthContext';
 import { validateCouponCode, processCheckout, type OrderRecord } from '@/features/student/api/cart';
 import { addToWishlist } from '@/features/wishlist';
+import { PaymentCardSimulator, type PaymentFormState } from '@/components/cart/PaymentCardSimulator';
+import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 
 const POPULAR_PROMOS = [
@@ -12,9 +14,15 @@ const POPULAR_PROMOS = [
 ];
 
 export default function CartPage() {
-  const { cart, removeFromCart, clearCart, cartTotal } = useCart();
+  const { cart, removeFromCart, clearCart, cartTotal, addToCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Step state: 'items' | 'payment' | 'success'
+  const [currentStep, setCurrentStep] = useState<'items' | 'payment'>(
+    searchParams.get('step') === 'payment' ? 'payment' : 'items'
+  );
 
   // Coupon state
   const [couponInput, setCouponInput] = useState('');
@@ -28,13 +36,36 @@ export default function CartPage() {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
 
-  // Checkout form & payment state
+  // Billing Details
   const [billingName, setBillingName] = useState(user?.name || '');
   const [billingEmail, setBillingEmail] = useState(user?.email || '');
   const [billingCountry, setBillingCountry] = useState('United States');
-  const [paymentMethod, setPaymentMethod] = useState<'simulated' | 'stripe' | 'paypal'>('simulated');
+
+  // Interactive Payment State
+  const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
+    method: 'card',
+    cardNumber: '',
+    cardHolder: user?.name ? user.name.toUpperCase() : '',
+    expiry: '',
+    cvv: '',
+    saveCard: true,
+  });
+
   const [checkingOut, setCheckingOut] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<OrderRecord | null>(null);
+
+  // Recommendations / Upsells state
+  const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Load top recommended courses for upsell strip
+    api.get('/courses?limit=4')
+      .then((res) => {
+        const list = res.data.courses || [];
+        setRecommendedCourses(list.filter((c: any) => !cart.some((it) => it.courseId === c._id)));
+      })
+      .catch(() => {});
+  }, [cart]);
 
   // Validate coupon against current cart
   const handleApplyCoupon = async (codeToApply?: string) => {
@@ -105,9 +136,9 @@ export default function CartPage() {
       const res = await processCheckout({
         courseIds,
         couponCode: appliedCoupon?.code,
-        paymentMethod: finalTotal === 0 ? 'free' : paymentMethod,
+        paymentMethod: finalTotal === 0 ? 'free' : 'simulated',
         billingDetails: {
-          name: billingName,
+          name: billingName || paymentForm.cardHolder,
           email: billingEmail,
           country: billingCountry,
         },
@@ -127,14 +158,14 @@ export default function CartPage() {
   if (completedOrder) {
     return (
       <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6">
-        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-8 sm:p-10 shadow-xl text-center space-y-6 animate-fadeIn">
-          <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto text-3xl">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-8 sm:p-10 shadow-2xl text-center space-y-6 animate-fadeIn">
+          <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner animate-bounce">
             ✓
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400">
-              Payment Confirmed
+            <span className="text-xs uppercase tracking-widest font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+              Payment Confirmed &bull; Lifetime Enrolled
             </span>
             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
               Thank You for Your Order!
@@ -145,34 +176,37 @@ export default function CartPage() {
           </div>
 
           {/* Enrolled Courses Summary Box */}
-          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 text-left border border-gray-100 dark:border-gray-800 space-y-3">
-            <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 text-left border border-gray-100 dark:border-gray-800 space-y-4">
+            <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
               Enrolled Courses ({completedOrder.items.length})
             </h3>
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {completedOrder.items.map((item, idx) => (
-                <div key={idx} className="py-2.5 flex justify-between items-center text-xs">
-                  <span className="font-semibold text-gray-900 dark:text-white">{item.title}</span>
-                  <span className="text-gray-600 dark:text-gray-300 font-mono">${item.finalPrice.toFixed(2)}</span>
+                <div key={idx} className="py-3 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white block">{item.title}</span>
+                    <span className="text-[10px] text-emerald-600 font-semibold">✓ Instant Access Activated</span>
+                  </div>
+                  <span className="text-gray-600 dark:text-gray-300 font-mono font-bold">${item.finalPrice.toFixed(2)}</span>
                 </div>
               ))}
             </div>
-            <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-sm font-bold text-gray-900 dark:text-white">
+            <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-sm font-extrabold text-gray-900 dark:text-white">
               <span>Total Paid</span>
-              <span className="text-indigo-600 dark:text-indigo-400 font-mono">${completedOrder.totalAmount.toFixed(2)} USD</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-mono text-base">${completedOrder.totalAmount.toFixed(2)} USD</span>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <Link
               to="/my-courses"
-              className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md"
+              className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md"
             >
               Start Learning in My Courses →
             </Link>
             <Link
               to="/purchase-history"
-              className="w-full sm:w-auto px-6 py-3 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-xl transition-colors"
+              className="w-full sm:w-auto px-6 py-3.5 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-xl transition-colors"
             >
               View Order Receipt & Invoice
             </Link>
@@ -198,7 +232,7 @@ export default function CartPage() {
         <div className="pt-2">
           <Link
             to="/courses"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
+            className="inline-flex items-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
           >
             <span>Browse All Courses</span>
             <span>→</span>
@@ -210,213 +244,268 @@ export default function CartPage() {
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
-          Shopping Cart & Checkout
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Review your chosen courses, apply discount coupons, and complete your enrollment.
-        </p>
+      {/* 3-Step Checkout Progression Header */}
+      <div className="max-w-xl mx-auto">
+        <div className="flex items-center justify-between text-xs font-bold">
+          <button
+            onClick={() => setCurrentStep('items')}
+            className={`flex items-center gap-2 ${
+              currentStep === 'items'
+                ? 'text-indigo-600 dark:text-indigo-400 font-extrabold'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] ${
+              currentStep === 'items'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-emerald-500 text-white'
+            }`}>
+              {currentStep === 'payment' ? '✓' : '1'}
+            </span>
+            <span>1. Review Cart</span>
+          </button>
+
+          <div className={`flex-1 h-0.5 mx-4 ${currentStep === 'payment' ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
+
+          <button
+            onClick={() => setCurrentStep('payment')}
+            className={`flex items-center gap-2 ${
+              currentStep === 'payment'
+                ? 'text-indigo-600 dark:text-indigo-400 font-extrabold'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] ${
+              currentStep === 'payment'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-gray-200 dark:bg-gray-800 text-gray-500'
+            }`}>
+              2
+            </span>
+            <span>2. Payment & Billing</span>
+          </button>
+
+          <div className="flex-1 h-0.5 mx-4 bg-gray-200 dark:bg-gray-800" />
+
+          <div className="flex items-center gap-2 text-gray-400">
+            <span className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-500 flex items-center justify-center text-[11px]">
+              3
+            </span>
+            <span>3. Confirmation</span>
+          </div>
+        </div>
       </div>
 
+      {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Cart Items & Billing Options */}
+        {/* Left Column: Cart Items OR Payment Step */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Courses List */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
-              <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                Courses in Cart ({cart.length})
-              </span>
-              <button
-                onClick={clearCart}
-                className="text-xs text-gray-400 hover:text-rose-500 transition-colors font-medium"
-              >
-                Clear All
-              </button>
-            </div>
+          {currentStep === 'items' ? (
+            /* STEP 1: CART ITEMS REVIEW */
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    Courses in Cart ({cart.length})
+                  </span>
+                  <button
+                    onClick={clearCart}
+                    className="text-xs text-gray-400 hover:text-rose-500 transition-colors font-medium"
+                  >
+                    Clear All
+                  </button>
+                </div>
 
-            <div className="divide-y divide-gray-100 dark:divide-gray-800">
-              {cart.map((item) => (
-                <div key={item.courseId} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 flex-1">
-                    {item.thumbnailUrl ? (
-                      <img
-                        src={item.thumbnailUrl}
-                        alt={item.title}
-                        className="w-16 h-12 object-cover rounded-xl shrink-0 border border-gray-200 dark:border-gray-700"
-                      />
-                    ) : (
-                      <div className="w-16 h-12 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm">
-                        🎓
+                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {cart.map((item) => (
+                    <div key={item.courseId} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1">
+                        {item.thumbnailUrl ? (
+                          <img
+                            src={item.thumbnailUrl}
+                            alt={item.title}
+                            className="w-20 h-14 object-cover rounded-xl shrink-0 border border-gray-200 dark:border-gray-700 shadow-2xs"
+                          />
+                        ) : (
+                          <div className="w-20 h-14 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 font-bold text-base">
+                            🎓
+                          </div>
+                        )}
+
+                        <div className="space-y-1 min-w-0">
+                          <Link
+                            to={`/courses/${item.courseId}`}
+                            className="text-sm font-bold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-1"
+                          >
+                            {item.title}
+                          </Link>
+                          {item.instructorName && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              By {item.instructorName}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-semibold">
+                            <span>✓ Lifetime Access</span>
+                            <span>&bull;</span>
+                            <span>Certificate Included</span>
+                          </div>
+                        </div>
                       </div>
-                    )}
 
-                    <div className="space-y-0.5 min-w-0">
-                      <Link
-                        to={`/courses/${item.courseId}`}
-                        className="text-sm font-bold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-1"
-                      >
-                        {item.title}
-                      </Link>
-                      {item.instructorName && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          Instructor: {item.instructorName}
-                        </p>
-                      )}
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                        <span className="text-base font-extrabold text-gray-900 dark:text-white font-mono">
+                          {item.price > 0 ? `$${item.price.toFixed(2)}` : 'FREE'}
+                        </span>
+
+                        <button
+                          onClick={() => handleMoveToWishlist(item)}
+                          title="Move to Wishlist"
+                          className="text-xs text-gray-400 hover:text-indigo-600 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        >
+                          Save for Later
+                        </button>
+
+                        <button
+                          onClick={() => removeFromCart(item.courseId)}
+                          title="Remove course from cart"
+                          className="text-gray-400 hover:text-rose-500 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                    <span className="text-base font-extrabold text-gray-900 dark:text-white font-mono">
-                      {item.price > 0 ? `$${item.price.toFixed(2)}` : 'FREE'}
-                    </span>
-
-                    <button
-                      onClick={() => handleMoveToWishlist(item)}
-                      title="Move to Wishlist"
-                      className="text-xs text-gray-400 hover:text-indigo-600 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      Save for Later
-                    </button>
-
-                    <button
-                      onClick={() => removeFromCart(item.courseId)}
-                      title="Remove course from cart"
-                      className="text-gray-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-              <Link
-                to="/courses"
-                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                + Add more courses to cart
-              </Link>
-              <span className="text-xs text-gray-500">
-                Subtotal: <strong className="font-mono text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</strong>
-              </span>
-            </div>
-          </div>
-
-          {/* Billing Details Card */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
-            <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Billing Information
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  value={billingName}
-                  onChange={(e) => setBillingName(e.target.value)}
-                  placeholder="Your full name"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                />
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <Link
+                    to="/courses"
+                    className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    ← Continue exploring more courses
+                  </Link>
+                  <button
+                    onClick={() => setCurrentStep('payment')}
+                    className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                  >
+                    <span>Proceed to Payment & Billing</span>
+                    <span>→</span>
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={billingEmail}
-                  onChange={(e) => setBillingEmail(e.target.value)}
-                  placeholder="your.email@example.com"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+              {/* Upsell / Recommended Courses Strip */}
+              {recommendedCourses.length > 0 && (
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                      Frequently Bought Together
+                    </h3>
+                    <span className="text-[11px] text-gray-400">Popular learner add-ons</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {recommendedCourses.slice(0, 2).map((c) => (
+                      <div
+                        key={c._id}
+                        className="p-3.5 rounded-xl border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
+                      >
+                        <div className="truncate flex-1">
+                          <h5 className="font-semibold text-xs text-gray-900 dark:text-white truncate">{c.title}</h5>
+                          <span className="text-xs font-bold text-indigo-600 font-mono">${c.price > 0 ? `$${c.price.toFixed(2)}` : 'FREE'}</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            addToCart({
+                              courseId: c._id,
+                              title: c.title,
+                              price: c.price,
+                              thumbnailUrl: c.thumbnail,
+                              instructorName: c.instructor?.name || 'Instructor',
+                            });
+                            toast.success(`"${c.title}" added to your cart!`);
+                          }}
+                          className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 rounded-lg text-xs font-bold transition-colors shrink-0"
+                        >
+                          + Add
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* STEP 2: PAYMENT & BILLING DETAILS */
+            <div className="space-y-6 animate-fadeIn">
+              {/* Billing Info Card */}
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                  <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    Billing Details
+                  </h3>
+                  <button
+                    onClick={() => setCurrentStep('items')}
+                    className="text-xs text-indigo-600 hover:underline font-semibold"
+                  >
+                    ← Edit Cart Items ({cart.length})
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={billingName}
+                      onChange={(e) => setBillingName(e.target.value)}
+                      placeholder="Your name"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={billingEmail}
+                      onChange={(e) => setBillingEmail(e.target.value)}
+                      placeholder="your.email@example.com"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Interactive Payment Gateway Simulator */}
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                  <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    Payment Authorization
+                  </h3>
+                  <span className="text-[10px] text-gray-400">🔒 256-Bit SSL Encrypted</span>
+                </div>
+
+                <PaymentCardSimulator
+                  formState={paymentForm}
+                  onChange={(updates) => setPaymentForm((prev) => ({ ...prev, ...updates }))}
+                  totalAmount={finalTotal}
                 />
               </div>
             </div>
-          </div>
-
-          {/* Payment Method Selector */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
-            <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Payment Gateway Option
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <label
-                className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                  paymentMethod === 'simulated'
-                    ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 shadow-xs'
-                    : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="simulated"
-                  checked={paymentMethod === 'simulated'}
-                  onChange={() => setPaymentMethod('simulated')}
-                  className="text-indigo-600 focus:ring-indigo-500"
-                />
-                <div className="text-xs">
-                  <strong className="block font-bold">⚡ Instant Demo Pay</strong>
-                  <span className="text-[10px] text-gray-500">Zero-friction 1-click test</span>
-                </div>
-              </label>
-
-              <label
-                className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                  paymentMethod === 'stripe'
-                    ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 shadow-xs'
-                    : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="stripe"
-                  checked={paymentMethod === 'stripe'}
-                  onChange={() => setPaymentMethod('stripe')}
-                  className="text-indigo-600 focus:ring-indigo-500"
-                />
-                <div className="text-xs">
-                  <strong className="block font-bold">💳 Credit / Debit Card</strong>
-                  <span className="text-[10px] text-gray-500">Stripe Gateway Ready</span>
-                </div>
-              </label>
-
-              <label
-                className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                  paymentMethod === 'paypal'
-                    ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 shadow-xs'
-                    : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="paypal"
-                  checked={paymentMethod === 'paypal'}
-                  onChange={() => setPaymentMethod('paypal')}
-                  className="text-indigo-600 focus:ring-indigo-500"
-                />
-                <div className="text-xs">
-                  <strong className="block font-bold">🅿️ PayPal / Wallet</strong>
-                  <span className="text-[10px] text-gray-500">Digital checkout</span>
-                </div>
-              </label>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Right Column: Sticky Coupon & Order Summary */}
-        <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+        <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
           {/* Promo Coupon Card */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-3">
             <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -499,7 +588,7 @@ export default function CartPage() {
 
             <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
               <div className="flex justify-between items-center">
-                <span>Original Price</span>
+                <span>Original Price ({cart.length} items)</span>
                 <span className="font-mono font-medium text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
               </div>
 
@@ -517,27 +606,47 @@ export default function CartPage() {
 
               <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-base font-extrabold text-gray-900 dark:text-white">
                 <span>Total Amount:</span>
-                <span className="text-indigo-600 dark:text-indigo-400 font-mono">
+                <span className="text-indigo-600 dark:text-indigo-400 font-mono text-lg">
                   ${finalTotal.toFixed(2)} USD
                 </span>
               </div>
             </div>
 
-            <button
-              onClick={handleCheckout}
-              disabled={checkingOut}
-              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
-            >
-              {checkingOut ? (
-                <span>Processing Order...</span>
-              ) : (
-                <span>Complete Purchase & Enroll Now</span>
-              )}
-            </button>
+            {currentStep === 'items' ? (
+              <button
+                onClick={() => setCurrentStep('payment')}
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+              >
+                <span>Proceed to Payment →</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleCheckout}
+                disabled={checkingOut}
+                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                {checkingOut ? (
+                  <span>Authorizing Order...</span>
+                ) : (
+                  <span>Authorize & Complete Purchase (${finalTotal.toFixed(2)})</span>
+                )}
+              </button>
+            )}
 
-            <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800 text-[11px] text-gray-400 text-center">
-              <p>🔒 256-Bit SSL Encrypted & Secure Checkout</p>
-              <p>⚡ Instant lifetime access to course materials upon order</p>
+            {/* Trust Badges */}
+            <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2 text-[11px] text-gray-500">
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-500">🛡️</span>
+                <span>30-Day 100% Money-Back Guarantee</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-indigo-500">⚡</span>
+                <span>Instant full access on desktop & mobile</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-amber-500">📜</span>
+                <span>Verified Certificate of Completion</span>
+              </div>
             </div>
           </div>
         </div>
@@ -545,3 +654,4 @@ export default function CartPage() {
     </div>
   );
 }
+
