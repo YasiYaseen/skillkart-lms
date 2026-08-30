@@ -79,12 +79,25 @@ function VerifyCertificatePage() {
                             </div>
                         </div>
 
-                        {/* Verified badge */}
-                        <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 border border-green-200 rounded-full px-4 py-1.5 text-sm font-semibold">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Verified Certificate
+                        {/* Verified badge & Actions */}
+                        <div className="flex flex-wrap items-center justify-center gap-4">
+                            <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 border border-green-200 rounded-full px-4 py-1.5 text-sm font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Verified Certificate
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => window.print()}
+                                className="print:hidden inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-5 py-1.5 text-sm font-semibold shadow-sm transition-all"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download / Print PDF
+                            </button>
                         </div>
                     </div>
 
@@ -92,7 +105,7 @@ function VerifyCertificatePage() {
                     <div className="h-3 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500" />
                 </div>
 
-                <p className="text-center text-xs text-gray-400 mt-4">
+                <p className="text-center text-xs text-gray-400 mt-4 print:hidden">
                     Issued by <span className="font-semibold text-gray-600">SkillKart</span> · <Link to="/" className="hover:underline text-indigo-400">skillkart.app</Link>
                 </p>
             </div>
