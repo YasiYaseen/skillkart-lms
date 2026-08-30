@@ -1,5 +1,6 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronDownIcon, QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+import { api } from "@/lib/api";
 
 export interface FAQItem {
   _id: string;
@@ -21,11 +22,8 @@ export default function CourseFAQAccordion({ courseId }: CourseFAQAccordionProps
     async function loadFAQs() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/courses/${courseId}/faqs`);
-        if (res.ok) {
-          const data = await res.json();
-          setFaqs(data.faqs || []);
-        }
+        const res = await api.get(`/courses/${courseId}/faqs`);
+        setFaqs(res.data.faqs || []);
       } catch (err) {
         console.error("Failed to load FAQs:", err);
       } finally {

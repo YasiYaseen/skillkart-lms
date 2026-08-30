@@ -1,8 +1,8 @@
 # Bulk Upload Lessons
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Let instructors add many lessons faster.
@@ -13,6 +13,6 @@ Let instructors add many lessons faster.
 - Report failed rows clearly
 
 ## Acceptance Checklist
-- [ ] Instructor can upload lesson batch
-- [ ] Invalid rows are reported
-- [ ] Valid lessons are saved in order
+- [x] Instructor can upload lesson batch
+- [x] Invalid rows are reported
+- [x] Valid lessons are saved in order

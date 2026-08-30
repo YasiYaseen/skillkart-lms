@@ -62,13 +62,13 @@ Polish features for the final stage if time allows.
 | Dark Mode | Done | [docs/features/nice-to-have/dark-mode.md](features/nice-to-have/dark-mode.md) |
 | Course Tags | Done | [docs/features/nice-to-have/course-tags.md](features/nice-to-have/course-tags.md) |
 | Instructor Public Profile | Done | [docs/features/nice-to-have/instructor-public-profile.md](features/nice-to-have/instructor-public-profile.md) |
-| Student Learning Streaks | Not Started | [docs/features/nice-to-have/student-learning-streaks.md](features/nice-to-have/student-learning-streaks.md) |
-| Course Recommendations | Not Started | [docs/features/nice-to-have/course-recommendations.md](features/nice-to-have/course-recommendations.md) |
-| Recently Viewed Courses | Not Started | [docs/features/nice-to-have/recently-viewed-courses.md](features/nice-to-have/recently-viewed-courses.md) |
-| Downloadable Certificate PDF | Not Started | [docs/features/nice-to-have/downloadable-certificate-pdf.md](features/nice-to-have/downloadable-certificate-pdf.md) |
-| Admin Audit Logs | Not Started | [docs/features/nice-to-have/admin-audit-logs.md](features/nice-to-have/admin-audit-logs.md) |
-| Bulk Upload Lessons | Not Started | [docs/features/nice-to-have/bulk-upload-lessons.md](features/nice-to-have/bulk-upload-lessons.md) |
-| Course FAQ | Not Started | [docs/features/nice-to-have/course-faq.md](features/nice-to-have/course-faq.md) |
+| Student Learning Streaks | Done | [docs/features/nice-to-have/student-learning-streaks.md](features/nice-to-have/student-learning-streaks.md) |
+| Course Recommendations | Done | [docs/features/nice-to-have/course-recommendations.md](features/nice-to-have/course-recommendations.md) |
+| Recently Viewed Courses | Done | [docs/features/nice-to-have/recently-viewed-courses.md](features/nice-to-have/recently-viewed-courses.md) |
+| Downloadable Certificate PDF | Done | [docs/features/nice-to-have/downloadable-certificate-pdf.md](features/nice-to-have/downloadable-certificate-pdf.md) |
+| Admin Audit Logs | Done | [docs/features/nice-to-have/admin-audit-logs.md](features/nice-to-have/admin-audit-logs.md) |
+| Bulk Upload Lessons | Done | [docs/features/nice-to-have/bulk-upload-lessons.md](features/nice-to-have/bulk-upload-lessons.md) |
+| Course FAQ | Done | [docs/features/nice-to-have/course-faq.md](features/nice-to-have/course-faq.md) |
 
 ## Suggested Implementation Order
 

@@ -1,7 +1,7 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { PlusIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import toast from "react-hot-toast";
-import { api } from "../../../lib/axios";
+import { toast } from "react-toastify";
+import { api } from "@/lib/api";
 
 export interface FAQItem {
   _id: string;

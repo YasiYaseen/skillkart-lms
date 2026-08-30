@@ -1,8 +1,8 @@
 # Admin Audit Logs
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Track important admin actions for accountability.
@@ -13,6 +13,6 @@ Track important admin actions for accountability.
 - Show audit log table to admins
 
 ## Acceptance Checklist
-- [ ] Admin actions are logged
-- [ ] Audit logs include actor, action, target, and date
-- [ ] Admin can view audit logs
+- [x] Admin actions are logged
+- [x] Audit logs include actor, action, target, and date
+- [x] Admin can view audit logs

@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FireIcon, TrophyIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
-import { api } from "../../../lib/axios";
+import { api } from "@/lib/api";
 
 interface DayActivity {
   date: string;

@@ -1,4 +1,5 @@
 import CourseStructure from '@/components/course/CourseStructure';
+import CourseFAQAccordion from '@/components/course/CourseFAQAccordion';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
@@ -53,6 +54,12 @@ function CourseDetailsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (courseId) {
+            api.post(`/me/recently-viewed/${courseId}`).catch(() => {
+                // Ignore silent errors for unauthenticated visitors
+            });
+        }
+
         Promise.all([
             api.get(`/courses/${courseId}`),
             api.get(`/courses/${courseId}/reviews`)
@@ -239,6 +246,10 @@ function CourseDetailsPage() {
                             </div>
                         </div>
 
+                        {/* 4. Frequently Asked Questions */}
+                        <CourseFAQAccordion courseId={courseId!} />
+
+                        {/* 5. Student Reviews */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
                             <div className="flex items-center justify-between gap-4 mb-6">
                                 <div>

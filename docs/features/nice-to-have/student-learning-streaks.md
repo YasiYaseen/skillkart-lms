@@ -1,8 +1,8 @@
 # Student Learning Streaks
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Encourage students to learn consistently.
@@ -13,6 +13,6 @@ Encourage students to learn consistently.
 - Show best streak
 
 ## Acceptance Checklist
-- [ ] Student activity dates are tracked
-- [ ] Current streak is calculated
-- [ ] Streak appears on student dashboard
+- [x] Student activity dates are tracked
+- [x] Current streak is calculated
+- [x] Streak appears on student dashboard

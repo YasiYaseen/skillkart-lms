@@ -131,7 +131,7 @@ All skill files for this project live in `.agents/skills/`. Before implementing 
 | `skillkart-progress` | LessonProgress model, quiz gate, dual-write, course completion |
 | `skillkart-quiz` | Quiz CRUD, submission scoring, quiz gate integration |
 | `skillkart-reviews` | Reviews, ratings aggregation, enrollment gate |
-| `skillkart-certificates` | Certificate auto-issuance, unique ID, verification routes |
+| `skillkart-certificates` | Certificate auto-issuance, unique ID, verification routes, PDF export |
 | `skillkart-notifications` | Notification model, trigger patterns, supported types |
 | `skillkart-wishlist` | Wishlist CRUD, enriched course response |
 | `skillkart-file-upload` | Multer config, allowed types, size limits, serving files |
@@ -142,3 +142,10 @@ All skill files for this project live in `.agents/skills/`. Before implementing 
 | `skillkart-instructor-analytics` | Advanced instructor metrics, revenue calculation, completion rates |
 | `skillkart-search` | Advanced multi-filter search, sorting, rating aggregations |
 | `skillkart-theme` | Dark mode, ThemeContext, OS preference listening, Tailwind classes |
+| `skillkart-instructor-profile` | Public instructor profiles, aggregated metrics, social links, public catalog |
+| `skillkart-learning-streaks` | Daily learning activity tracking, streak counters, 7-day visual calendar |
+| `skillkart-recommendations` | Smart course recommendations based on interests and popularity |
+| `skillkart-recently-viewed` | LRU recently viewed courses tracking and quick-access strip |
+| `skillkart-audit-logs` | Admin security audit logging and inspector UI |
+| `skillkart-faq` | Course FAQ management, ordering, and accordion viewer |
+| `skillkart-bulk-upload` | Bulk lesson creation and CSV / batch parsing for sections |

@@ -1,8 +1,9 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { FileUpload } from '@components/common';
+import CourseFAQEditor from '../components/CourseFAQEditor';
 
 const LEVEL_OPTIONS = [
     { label: 'Beginner', value: 'beginner' },
@@ -302,6 +303,11 @@ function EditCourse() {
                     </button>
                 </div>
             </form>
+
+            {/* Course FAQ Management */}
+            <div className="mt-10 pt-8 border-t border-gray-200">
+                <CourseFAQEditor courseId={courseId!} />
+            </div>
         </div>
     );
 }

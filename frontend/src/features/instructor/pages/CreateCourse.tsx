@@ -1,8 +1,9 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { QuizEditorModal } from '../components/QuizEditorModal';
+import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { FileUpload } from '@components/common';
 
 const LEVEL_OPTIONS = [
@@ -42,6 +43,7 @@ function CreateCourse() {
     const [newItemContent, setNewItemContent] = useState('');
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
     const [quizLessonId, setQuizLessonId] = useState<string | null>(null);
+    const [bulkUploadSectionId, setBulkUploadSectionId] = useState<string | null>(null);
 
     const handleAddTag = () => {
         const trimmed = tagInput.trim().replace(/^#/, '');
@@ -360,12 +362,21 @@ function CreateCourse() {
                                     <h3 className="font-bold text-gray-800 text-sm">
                                         Section {sIdx + 1}: {sec.title}
                                     </h3>
-                                    <button
-                                        onClick={() => setActiveSectionId(activeSectionId === sec._id ? null : sec._id)}
-                                        className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                                    >
-                                        {activeSectionId === sec._id ? 'Cancel' : '+ Add Lesson'}
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setBulkUploadSectionId(sec._id)}
+                                            className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-medium transition-colors border border-indigo-200"
+                                        >
+                                            ⚡ Bulk Add Lessons
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveSectionId(activeSectionId === sec._id ? null : sec._id)}
+                                            className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                                        >
+                                            {activeSectionId === sec._id ? 'Cancel' : '+ Add Lesson'}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="p-6">
@@ -482,6 +493,24 @@ function CreateCourse() {
             {/* Quiz Editor Modal */}
             {quizLessonId && (
                 <QuizEditorModal lessonId={quizLessonId} onClose={() => setQuizLessonId(null)} />
+            )}
+
+            {/* Bulk Lesson Upload Modal */}
+            {bulkUploadSectionId && (
+                <BulkLessonUploadModal
+                    sectionId={bulkUploadSectionId}
+                    isOpen={Boolean(bulkUploadSectionId)}
+                    onClose={() => setBulkUploadSectionId(null)}
+                    onSuccess={(newLessons) => {
+                        setSections(
+                            sections.map((sec) =>
+                                sec._id === bulkUploadSectionId
+                                    ? { ...sec, lessons: [...sec.lessons, ...newLessons.map(l => ({ ...l, items: [] }))] }
+                                    : sec
+                            )
+                        );
+                    }}
+                />
             )}
         </div>
     );

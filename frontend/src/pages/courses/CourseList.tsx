@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { SearchBar, CourseCard, Button, Course } from '../../components/common';
 import { api } from '@/lib/api';
+import CourseRecommendations from '@/components/course/CourseRecommendations';
+import RecentlyViewedCourses from '@/components/course/RecentlyViewedCourses';
 
 const LEVEL_OPTIONS = [
     { label: 'All Levels', value: '' },
@@ -285,6 +287,19 @@ function CourseList() {
                     )}
                 </>
             )}
+
+            {/* Recently Viewed */}
+            <div className="pt-10 border-t border-gray-100 dark:border-gray-800">
+                <RecentlyViewedCourses />
+            </div>
+
+            {/* Course Recommendations */}
+            <div className="pt-8 border-t border-gray-100 dark:border-gray-800">
+                <CourseRecommendations
+                    title="Recommended For You"
+                    subtitle="Courses picked based on community ratings and popularity"
+                />
+            </div>
         </div>
     );
 }

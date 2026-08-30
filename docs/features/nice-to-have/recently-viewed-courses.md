@@ -1,8 +1,8 @@
 # Recently Viewed Courses
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Help students return to courses they recently checked.
@@ -12,6 +12,6 @@ Help students return to courses they recently checked.
 - Show recently viewed courses to the student
 
 ## Acceptance Checklist
-- [ ] Viewed courses are recorded
-- [ ] Recently viewed list is shown
-- [ ] Duplicate recent entries are handled cleanly
+- [x] Viewed courses are recorded
+- [x] Recently viewed list is shown
+- [x] Duplicate recent entries are handled cleanly

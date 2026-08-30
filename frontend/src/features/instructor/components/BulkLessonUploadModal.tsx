@@ -1,7 +1,7 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { XMarkIcon, PlusIcon, TrashIcon, ArrowUpTrayIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
-import toast from "react-hot-toast";
-import { api } from "../../../lib/axios";
+import { toast } from "react-toastify";
+import { api } from "@/lib/api";
 
 export interface BulkLessonDraft {
   title: string;
@@ -13,15 +13,15 @@ export interface BulkLessonDraft {
 
 interface BulkLessonUploadModalProps {
   sectionId: string;
-  sectionTitle: string;
+  sectionTitle?: string;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: (lessons: any[]) => void;
 }
 
-export default function BulkLessonUploadModal({
+export function BulkLessonUploadModal({
   sectionId,
-  sectionTitle,
+  sectionTitle = "Section",
   isOpen,
   onClose,
   onSuccess,
@@ -315,3 +315,5 @@ export default function BulkLessonUploadModal({
     </div>
   );
 }
+
+export default BulkLessonUploadModal;

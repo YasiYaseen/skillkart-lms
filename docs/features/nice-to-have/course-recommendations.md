@@ -1,8 +1,8 @@
 # Course Recommendations
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Suggest relevant courses to students.
@@ -13,6 +13,6 @@ Suggest relevant courses to students.
 - Optionally recommend courses by category
 
 ## Acceptance Checklist
-- [ ] Recommended courses section exists
-- [ ] Recommendations exclude already enrolled courses
-- [ ] Recommendations link to course detail pages
+- [x] Recommended courses section exists
+- [x] Recommendations exclude already enrolled courses
+- [x] Recommendations link to course detail pages

@@ -1,11 +1,11 @@
-﻿import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   ClipboardDocumentListIcon,
   FunnelIcon,
   ShieldCheckIcon,
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
-import { api } from "../../../lib/axios";
+import { api } from "@/lib/api";
 
 interface AuditLogItem {
   _id: string;

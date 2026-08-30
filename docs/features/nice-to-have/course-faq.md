@@ -1,8 +1,8 @@
 # Course FAQ
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Let instructors answer common questions on course detail pages.
@@ -13,6 +13,6 @@ Let instructors answer common questions on course detail pages.
 - Instructor can edit and delete FAQ items
 
 ## Acceptance Checklist
-- [ ] Instructor can create FAQ item
-- [ ] FAQ appears on course detail page
-- [ ] Instructor can edit and delete FAQ item
+- [x] Instructor can create FAQ item
+- [x] FAQ appears on course detail page
+- [x] Instructor can edit and delete FAQ item

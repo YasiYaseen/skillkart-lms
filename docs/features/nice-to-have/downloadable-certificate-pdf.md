@@ -1,8 +1,8 @@
 # Downloadable Certificate PDF
 
-Status: Not Started
+Status: Done
 Priority: Nice-To-Have
-Owner: Unassigned
+Owner: SkillKart Team
 
 ## Goal
 Let students download their completion certificate as a PDF.
@@ -13,6 +13,6 @@ Let students download their completion certificate as a PDF.
 - Include certificate ID for verification
 
 ## Acceptance Checklist
-- [ ] PDF download works
-- [ ] PDF contains correct certificate details
-- [ ] Certificate ID appears in PDF
+- [x] PDF download works
+- [x] PDF contains correct certificate details
+- [x] Certificate ID appears in PDF
