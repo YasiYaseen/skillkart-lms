@@ -239,16 +239,37 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
       {/* 1-CLICK FAST PAY VIEW */}
       {formState.method === 'express' && (
         <div className="p-6 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-2xl mx-auto">
-            ⚡
-          </div>
           <div className="space-y-1">
-            <h4 className="font-bold text-sm text-gray-900 dark:text-white">1-Click Express Checkout</h4>
+            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Express 1-Click Fast Checkout</h4>
             <p className="text-xs text-gray-500 max-w-sm mx-auto">
-              Skip filling billing info. Seamlessly authorize this test order with one click.
+              Select your preferred digital wallet for instant authorization.
             </p>
           </div>
-          <div className="p-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 font-mono text-xs text-emerald-600 font-bold">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto pt-2">
+            <button
+              type="button"
+              className="py-3 px-4 bg-black text-white hover:bg-gray-800 rounded-xl font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-2"
+            >
+              <span className="text-sm"></span>
+              <span>Pay with Apple Pay</span>
+            </button>
+
+            <button
+              type="button"
+              className="py-3 px-4 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-2"
+            >
+              <span className="font-bold text-blue-500">G</span>
+              <span className="font-bold text-red-500">o</span>
+              <span className="font-bold text-amber-500">o</span>
+              <span className="font-bold text-green-500">g</span>
+              <span className="font-bold text-blue-500">l</span>
+              <span className="font-bold text-red-500">e</span>
+              <span>Pay</span>
+            </button>
+          </div>
+
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-mono text-xs text-emerald-700 dark:text-emerald-300 font-bold max-w-md mx-auto">
             ✓ Express Token Pre-Authorized for ${totalAmount.toFixed(2)} USD
           </div>
         </div>
@@ -256,23 +277,81 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
 
       {/* PAYPAL VIEW */}
       {formState.method === 'paypal' && (
-        <div className="p-6 rounded-2xl bg-[#003087]/5 dark:bg-[#003087]/15 border border-[#003087]/20 text-center space-y-3">
-          <div className="text-3xl">🅿️</div>
-          <h4 className="font-bold text-sm text-gray-900 dark:text-white">Pay with PayPal</h4>
-          <p className="text-xs text-gray-500 max-w-sm mx-auto">
-            You will be redirected to PayPal's simulated authorization portal upon completing checkout.
-          </p>
+        <div className="p-6 rounded-2xl bg-[#003087]/5 dark:bg-[#003087]/15 border border-[#003087]/20 text-center space-y-4">
+          <div className="space-y-1">
+            <div className="text-3xl">🅿️</div>
+            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Pay with PayPal</h4>
+            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+              Safe, fast checkout with your PayPal balance or linked bank accounts.
+            </p>
+          </div>
+
+          <div className="max-w-xs mx-auto pt-2 space-y-2">
+            <button
+              type="button"
+              className="w-full py-3 bg-[#FFC439] hover:bg-[#F2BA36] text-[#003087] font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <span className="italic font-black text-base">PayPal</span>
+              <span>Checkout</span>
+            </button>
+            <button
+              type="button"
+              className="w-full py-2.5 bg-[#2C2E2F] hover:bg-[#1f2021] text-white font-semibold text-xs rounded-xl transition-all shadow-xs"
+            >
+              Pay Later (4 interest-free payments)
+            </button>
+          </div>
         </div>
       )}
 
-      {/* UPI VIEW */}
+      {/* UPI / QR VIEW */}
       {formState.method === 'upi' && (
-        <div className="p-6 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-center space-y-3">
-          <div className="text-3xl">🏦</div>
-          <h4 className="font-bold text-sm text-gray-900 dark:text-white">Instant UPI / QR Code</h4>
-          <p className="text-xs text-gray-500 max-w-sm mx-auto">
-            Scan and pay from any supported UPI app (Google Pay, PhonePe, Paytm, or Net Banking).
-          </p>
+        <div className="p-6 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 space-y-4">
+          <div className="text-center space-y-1">
+            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Instant UPI & Net Banking</h4>
+            <p className="text-xs text-gray-500">
+              Scan the QR code from your phone or enter your UPI ID.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-2">
+            {/* Interactive QR Mockup */}
+            <div className="bg-white p-3.5 rounded-2xl border border-gray-200 shadow-md text-center space-y-2">
+              <div className="w-32 h-32 bg-gray-900 rounded-xl p-2 flex items-center justify-center mx-auto text-white font-mono text-[10px] grid grid-cols-4 gap-1">
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`rounded-xs ${
+                      i % 3 === 0 || i === 0 || i === 3 || i === 12 || i === 15
+                        ? 'bg-white'
+                        : 'bg-indigo-400 opacity-80'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-[10px] font-bold text-gray-600 block">Scan to Pay ${totalAmount.toFixed(2)}</span>
+            </div>
+
+            {/* UPI ID input & app icons */}
+            <div className="space-y-3 flex-1 max-w-xs text-xs">
+              <div>
+                <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  Or enter UPI Virtual ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="username@okhdfcbank"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 justify-center pt-1 text-[11px] text-gray-500">
+                <span className="px-2 py-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold">GPay</span>
+                <span className="px-2 py-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold">PhonePe</span>
+                <span className="px-2 py-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold">Paytm</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
