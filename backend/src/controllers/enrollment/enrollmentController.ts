@@ -1,14 +1,15 @@
 import type { Request, Response } from "express";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import Course from "../../models/Course";
 import Enrollment from "../../models/Enrollment";
 import Lesson from "../../models/Lesson";
-import Section from "../../models/Section";
+import Section, { type ISection } from "../../models/Section";
 import LessonProgress from "../../models/LessonProgress";
 import Certificate from "../../models/Certificate";
 import Notification from "../../models/Notification";
 import User from "../../models/User";
 import { sendEnrollmentEmail } from "../../services/emailService";
+import { recordUserActivity } from "../../services/streakService";
 import {
   enrollSchema,
   enrollmentListQuerySchema,
@@ -125,16 +126,16 @@ export async function enrollInCourse(req: Request, res: Response) {
             studentUser.name || "Student",
             course.title,
             course._id.toString()
-          ).catch((err) => {
-            console.error("[EMAIL] Failed to send enrollment email:", err);
-          });
+          ).catch((err) => console.error("Enrollment email failed:", err));
         }
       })
-      .catch((err) => {
-        console.error("[EMAIL] Error looking up student for email:", err);
-      });
+      .catch((err) => console.error("User lookup for enrollment email failed:", err));
 
-    return res.status(201).json({ message: "Enrollment created", enrollment });
+    recordUserActivity(req.user.id).catch((err) =>
+      console.error("Streak recording on enrollment failed:", err)
+    );
+
+    return res.status(201).json({ message: "Enrolled successfully", enrollment });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
@@ -151,7 +152,7 @@ export async function getMyEnrollments(req: Request, res: Response) {
     }
     const { status, page, limit } = parsed.data;
 
-    const filter: any = { student: req.user.id };
+    const filter: Record<string, unknown> = { student: req.user.id };
     if (status) filter.status = status;
 
     const skip = (page - 1) * limit;
@@ -250,12 +251,15 @@ export async function updateProgress(req: Request, res: Response) {
 
     if (enrollment.status !== "active") return res.status(403).json({ message: "Enrollment is not active" });
 
-    const lesson = await Lesson.findById(lessonId).populate({ path: "section", select: "course" });
-    if (!lesson || !lesson.section || !(lesson.section as any).course) {
+    const lesson = await Lesson.findById(lessonId).populate<{ section: ISection }>({
+      path: "section",
+      select: "course",
+    });
+    if (!lesson || !lesson.section || !lesson.section.course) {
       return res.status(400).json({ message: "Lesson not found or malformed" });
     }
 
-    if ((lesson.section as any).course.toString() !== enrollment.course.toString()) {
+    if (lesson.section.course.toString() !== enrollment.course.toString()) {
       return res.status(400).json({ message: "Lesson does not belong to this course" });
     }
 

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import Course from "../../models/Course";
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
@@ -11,6 +11,8 @@ import Certificate from "../../models/Certificate";
 import Notification from "../../models/Notification";
 import User from "../../models/User";
 import { sendCertificateEmail } from "../../services/emailService";
+import { recordUserActivity } from "../../services/streakService";
+
 
 async function getCourseFromLessonId(lessonId: string) {
   const lesson = await Lesson.findById(lessonId);
@@ -140,16 +142,21 @@ export async function updateLessonProgress(req: Request, res: Response) {
     );
 
     // Sync with Enrollment model
-    enrollment.lastAccessedLessonId = lesson._id as any;
+    enrollment.lastAccessedLessonId = new Types.ObjectId(lesson._id.toString());
     if (isCompleted) {
       if (!enrollment.completedLessonIds.some((id) => id.toString() === lesson._id.toString())) {
-        enrollment.completedLessonIds.push(lesson._id as any);
+        enrollment.completedLessonIds.push(new Types.ObjectId(lesson._id.toString()));
       }
     } else {
       enrollment.completedLessonIds = enrollment.completedLessonIds.filter(
         (id) => id.toString() !== lesson._id.toString()
       );
     }
+
+    // Record student learning streak
+    recordUserActivity(req.user.id).catch((err) =>
+      console.error("Failed to update learning streak:", err)
+    );
 
     // Auto-complete course status transitions
     const isFullyComplete =

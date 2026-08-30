@@ -9,6 +9,11 @@ import {
   getCourseBookmarks,
   getAllUserBookmarks,
 } from "../controllers/course/bookmarkController";
+import {
+  getStudentStreak,
+  getRecentlyViewedCourses,
+  recordRecentlyViewedCourse,
+} from "../controllers/user/userController";
 import { protect } from "../middleware/authMiddleware";
 import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
 
@@ -16,6 +21,13 @@ const router = Router();
 
 router.get("/courses", protect, requireOnboardingCompleted, getMyEnrollments);
 router.get("/courses/:courseId/progress", protect, requireOnboardingCompleted, getMyCourseProgress);
+
+// Learning streak
+router.get("/streak", protect, getStudentStreak);
+
+// Recently viewed courses
+router.get("/recently-viewed", protect, getRecentlyViewedCourses);
+router.post("/recently-viewed/:courseId", protect, recordRecentlyViewedCourse);
 
 // User study notes
 router.get("/notes", protect, requireOnboardingCompleted, getAllUserNotes);

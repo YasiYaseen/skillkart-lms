@@ -427,3 +427,84 @@ export async function deleteCourse(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function getCourseRecommendations(req: Request, res: Response) {
+  try {
+    const filter: Record<string, unknown> = {
+      status: "published",
+      isActive: { $ne: false },
+      isApproved: { $ne: false },
+    };
+
+    let userInterests: string[] = [];
+
+    if (req.user) {
+      const [userEnrollments, userDoc] = await Promise.all([
+        Enrollment.find({
+          student: req.user.id,
+          status: { $in: ["active", "completed"] },
+        })
+          .select("course")
+          .lean(),
+        User.findById(req.user.id).select("interests").lean(),
+      ]);
+
+      const enrolledCourseIds = userEnrollments.map((e) => e.course);
+      if (enrolledCourseIds.length > 0) {
+        filter._id = { $nin: enrolledCourseIds };
+      }
+      if (userDoc?.interests && Array.isArray(userDoc.interests)) {
+        userInterests = userDoc.interests.map((i) => i.toLowerCase().trim()).filter(Boolean);
+      }
+    }
+
+    const courses = await Course.find(filter)
+      .populate("instructor", "name avatar email")
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    if (courses.length === 0) {
+      return res.json({ recommendations: [] });
+    }
+
+    const enriched = await Promise.all(
+      courses.map(async (course) => {
+        const courseId = course._id.toString();
+        const [durationMinutes, ratingSummary, enrollmentCount] = await Promise.all([
+          getCourseDurationMinutes(courseId),
+          getCourseRatingSummary(courseId),
+          Enrollment.countDocuments({ course: course._id }),
+        ]);
+
+        let score = (ratingSummary.averageRating || 0) * 10 + Math.min(enrollmentCount, 50);
+
+        // Boost interest match
+        if (userInterests.length > 0) {
+          const courseTags = (course.tags || []).map((t) => t.toLowerCase());
+          const matchCount = userInterests.filter((interest) =>
+            courseTags.some((tag) => tag.includes(interest) || interest.includes(tag))
+          ).length;
+          score += matchCount * 25;
+        }
+
+        return {
+          ...course,
+          durationMinutes,
+          ...ratingSummary,
+          enrollmentCount,
+          recommendationScore: score,
+        };
+      })
+    );
+
+    enriched.sort((a, b) => b.recommendationScore - a.recommendationScore);
+    const recommendations = enriched.slice(0, 6);
+
+    return res.json({ recommendations });
+  } catch (error) {
+    console.error("Error in getCourseRecommendations:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+

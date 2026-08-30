@@ -4,6 +4,9 @@ import User from "../../models/User";
 import Course from "../../models/Course";
 import Enrollment from "../../models/Enrollment";
 
+import { recordAuditLog } from "../../services/auditService";
+import AuditLog from "../../models/AuditLog";
+
 export async function getStats(req: Request, res: Response) {
   try {
     const totalUsers = await User.countDocuments();
@@ -59,8 +62,21 @@ export async function toggleUserStatus(req: Request, res: Response) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const previousStatus = user.isActive;
     user.isActive = isActive;
     await user.save();
+
+    if (req.user) {
+      await recordAuditLog({
+        adminId: req.user.id,
+        action: isActive ? "USER_ACTIVATED" : "USER_DEACTIVATED",
+        targetType: "user",
+        targetId: user._id.toString(),
+        targetName: user.name,
+        details: { email: user.email, role: user.role, previousStatus, newStatus: isActive },
+        req,
+      });
+    }
 
     return res.json({ message: "User status updated", user: { _id: user._id, isActive: user.isActive } });
   } catch (error) {
@@ -96,10 +112,27 @@ export async function updateCourseStatus(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
+    const previousState = { isActive: course.isActive, isApproved: course.isApproved };
+
     if (isActive !== undefined) course.isActive = Boolean(isActive);
     if (isApproved !== undefined) course.isApproved = Boolean(isApproved);
 
     await course.save();
+
+    if (req.user) {
+      await recordAuditLog({
+        adminId: req.user.id,
+        action: "COURSE_MODERATED",
+        targetType: "course",
+        targetId: course._id.toString(),
+        targetName: course.title,
+        details: {
+          previousState,
+          newState: { isActive: course.isActive, isApproved: course.isApproved },
+        },
+        req,
+      });
+    }
 
     return res.json({ message: "Course status updated", course });
   } catch (error) {
@@ -121,3 +154,25 @@ export async function getEnrollments(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function getAuditLogs(req: Request, res: Response) {
+  try {
+    const { action, targetType } = req.query as { action?: string; targetType?: string };
+    const filter: Record<string, unknown> = {};
+
+    if (action) filter.action = action;
+    if (targetType) filter.targetType = targetType;
+
+    const logs = await AuditLog.find(filter)
+      .populate("admin", "name email role")
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    return res.json({ logs });
+  } catch (error) {
+    console.error("Error in getAuditLogs:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+

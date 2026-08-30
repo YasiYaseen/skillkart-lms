@@ -8,6 +8,7 @@ import {
   getCourses,
   updateCourseStatus,
   getEnrollments,
+  getAuditLogs,
 } from "../controllers/admin/adminController";
 
 const router = Router();
@@ -24,5 +25,7 @@ router.get("/courses", getCourses);
 router.patch("/courses/:courseId/status", updateCourseStatus);
 
 router.get("/enrollments", getEnrollments);
+
+router.get("/audit-logs", getAuditLogs);
 
 export default router;

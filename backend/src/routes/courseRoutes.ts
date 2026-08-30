@@ -8,6 +8,7 @@ import {
   unpublishCourse,
   archiveCourse,
   deleteCourse,
+  getCourseRecommendations,
 } from "../controllers/course/courseController";
 import { createSection } from "../controllers/course/sectionController";
 import {
@@ -24,6 +25,12 @@ import {
   createAnnouncement,
   deleteAnnouncement,
 } from "../controllers/course/announcementController";
+import {
+  getCourseFAQs,
+  createCourseFAQ,
+  updateCourseFAQ,
+  deleteCourseFAQ,
+} from "../controllers/course/faqController";
 import { protect, optionalProtect } from "../middleware/authMiddleware";
 import { authorize } from "../middleware/roleMiddleware";
 import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
@@ -31,8 +38,31 @@ import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
 const router = Router();
 
 router.get("/", optionalProtect, getCourses);
+router.get("/recommendations", optionalProtect, getCourseRecommendations);
 router.get("/:courseId", optionalProtect, getCourseById);
 router.get("/:courseId/curriculum", optionalProtect, getCurriculumForCourse);
+router.get("/:courseId/faqs", getCourseFAQs);
+router.post(
+  "/:courseId/faqs",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  createCourseFAQ
+);
+router.patch(
+  "/:courseId/faqs/:faqId",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  updateCourseFAQ
+);
+router.delete(
+  "/:courseId/faqs/:faqId",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  deleteCourseFAQ
+);
 router.get("/:courseId/reviews", listCourseReviews);
 router.post("/:courseId/reviews", protect, requireOnboardingCompleted, authorize("student"), createCourseReview);
 router.patch("/:courseId/reviews/me", protect, requireOnboardingCompleted, authorize("student"), updateCourseReview);

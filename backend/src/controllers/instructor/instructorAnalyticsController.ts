@@ -21,7 +21,7 @@ export async function getInstructorAnalytics(req: Request, res: Response) {
     const requestedCourseId = getParam(req.query.courseId as string);
 
     // 1. Fetch instructor's courses (or verify the requested course)
-    const courseQuery: any = { isActive: true };
+    const courseQuery: Record<string, unknown> = { isActive: true };
     if (req.user.role !== "admin") {
       courseQuery.instructor = new Types.ObjectId(instructorId);
     }

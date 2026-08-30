@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, Document, Types } from "mongoose";
 
 export interface IUser extends Document {
   name: string;
@@ -17,6 +17,11 @@ export interface IUser extends Document {
     twitter?: string;
   };
   isActive: boolean;
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate?: string;
+  activeDates: string[];
+  recentlyViewedCourses: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +48,11 @@ const UserSchema = new Schema<IUser>(
       twitter: String,
     },
     isActive: { type: Boolean, default: true },
+    currentStreak: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    lastActiveDate: { type: String },
+    activeDates: { type: [String], default: [] },
+    recentlyViewedCourses: [{ type: Schema.Types.ObjectId, ref: "Course" }],
   },
   { timestamps: true }
 );
