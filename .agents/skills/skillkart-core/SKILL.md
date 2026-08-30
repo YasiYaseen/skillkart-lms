@@ -1,4 +1,4 @@
-﻿---
+---
 name: skillkart-core
 description: Core architectural patterns, coding standards, and common agent tasks for the SkillKart LMS project.
 ---
@@ -119,6 +119,19 @@ skillkart/
 
 ---
 
-## Skill Files
+## Skill Files Index
 
-All skill files for this project live in `.agents/skills/`. Before implementing any subsystem, check if a skill file already exists for it. After implementing a new pattern or subsystem, create or update the relevant skill file using the template at `.agents/skills/SKILL_TEMPLATE.md`.
+All skill files for this project live in `.agents/skills/`. Before implementing any subsystem, check if a skill file already exists for it. After implementing a new pattern or subsystem, create or update the relevant skill file using `.agents/skills/SKILL_TEMPLATE.md`.
+
+| Skill | Covers |
+|---|---|
+| `skillkart-core` | Architecture, coding standards, common tasks (this file) |
+| `skillkart-auth` | JWT, Google OAuth, `protect`/`authorize` middleware, onboarding |
+| `skillkart-enrollment` | Enrollment lifecycle, progress updates, auto-completion |
+| `skillkart-progress` | LessonProgress model, quiz gate, dual-write, course completion |
+| `skillkart-quiz` | Quiz CRUD, submission scoring, quiz gate integration |
+| `skillkart-reviews` | Reviews, ratings aggregation, enrollment gate |
+| `skillkart-certificates` | Certificate auto-issuance, unique ID, verification routes |
+| `skillkart-notifications` | Notification model, trigger patterns, supported types |
+| `skillkart-wishlist` | Wishlist CRUD, enriched course response |
+| `skillkart-file-upload` | Multer config, allowed types, size limits, serving files |
