@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import {
   fetchLessonNotes,
@@ -49,8 +49,8 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
         const data = await fetchCourseNotes(courseId);
         setNotes(data);
       }
-    } catch {
-      toast.error('Failed to load notes');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to load notes');
     } finally {
       setLoading(false);
     }
@@ -71,8 +71,8 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
       setNotes((prev) => [newNote, ...prev]);
       setContent('');
       toast.success('Study note saved!');
-    } catch {
-      toast.error('Failed to save note');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to save note');
     } finally {
       setSubmitting(false);
     }
@@ -101,8 +101,8 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
       );
       setEditingId(null);
       toast.success('Note updated');
-    } catch {
-      toast.error('Failed to update note');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update note');
     } finally {
       setSavingEdit(false);
     }
@@ -113,8 +113,8 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
       await deleteNote(noteId);
       setNotes((prev) => prev.filter((n) => n._id !== noteId));
       toast.success('Note deleted');
-    } catch {
-      toast.error('Failed to delete note');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to delete note');
     }
   };
 

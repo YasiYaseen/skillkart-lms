@@ -12,6 +12,7 @@ import {
     toggleLessonBookmark,
     fetchCourseBookmarks,
 } from '@/features/student/api/bookmarks';
+import { MarkdownRenderer } from '@components/common';
 
 function getEmbedVideoUrl(rawUrl: string): string {
     if (!rawUrl) return '';
@@ -202,8 +203,8 @@ function LessonViewer() {
                     navigate(`/learn/${courseId}/${nextLesson._id}`);
                 }
             }
-        } catch {
-            toast.error('Failed to save progress');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to save progress');
         }
     };
 
@@ -220,8 +221,8 @@ function LessonViewer() {
                 setBookmarkedLessonIds((prev) => prev.filter((id) => id !== lessonId));
                 toast.info('Bookmark removed');
             }
-        } catch {
-            toast.error('Failed to update bookmark');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to update bookmark');
         } finally {
             setTogglingBookmark(false);
         }
@@ -280,7 +281,7 @@ function LessonViewer() {
                         return (
                             <div key={sec._id} className="border-b border-gray-100 dark:border-gray-700/60">
                                 <div className="bg-gray-50 dark:bg-gray-800/80 px-5 py-3 font-bold text-gray-700 dark:text-gray-300 text-xs">
-                                    Section {sIdx + 1}: {sec.title}
+                                    Section {sIdx + 1}: {sec.title.replace(/^Section\s*\d+\s*:\s*/i, '')}
                                 </div>
                                 <div className="flex flex-col">
                                     {secLessons.map((les, lIdx) => {
@@ -571,8 +572,8 @@ function LessonViewer() {
                                         } else {
                                             return (
                                                 <div key={item._id} className="item-content">
-                                                    <div className="text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/80 p-6 md:p-8 rounded-2xl border border-gray-100 dark:border-gray-700 whitespace-pre-wrap leading-relaxed text-sm md:text-base font-normal">
-                                                        {content.text}
+                                                    <div className="bg-white dark:bg-gray-800/90 p-6 md:p-8 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs">
+                                                        <MarkdownRenderer content={content.text || ''} />
                                                     </div>
                                                 </div>
                                             );

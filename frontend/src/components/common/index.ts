@@ -8,4 +8,5 @@ export { default as Select } from '@components/common/Select';
 export { default as FileUpload } from '@components/common/FileUpload';
 export { default as ProtectedRoute } from '@components/common/ProtectedRoute';
 export { default as Pagination } from '@components/common/Pagination';
+export { MarkdownRenderer } from '@components/common/MarkdownRenderer';
 export type { Course } from '@components/common/CourseCard';

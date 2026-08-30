@@ -53,7 +53,7 @@ export async function getCourseAssignments(req: Request, res: Response) {
       const enrollment = await Enrollment.exists({
         student: req.user.id,
         course: courseId,
-        status: "active",
+        status: { $in: ["active", "completed"] },
       });
       if (!enrollment) {
         return res.status(403).json({ message: "You must be enrolled to view course assignments." });
@@ -198,7 +198,7 @@ export async function createAssignment(req: Request, res: Response) {
       try {
         const enrollments = await Enrollment.find({
           course: courseId,
-          status: "active",
+          status: { $in: ["active", "completed"] },
         }).select("student");
 
         if (enrollments.length > 0) {
@@ -333,7 +333,7 @@ export async function submitAssignment(req: Request, res: Response) {
     const enrollment = await Enrollment.findOne({
       student: req.user.id,
       course: assignment.course,
-      status: "active",
+      status: { $in: ["active", "completed"] },
     });
     if (!enrollment) {
       return res.status(403).json({ message: "You must be enrolled in the course to submit assignments." });

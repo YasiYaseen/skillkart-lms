@@ -91,7 +91,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({ sections, totalSectio
                     <ChevronDownIcon />
                   </div>
                   <span className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">
-                    Section {secIdx + 1}: {section.title}
+                    Section {secIdx + 1}: {section.title.replace(/^Section\s*\d+\s*:\s*/i, '')}
                   </span>
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 shrink-0">

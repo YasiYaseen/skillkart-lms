@@ -1,4 +1,4 @@
-﻿import type { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { isValidObjectId, Types } from "mongoose";
 import Note from "../../models/Note";
 import Lesson from "../../models/Lesson";
@@ -33,7 +33,7 @@ async function canAccessLesson(courseId: Types.ObjectId | string, userId: string
   const enrollment = await Enrollment.exists({
     student: userId,
     course: courseId,
-    status: "active",
+    status: { $in: ["active", "completed"] },
   });
 
   return Boolean(enrollment);
@@ -67,7 +67,7 @@ export async function getLessonNotes(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
-        message: "You must be actively enrolled in this course to access notes.",
+        message: "You must be enrolled in this course to access notes.",
       });
     }
 
@@ -121,7 +121,7 @@ export async function createLessonNote(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
-        message: "You must be actively enrolled in this course to create notes.",
+        message: "You must be enrolled in this course to create notes.",
       });
     }
 

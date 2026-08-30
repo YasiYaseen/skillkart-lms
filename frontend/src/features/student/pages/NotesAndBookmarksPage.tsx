@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -45,8 +45,8 @@ export default function NotesAndBookmarksPage() {
         ]);
         setBookmarks(bookmarksData);
         setNotes(notesData);
-      } catch {
-        toast.error('Failed to load study records');
+      } catch (error: any) {
+        toast.error(error?.response?.data?.message || 'Failed to load study records');
       } finally {
         setLoading(false);
       }
@@ -60,8 +60,8 @@ export default function NotesAndBookmarksPage() {
       await toggleLessonBookmark(lessonId);
       setBookmarks((prev) => prev.filter((b) => b.lesson._id !== lessonId));
       toast.success('Bookmark removed');
-    } catch {
-      toast.error('Failed to update bookmark');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update bookmark');
     }
   };
 
@@ -70,8 +70,8 @@ export default function NotesAndBookmarksPage() {
       await deleteNote(noteId);
       setNotes((prev) => prev.filter((n) => n._id !== noteId));
       toast.success('Note deleted');
-    } catch {
-      toast.error('Failed to delete note');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to delete note');
     }
   };
 
@@ -85,8 +85,8 @@ export default function NotesAndBookmarksPage() {
       );
       setEditingNoteId(null);
       toast.success('Note updated');
-    } catch {
-      toast.error('Failed to update note');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update note');
     } finally {
       setSavingNote(false);
     }

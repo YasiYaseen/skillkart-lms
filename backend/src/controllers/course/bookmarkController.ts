@@ -1,4 +1,4 @@
-﻿import type { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { isValidObjectId, Types } from "mongoose";
 import Bookmark from "../../models/Bookmark";
 import Lesson from "../../models/Lesson";
@@ -32,7 +32,7 @@ async function canAccessLesson(courseId: Types.ObjectId | string, userId: string
   const enrollment = await Enrollment.exists({
     student: userId,
     course: courseId,
-    status: "active",
+    status: { $in: ["active", "completed"] },
   });
 
   return Boolean(enrollment);
@@ -92,7 +92,7 @@ export async function toggleLessonBookmark(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
-        message: "You must be actively enrolled in this course to bookmark lessons.",
+        message: "You must be enrolled in this course to bookmark lessons.",
       });
     }
 

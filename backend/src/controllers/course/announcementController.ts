@@ -48,11 +48,11 @@ export async function listAnnouncements(req: Request, res: Response) {
       req.user.role === "admin" || course.instructor.toString() === req.user.id;
 
     if (!isOwnerOrAdmin) {
-      // Students must be actively enrolled
+      // Students must be enrolled
       const enrollment = await Enrollment.exists({
         student: req.user.id,
         course: courseId,
-        status: "active",
+        status: { $in: ["active", "completed"] },
       });
       if (!enrollment) {
         return res.status(403).json({
@@ -111,7 +111,7 @@ export async function createAnnouncement(req: Request, res: Response) {
       try {
         const enrollments = await Enrollment.find({
           course: courseId,
-          status: "active",
+          status: { $in: ["active", "completed"] },
         }).select("student");
 
         if (enrollments.length === 0) return;

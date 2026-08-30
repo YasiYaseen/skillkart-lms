@@ -37,6 +37,7 @@ import {
     AuditLogs,
     FinancialReports,
     SystemSettings,
+    CourseGenerator,
 } from '@features/admin';
 
 /**
@@ -103,6 +104,7 @@ function App() {
                             <Route path="/admin/reports" element={<FinancialReports />} />
                             <Route path="/admin/audit-logs" element={<AuditLogs />} />
                             <Route path="/admin/settings" element={<SystemSettings />} />
+                            <Route path="/admin/generator" element={<CourseGenerator />} />
                         </Route>
                     </Route>
                 </Routes>

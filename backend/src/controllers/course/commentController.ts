@@ -34,7 +34,7 @@ async function canAccessLessonComments(courseId: Types.ObjectId | string, userId
   const enrollment = await Enrollment.exists({
     student: userId,
     course: courseId,
-    status: "active",
+    status: { $in: ["active", "completed"] },
   });
 
   return Boolean(enrollment);
@@ -68,7 +68,7 @@ export async function getLessonComments(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
-        message: "You must be actively enrolled in this course to view discussions.",
+        message: "You must be enrolled in this course to view discussions.",
       });
     }
 
@@ -121,7 +121,7 @@ export async function createLessonComment(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
-        message: "You must be actively enrolled in this course to participate in discussions.",
+        message: "You must be enrolled in this course to participate in discussions.",
       });
     }
 

@@ -10,6 +10,7 @@ import { useEnrollment } from '@/features/enrollment/hooks/useEnrollment';
 import { WishlistButton } from '@/features/wishlist';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { MarkdownRenderer } from '@/components/common';
 
 function formatMinutes(totalMins: number) {
     if (!totalMins || totalMins <= 0) return '0m';
@@ -502,9 +503,9 @@ function CourseDetailsSkeleton() {
                         {/* 3. Course Description */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700 p-6 md:p-8">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Course Description</h2>
-                            <div className="space-y-4 text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
+                            <div className="space-y-4">
                                 {course.description.map((paragraph: string, idx: number) => (
-                                    <p key={idx}>{paragraph}</p>
+                                    <MarkdownRenderer key={idx} content={paragraph} />
                                 ))}
                             </div>
                         </div>

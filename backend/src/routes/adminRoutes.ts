@@ -17,11 +17,18 @@ import {
   updateAdminSettings,
   testEmailDiagnostics,
 } from "../controllers/admin/adminSettingsController";
+import {
+  getCoursePresets,
+  generateAdminCourses,
+} from "../controllers/admin/adminGeneratorController";
 
 const router = Router();
 
 // All routes here require the user to be authenticated and have the 'admin' role
 router.use(protect, authorize("admin"));
+
+router.get("/course-presets", getCoursePresets);
+router.post("/generate-courses", generateAdminCourses);
 
 router.get("/stats", getStats);
 
