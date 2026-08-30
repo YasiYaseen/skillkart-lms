@@ -368,3 +368,35 @@ export async function cancelEnrollment(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function getCurriculumForCourse(req: Request, res: Response) {
+  try {
+    const { courseId } = req.params;
+    if (!isValidObjectId(courseId)) {
+      return res.status(400).json({ message: "Invalid course id" });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    if (course.status !== "published" || course.isActive === false || course.isApproved === false) {
+      const isManager = req.user && (req.user.role === "admin" || req.user.id === course.instructor.toString());
+      if (!isManager) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+    }
+
+    const sections = await Section.find({ course: course._id }).sort({ order: 1 }).lean();
+    const sectionIds = sections.map((s) => s._id);
+    const lessons = sectionIds.length
+      ? await Lesson.find({ section: { $in: sectionIds } }).sort({ order: 1 }).lean()
+      : [];
+
+    return res.json({ sections, lessons });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}

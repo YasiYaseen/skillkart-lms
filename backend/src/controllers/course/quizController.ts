@@ -1,8 +1,11 @@
 import type { Request, Response } from "express";
 import { isValidObjectId } from "mongoose";
+import Course from "../../models/Course";
+import Section from "../../models/Section";
 import Quiz from "../../models/Quiz";
 import QuizAttempt from "../../models/QuizAttempt";
 import Lesson from "../../models/Lesson";
+import { isCourseManager } from "./shared";
 
 function normalizeParam(param: string | string[] | undefined): string | null {
   if (!param) return null;
@@ -21,6 +24,16 @@ export async function createOrReplaceQuiz(req: Request, res: Response) {
 
     const lesson = await Lesson.findById(lessonId);
     if (!lesson) return res.status(404).json({ message: "Lesson not found" });
+
+    const section = await Section.findById(lesson.section);
+    if (!section) return res.status(404).json({ message: "Section not found" });
+
+    const course = await Course.findById(section.course);
+    if (!course) return res.status(404).json({ message: "Course not found" });
+
+    if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
+      return res.status(403).json({ message: "Forbidden: You do not own this course" });
+    }
 
     const { questions, passingPercentage } = req.body;
 

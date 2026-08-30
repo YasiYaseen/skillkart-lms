@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
@@ -124,12 +124,19 @@ function LessonViewer() {
     const handleProgress = async () => {
         try {
             await api.post(`/lessons/${lessonId}/progress`, { completed: true });
-            toast.success('Progress saved!');
             
             const progRes = await api.get(`/me/courses/${courseId}/progress`);
             const p = progRes.data;
             setCompletedLessonIds(p.completedLessonIds || []);
             setProgressPercentage(p.progressPercentage || 0);
+
+            if (p.isCompleted || p.progressPercentage === 100) {
+                toast.success('🎉 Congratulations! You completed this course! Your certificate is ready under My Certificates.', {
+                    autoClose: 8000,
+                });
+            } else {
+                toast.success('Progress saved!');
+            }
         } catch {
             toast.error('Failed to save progress');
         }

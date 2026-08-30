@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { isValidObjectId } from "mongoose";
 import User from "../../models/User";
 import Course from "../../models/Course";
 import Enrollment from "../../models/Enrollment";
@@ -41,6 +42,18 @@ export async function toggleUserStatus(req: Request, res: Response) {
     const { userId } = req.params;
     const { isActive } = req.body;
 
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({ message: "isActive must be a boolean" });
+    }
+
+    if (req.user && userId === req.user.id && !isActive) {
+      return res.status(400).json({ message: "Admin cannot deactivate their own account" });
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -74,13 +87,17 @@ export async function updateCourseStatus(req: Request, res: Response) {
     const { courseId } = req.params;
     const { isActive, isApproved } = req.body;
 
+    if (!isValidObjectId(courseId)) {
+      return res.status(400).json({ message: "Invalid course id" });
+    }
+
     const course = await Course.findById(courseId);
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    if (isActive !== undefined) course.isActive = isActive;
-    if (isApproved !== undefined) course.isApproved = isApproved;
+    if (isActive !== undefined) course.isActive = Boolean(isActive);
+    if (isApproved !== undefined) course.isApproved = Boolean(isApproved);
 
     await course.save();
 

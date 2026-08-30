@@ -12,8 +12,8 @@ import {
 import { createSection } from "../controllers/course/sectionController";
 import {
   getCurriculumForCourse,
-} from "../controllers/course/enrollmentController";
-import { getCourseStudents } from "../controllers/enrollment/enrollmentController";
+  getCourseStudents,
+} from "../controllers/enrollment/enrollmentController";
 import {
   createCourseReview,
   listCourseReviews,

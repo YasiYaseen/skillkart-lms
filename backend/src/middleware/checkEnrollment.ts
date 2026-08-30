@@ -17,9 +17,9 @@ export async function checkEnrollment(req: Request, res: Response, next: NextFun
       course: courseId,
     });
 
-    if (!enrollment || enrollment.status !== "active") {
+    if (!enrollment || (enrollment.status !== "active" && enrollment.status !== "completed")) {
       return res.status(403).json({
-        message: "You must be actively enrolled to access this content.",
+        message: "You must have an active or completed enrollment to access this content.",
       });
     }
 

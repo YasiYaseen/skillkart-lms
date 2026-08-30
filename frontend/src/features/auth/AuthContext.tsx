@@ -35,23 +35,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     if (storedToken && storedUser) {
-      const parsedUser = JSON.parse(storedUser) as User;
-      setToken(storedToken);
-      setUser(parsedUser);
+      try {
+        const parsedUser = JSON.parse(storedUser) as User;
+        setToken(storedToken);
+        setUser(parsedUser);
 
-      getOnboardingStatusApi()
-        .then((res) => {
-          const serverUser = res.data?.user as User | undefined;
-          if (!serverUser) return;
-          setUser(serverUser);
-          localStorage.setItem('user', JSON.stringify(serverUser));
-        })
-        .catch(() => {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setToken(null);
-          setUser(null);
-        });
+        getOnboardingStatusApi()
+          .then((res) => {
+            const serverUser = res.data?.user as User | undefined;
+            if (!serverUser) return;
+            setUser(serverUser);
+            localStorage.setItem('user', JSON.stringify(serverUser));
+          })
+          .catch(() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setToken(null);
+            setUser(null);
+          });
+      } catch {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setToken(null);
+        setUser(null);
+      }
     }
   }, []);
 
