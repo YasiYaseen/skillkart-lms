@@ -469,7 +469,7 @@ export function CourseGenerator() {
                         : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300'
                     }`}
                   >
-                    <div className="sm:w-36 h-24 rounded-xl overflow-hidden bg-gray-100 shrink-0 relative">
+                    <div className="sm:w-36 h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0 relative">
                       <img
                         src={preset.thumbnailUrl}
                         alt={preset.title}

@@ -34,10 +34,10 @@ function Analytics() {
         <div className="h-8 bg-gray-200 rounded-md w-64 mb-6"></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="h-32 bg-gray-100 rounded-2xl"></div>
+            <div key={n} className="h-32 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
           ))}
         </div>
-        <div className="h-64 bg-gray-100 rounded-2xl mt-8"></div>
+        <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-2xl mt-8"></div>
       </div>
     );
   }

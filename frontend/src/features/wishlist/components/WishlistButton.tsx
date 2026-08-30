@@ -80,7 +80,7 @@ export function WishlistButton({
       strokeLinecap="round"
       strokeLinejoin="round"
       className={`w-5 h-5 transition-transform duration-200 ${
-        isWishlisted ? "text-rose-500 scale-110" : "text-gray-600 hover:text-rose-500"
+        isWishlisted ? "text-rose-500 scale-110" : "text-gray-600 dark:text-gray-400 hover:text-rose-500"
       }`}
     >
       <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
@@ -94,7 +94,7 @@ export function WishlistButton({
         onClick={handleToggle}
         disabled={loading}
         title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        className={`p-2 rounded-full bg-white/90 backdrop-blur-xs shadow-xs hover:bg-white hover:shadow-md transition-all duration-200 active:scale-95 disabled:opacity-50 ${className}`}
+        className={`p-2 rounded-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-xs shadow-xs hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all duration-200 active:scale-95 disabled:opacity-50 ${className}`}
       >
         {heartIcon}
       </button>

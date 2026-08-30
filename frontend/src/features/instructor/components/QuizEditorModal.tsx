@@ -130,7 +130,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
         <Modal isOpen={isOpen} onClose={onClose} title="Manage Quiz">
             {loadingExisting ? (
                 <div className="py-12 flex flex-col items-center justify-center space-y-2">
-                    <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     <span className="text-xs text-gray-500 dark:text-gray-400">Loading quiz questions...</span>
                 </div>
             ) : (
@@ -148,13 +148,13 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                         required
                         value={passingPercentage}
                         onChange={(e) => setPassingPercentage(Number(e.target.value))}
-                        className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-32 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
                 <div className="space-y-6">
                     {questions.map((q, qIdx) => (
-                        <div key={qIdx} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                        <div key={qIdx} className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                             <div className="flex justify-between items-center mb-3">
                                 <h4 className="font-semibold text-gray-800 dark:text-gray-200">Question {qIdx + 1}</h4>
                                 {questions.length > 1 && (
@@ -175,7 +175,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                                     required
                                     value={q.question}
                                     onChange={(e) => handleQuestionChange(qIdx, 'question', e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
 
                                 <div className="space-y-2">
@@ -197,7 +197,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                                                 required
                                                 value={opt}
                                                 onChange={(e) => handleOptionChange(qIdx, oIdx, e.target.value)}
-                                                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                className="flex-1 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             />
                                             {q.options.length > 2 && (
                                                 <button
@@ -229,7 +229,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                     ))}
                 </div>
 
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button
                         type="button"
                         onClick={handleAddQuestion}

@@ -105,7 +105,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center px-4 py-10 transition-colors">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome{firstName ? `, ${firstName}` : ''}!</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-2">Let&apos;s set up your profile in three quick steps.</p>
@@ -121,23 +121,23 @@ export default function OnboardingPage() {
                     ? 'bg-green-500 text-white'
                     : idx === step
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-500'
+                    : 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                 }`}
               >
                 {idx < step ? 'OK' : idx + 1}
               </div>
-              <span className={`text-xs mt-1 font-medium ${idx === step ? 'text-blue-600' : 'text-gray-400'}`}>
+              <span className={`text-xs mt-1 font-medium ${idx === step ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
                 {label}
               </span>
             </div>
             {idx < STEPS.length - 1 && (
-              <div className={`w-10 h-0.5 mb-4 ${idx < step ? 'bg-green-400' : 'bg-gray-200'}`} />
+              <div className={`w-10 h-0.5 mb-4 ${idx < step ? 'bg-green-400 dark:bg-green-500' : 'bg-gray-200 dark:bg-gray-800'}`} />
             )}
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm w-full max-w-2xl p-8">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm w-full max-w-2xl p-8 transition-colors">
         {step === 0 && (
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">What best describes you?</h2>
@@ -149,7 +149,9 @@ export default function OnboardingPage() {
                   type="button"
                   onClick={() => updateForm({ role })}
                   className={`p-5 rounded-xl border-2 text-left transition-all ${
-                    form.role === role ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                    form.role === role
+                      ? 'border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-950/40'
+                      : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
                 >
                   <div className="font-semibold text-gray-900 dark:text-white capitalize">{role}</div>
@@ -177,9 +179,9 @@ export default function OnboardingPage() {
                   onChange={(e) => updateForm({ headline: e.target.value })}
                   maxLength={120}
                   placeholder="e.g. Frontend Developer | React Enthusiast"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <p className="text-xs text-gray-400 mt-1">{form.headline.length}/120</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{form.headline.length}/120</p>
               </div>
 
               <div>
@@ -190,9 +192,9 @@ export default function OnboardingPage() {
                   maxLength={500}
                   rows={4}
                   placeholder="Share your background and goals."
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 />
-                <p className="text-xs text-gray-400 mt-1">{form.bio.length}/500</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{form.bio.length}/500</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -203,7 +205,7 @@ export default function OnboardingPage() {
                     updateForm({ socialLinks: { ...form.socialLinks, website: e.target.value } })
                   }
                   placeholder="Website (optional)"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <input
                   type="url"
@@ -212,7 +214,7 @@ export default function OnboardingPage() {
                     updateForm({ socialLinks: { ...form.socialLinks, linkedin: e.target.value } })
                   }
                   placeholder="LinkedIn (optional)"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -234,7 +236,7 @@ export default function OnboardingPage() {
                     className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
                       selected
                         ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500'
                     }`}
                   >
                     {interest}
@@ -243,7 +245,7 @@ export default function OnboardingPage() {
               })}
             </div>
             {form.interests.length === 0 && (
-              <p className="text-xs text-red-500 mt-3">Please select at least one interest.</p>
+              <p className="text-xs text-red-500 dark:text-red-400 mt-3">Please select at least one interest.</p>
             )}
           </div>
         )}
@@ -269,7 +271,7 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      <p className="text-xs text-gray-400 mt-6">Headline and at least one interest are required.</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-6">Headline and at least one interest are required.</p>
     </div>
   );
 }

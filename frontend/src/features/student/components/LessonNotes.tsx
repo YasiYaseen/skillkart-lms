@@ -121,11 +121,11 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
   return (
     <div className="space-y-6">
       {/* Header & View Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-xs transition-colors">
         <div>
           <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <span>📝 Personal Study Notes</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
               {notes.length} {notes.length === 1 ? 'note' : 'notes'}
             </span>
           </h3>
@@ -135,14 +135,14 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
         </div>
 
         {/* View Switcher */}
-        <div className="inline-flex rounded-xl bg-gray-100 p-1 self-start sm:self-auto">
+        <div className="inline-flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setViewMode('lesson')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
               viewMode === 'lesson'
-                ? 'bg-white text-blue-700 shadow-xs'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             Current Lesson
@@ -152,8 +152,8 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
             onClick={() => setViewMode('course')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
               viewMode === 'course'
-                ? 'bg-white text-blue-700 shadow-xs'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             All Course Notes
@@ -162,7 +162,7 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
       </div>
 
       {/* Note Creation Form (Always enabled for current lesson) */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs transition-colors">
         <div className="flex items-center justify-between mb-3">
           <label htmlFor="new-note-text" className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             Add a Note {lessonTitle && <span className="text-gray-400 font-normal">for {lessonTitle}</span>}
@@ -181,7 +181,7 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
             placeholder="Type your study notes, code snippets, or takeaways here... (Ctrl+Enter to save)"
             rows={3}
             maxLength={5000}
-            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
+            className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
           />
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400 hidden sm:inline">
@@ -202,12 +202,12 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
       {loading ? (
         <div className="space-y-4">
           {[1, 2].map((n) => (
-            <div key={n} className="animate-pulse bg-white border border-gray-200 rounded-2xl p-6 h-28" />
+            <div key={n} className="animate-pulse bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 h-28" />
           ))}
         </div>
       ) : notes.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-2xl p-8">
-          <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+        <div className="text-center py-16 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
+          <div className="w-14 h-14 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
             ✏️
           </div>
           <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">
@@ -226,7 +226,7 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
             return (
               <div
                 key={note._id}
-                className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-sm transition-all"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-xs hover:shadow-sm transition-colors"
               >
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="flex flex-wrap items-center gap-2">
@@ -234,7 +234,7 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
                       <button
                         type="button"
                         onClick={() => onNavigateLesson?.(targetLesson._id)}
-                        className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors flex items-center gap-1"
+                        className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center gap-1"
                       >
                         <span>Lesson {targetLesson.order}: {targetLesson.title}</span>
                         <span>↗</span>
@@ -283,7 +283,7 @@ export function LessonNotes({ courseId, lessonId, lessonTitle, onNavigateLesson 
                       onChange={(e) => setEditContent(e.target.value)}
                       rows={3}
                       maxLength={5000}
-                      className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
+                      className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
                     />
                     <div className="flex items-center justify-end gap-2">
                       <button

@@ -3,6 +3,7 @@ import { useState, FormEvent } from 'react';
 import { GraduationCapIcon } from '../../assets/icons';
 import Button from '../common/Button';
 import { toast } from 'react-toastify';
+import { api } from '@/lib/api';
 
 /**
  * Footer Component
@@ -11,12 +12,27 @@ import { toast } from 'react-toastify';
 function Footer() {
     const currentYear = new Date().getFullYear();
     const [newsletterEmail, setNewsletterEmail] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleNewsletterSubmit = (e: FormEvent) => {
+    const handleNewsletterSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        if (!newsletterEmail.trim()) return;
-        toast.success(`Thank you! ${newsletterEmail} has been subscribed to our newsletter.`);
-        setNewsletterEmail('');
+        const trimmed = newsletterEmail.trim();
+        if (!trimmed) return;
+
+        setIsSubmitting(true);
+        try {
+            const res = await api.post<{ success: boolean; message: string; alreadySubscribed?: boolean }>('/newsletter/subscribe', {
+                email: trimmed,
+                source: 'footer',
+            });
+            toast.success(res.data.message || `Thank you! ${trimmed} has been subscribed to our newsletter.`);
+            setNewsletterEmail('');
+        } catch (error: any) {
+            const errMsg = error.response?.data?.message || 'Failed to subscribe. Please try again later.';
+            toast.error(errMsg);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -72,8 +88,8 @@ function Footer() {
                                     className="footer-newsletter-input"
                                     placeholder="Enter your email"
                                 />
-                                <Button variant="primary" size="md" type="submit">
-                                    Subscribe
+                                <Button variant="primary" size="md" type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? 'Subscribing...' : 'Subscribe'}
                                 </Button>
                             </form>
                         </div>

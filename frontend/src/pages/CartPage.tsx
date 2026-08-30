@@ -335,7 +335,7 @@ export default function CartPage() {
                             className="w-20 h-14 object-cover rounded-xl shrink-0 border border-gray-200 dark:border-gray-700 shadow-2xs"
                           />
                         ) : (
-                          <div className="w-20 h-14 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 font-bold text-base">
+                          <div className="w-20 h-14 bg-indigo-50 dark:bg-indigo-950 text-blue-600 rounded-xl flex items-center justify-center shrink-0 font-bold text-base">
                             🎓
                           </div>
                         )}
@@ -343,7 +343,7 @@ export default function CartPage() {
                         <div className="space-y-1 min-w-0">
                           <Link
                             to={`/courses/${item.courseId}`}
-                            className="text-sm font-bold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-1"
+                            className="text-sm font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-indigo-400 transition-colors line-clamp-1"
                           >
                             {item.title}
                           </Link>
@@ -368,7 +368,7 @@ export default function CartPage() {
                         <button
                           onClick={() => handleMoveToWishlist(item)}
                           title="Move to Wishlist"
-                          className="text-xs text-gray-400 hover:text-indigo-600 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          className="text-xs text-gray-400 hover:text-blue-600 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                         >
                           Save for Later
                         </button>
@@ -390,13 +390,13 @@ export default function CartPage() {
                 <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <Link
                     to="/courses"
-                    className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="text-xs font-semibold text-blue-600 dark:text-indigo-400 hover:underline"
                   >
                     ← Continue exploring more courses
                   </Link>
                   <button
                     onClick={() => setCurrentStep('payment')}
-                    className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                    className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
                   >
                     <span>Proceed to Payment & Billing</span>
                     <span>→</span>
@@ -424,7 +424,7 @@ export default function CartPage() {
                         >
                           <div className="truncate flex-1">
                             <h5 className="font-semibold text-xs text-gray-900 dark:text-white truncate">{c.title}</h5>
-                            <span className="text-xs font-bold text-indigo-600 font-mono">
+                            <span className="text-xs font-bold text-blue-600 font-mono">
                               {formatPrice(coursePrice)}
                             </span>
                           </div>
@@ -461,7 +461,7 @@ export default function CartPage() {
                   </h3>
                   <button
                     onClick={() => setCurrentStep('items')}
-                    className="text-xs text-indigo-600 hover:underline font-semibold"
+                    className="text-xs text-blue-600 hover:underline font-semibold"
                   >
                     ← Edit Cart Items ({cart.length})
                   </button>
@@ -575,7 +575,7 @@ export default function CartPage() {
                     <button
                       type="submit"
                       disabled={validatingCoupon || !couponInput.trim()}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors shrink-0"
+                      className="px-4 py-2 bg-blue-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors shrink-0"
                     >
                       {validatingCoupon ? 'Checking...' : 'Apply'}
                     </button>
@@ -632,7 +632,7 @@ export default function CartPage() {
 
               <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-base font-extrabold text-gray-900 dark:text-white">
                 <span>Total Amount:</span>
-                <span className="text-indigo-600 dark:text-indigo-400 font-mono text-lg">
+                <span className="text-blue-600 dark:text-indigo-400 font-mono text-lg">
                   {formatAmount(finalTotal, { showCode: true })}
                 </span>
               </div>
@@ -641,7 +641,7 @@ export default function CartPage() {
             {currentStep === 'items' ? (
               <button
                 onClick={() => setCurrentStep('payment')}
-                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                className="w-full py-3.5 bg-blue-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
               >
                 <span>Proceed to Payment →</span>
               </button>

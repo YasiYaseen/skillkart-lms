@@ -41,16 +41,16 @@ export function WishlistPage() {
     return (
       <div className="container py-12">
         <div className="mb-8">
-          <div className="h-8 w-48 bg-gray-200 rounded-md animate-pulse mb-2"></div>
-          <div className="h-4 w-64 bg-gray-100 rounded-md animate-pulse"></div>
+          <div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded-md animate-pulse mb-2"></div>
+          <div className="h-4 w-64 bg-gray-100 dark:bg-gray-800 rounded-md animate-pulse"></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm animate-pulse space-y-4">
-              <div className="aspect-video bg-gray-200 rounded-xl"></div>
-              <div className="h-5 bg-gray-200 rounded-md w-3/4"></div>
-              <div className="h-4 bg-gray-100 rounded-md w-1/2"></div>
-              <div className="h-8 bg-gray-200 rounded-lg w-full mt-4"></div>
+            <div key={n} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 shadow-sm animate-pulse space-y-4">
+              <div className="aspect-video bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+              <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded-md w-3/4"></div>
+              <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded-md w-1/2"></div>
+              <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded-lg w-full mt-4"></div>
             </div>
           ))}
         </div>

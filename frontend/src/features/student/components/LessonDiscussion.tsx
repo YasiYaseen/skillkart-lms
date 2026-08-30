@@ -133,7 +133,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
   return (
     <div className="space-y-6">
       {/* Top Question / Comment Form */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs transition-colors">
         <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
           <span>Ask a Question / Join the Discussion</span>
           <span className="text-xs font-normal text-gray-500 dark:text-gray-400">({comments.length} total)</span>
@@ -149,7 +149,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
             rows={3}
             required
             minLength={2}
-            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
           <div className="flex justify-end">
             <button
@@ -167,12 +167,12 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="animate-pulse bg-white border border-gray-200 rounded-2xl p-6 h-32" />
+            <div key={n} className="animate-pulse bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 h-32" />
           ))}
         </div>
       ) : topLevelComments.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-2xl p-8">
-          <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+        <div className="text-center py-16 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
+          <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
             💬
           </div>
           <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">No comments on this lesson yet</h4>
@@ -194,7 +194,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
             return (
               <div
                 key={comment._id}
-                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs transition-shadow hover:shadow-sm"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs transition-colors hover:shadow-sm"
               >
                 {/* Main Comment Header */}
                 <div className="flex items-start justify-between gap-4">
@@ -202,7 +202,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                     <img
                       src={authorAvatar}
                       alt={comment.user?.name || 'User'}
-                      className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                      className="w-10 h-10 rounded-full object-cover border border-gray-100 dark:border-gray-700"
                     />
                     <div>
                       <div className="flex items-center gap-2">
@@ -244,7 +244,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                 </div>
 
                 {/* Action Bar */}
-                <div className="mt-4 pl-13 flex items-center gap-4 border-t border-gray-100 pt-3">
+                <div className="mt-4 pl-13 flex items-center gap-4 border-t border-gray-100 dark:border-gray-800 pt-3">
                   <button
                     onClick={() => {
                       if (isReplying) {
@@ -283,7 +283,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                       rows={2}
                       required
                       autoFocus
-                      className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 focus:bg-white"
+                      className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     />
                     <div className="flex items-center justify-end gap-2">
                       <button
@@ -309,7 +309,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
 
                 {/* Threaded Replies List */}
                 {replies.length > 0 && (
-                  <div className="mt-4 pl-10 space-y-3 border-l-2 border-blue-100 ml-5">
+                  <div className="mt-4 pl-10 space-y-3 border-l-2 border-blue-100 dark:border-blue-900/60 ml-5">
                     {replies.map((reply) => {
                       const replyAvatar =
                         reply.user?.avatar ||
@@ -320,14 +320,14 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                       return (
                         <div
                           key={reply._id}
-                          className="bg-gray-50 border border-gray-100 rounded-xl p-4 transition-colors"
+                          className="bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/60 rounded-xl p-4 transition-colors"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2.5">
                               <img
                                 src={replyAvatar}
                                 alt={reply.user?.name || 'User'}
-                                className="w-7 h-7 rounded-full object-cover border border-gray-200"
+                                className="w-7 h-7 rounded-full object-cover border border-gray-200 dark:border-gray-700"
                               />
                               <div>
                                 <div className="flex items-center gap-2">

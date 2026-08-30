@@ -161,7 +161,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
             <button
               type="button"
               onClick={handleAutoFillDemo}
-              className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 transition-colors shadow-2xs"
+              className="text-xs text-blue-600 dark:text-blue-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 transition-colors shadow-2xs"
             >
               <span>⚡ Click to Auto-fill Demo Test Card (Zero friction)</span>
             </button>
@@ -180,7 +180,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
                   placeholder="4242 4242 4242 4242"
                   value={formState.cardNumber}
                   onChange={(e) => onChange({ cardNumber: formatCardNumber(e.target.value) })}
-                  className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono tracking-wider focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                  className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono tracking-wider focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
                 <span className="absolute right-3 top-2.5 text-base">🔒</span>
               </div>
@@ -195,7 +195,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
                 placeholder="e.g. John Doe"
                 value={formState.cardHolder}
                 onChange={(e) => onChange({ cardHolder: e.target.value.toUpperCase() })}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
 
@@ -209,7 +209,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
                 placeholder="12/28"
                 value={formState.expiry}
                 onChange={(e) => onChange({ expiry: formatExpiry(e.target.value) })}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
 
@@ -226,7 +226,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
                 placeholder="888"
                 value={formState.cvv}
                 onChange={(e) => onChange({ cvv: e.target.value.replace(/[^0-9]/g, '') })}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
           </div>
