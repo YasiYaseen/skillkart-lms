@@ -18,6 +18,7 @@ import {
     EditCourse,
     StudentsEnrolled,
     Announcements,
+    Analytics,
 } from '@features/instructor';
 import {
     AdminLayout,
@@ -63,8 +64,10 @@ function App() {
                             <Route path="/instructor/courses/:courseId/edit" element={<EditCourse />} />
                             <Route path="/instructor/students" element={<StudentsEnrolled />} />
                             <Route path="/instructor/announcements" element={<Announcements />} />
+                            <Route path="/instructor/analytics" element={<Analytics />} />
                         </Route>
                     </Route>
+
 
                     {/* Admin Layout */}
                     <Route element={<ProtectedRoute allowedRoles={['admin']} />}>

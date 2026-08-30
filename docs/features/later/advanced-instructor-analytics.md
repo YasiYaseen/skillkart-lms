@@ -1,8 +1,8 @@
 # Advanced Instructor Analytics
 
-Status: Not Started
+Status: Done
 Priority: Later
-Owner: Unassigned
+Owner: Implemented
 
 ## Goal
 Give instructors deeper insight into student learning behavior.
@@ -14,7 +14,7 @@ Give instructors deeper insight into student learning behavior.
 - Drop-off lesson tracking
 
 ## Acceptance Checklist
-- [ ] Instructor sees completion rate
-- [ ] Instructor sees average quiz score
-- [ ] Instructor sees most active students
-- [ ] Instructor sees lesson drop-off data
+- [x] Instructor sees completion rate
+- [x] Instructor sees average quiz score
+- [x] Instructor sees most active students
+- [x] Instructor sees lesson drop-off data
