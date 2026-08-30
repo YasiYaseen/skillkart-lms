@@ -161,6 +161,7 @@ export async function getMyEnrollments(req: Request, res: Response) {
       .skip(skip)
       .limit(limit)
       .populate("course", "title thumbnailUrl instructor")
+      .populate("lastAccessedLessonId", "title")
       .sort({ createdAt: -1 });
 
     const filteredData = data.filter((doc) => doc.course != null);

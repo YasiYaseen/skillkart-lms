@@ -267,12 +267,95 @@ function CourseDetailsPage() {
         }
     };
 
+function CourseDetailsSkeleton() {
+    return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-12 animate-pulse">
+            <div className="container py-10">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                    {/* Left Column Skeleton */}
+                    <div className="lg:col-span-2 space-y-8">
+                        <div className="space-y-4">
+                            <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded-xl w-3/4" />
+                            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded-lg w-1/2" />
+                            <div className="flex items-center gap-4">
+                                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-28" />
+                                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                            </div>
+                            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-40" />
+                        </div>
+
+                        {/* Description Box Skeleton */}
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 space-y-3">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-40" />
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6" />
+                        </div>
+
+                        {/* Curriculum Skeleton */}
+                        <div className="space-y-4">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48" />
+                            <div className="space-y-3">
+                                {Array.from({ length: 3 }).map((_, i) => (
+                                    <div key={i} className="h-14 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center">
+                                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column Skeleton */}
+                    <div className="space-y-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden p-6 space-y-6 shadow-sm">
+                            <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-2xl w-full" />
+                            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-28" />
+                            <div className="space-y-3">
+                                <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-xl w-full" />
+                                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl w-full" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
     if (loading) {
-        return <div className="text-center py-20 text-gray-500">Loading course details...</div>;
+        return <CourseDetailsSkeleton />;
     }
 
     if (!course) {
-        return <div className="text-center py-20 text-red-500">Course not found</div>;
+        return (
+            <div className="min-h-[70vh] flex items-center justify-center px-4">
+                <div className="max-w-md w-full text-center bg-white dark:bg-gray-800 rounded-3xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl">
+                        🔍
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Course Not Found</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                        The course you are looking for may have been removed, unpublished, or the link is incorrect.
+                    </p>
+                    <div className="flex justify-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                            Go Back
+                        </button>
+                        <Link
+                            to="/courses"
+                            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors shadow-xs"
+                        >
+                            Browse All Courses
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (

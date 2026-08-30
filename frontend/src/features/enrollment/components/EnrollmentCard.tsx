@@ -7,7 +7,7 @@ export interface EnrollmentCardProps {
   enrollment: {
     _id: string;
     status?: string;
-    lastAccessedLessonId?: string;
+    lastAccessedLessonId?: string | { _id: string; title?: string };
     course: {
       _id: string;
       title: string;
@@ -18,6 +18,9 @@ export interface EnrollmentCardProps {
     progressPercentage: number;
     completedLessonsCount?: number;
     totalLessonsCount?: number;
+    completedAt?: string;
+    updatedAt?: string;
+    createdAt?: string;
   };
   onUnenroll?: (enrollmentId: string) => void;
   completed?: boolean;
@@ -28,9 +31,19 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
   const c = enrollment.course;
   const thumbnailUrl = c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop';
 
-  const learnHref = enrollment.lastAccessedLessonId
-    ? `/learn/${c._id}/${enrollment.lastAccessedLessonId}`
+  const lessonId = typeof enrollment.lastAccessedLessonId === 'object'
+    ? enrollment.lastAccessedLessonId?._id
+    : enrollment.lastAccessedLessonId;
+
+  const lastLessonTitle = typeof enrollment.lastAccessedLessonId === 'object'
+    ? enrollment.lastAccessedLessonId?.title
+    : undefined;
+
+  const learnHref = lessonId
+    ? `/learn/${c._id}/${lessonId}`
     : `/learn/${c._id}`;
+
+  const completionDate = enrollment.completedAt || enrollment.updatedAt;
 
   const confirmUnenroll = () => {
     setShowUnenrollModal(false);
@@ -54,7 +67,7 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
         )}
 
         {/* Unenroll button */}
-        {onUnenroll && (
+        {onUnenroll && !completed && (
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -90,9 +103,23 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
             <h3 className="font-bold text-gray-900 dark:text-white mb-1 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
               {c.title}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 line-clamp-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-1">
               By {c.instructor?.name || 'Instructor'}
             </p>
+
+            {/* Subtitle: Last lesson or completion date */}
+            {completed && completionDate ? (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-3 font-medium flex items-center gap-1">
+                <span>✓ Completed on {new Date(completionDate).toLocaleDateString()}</span>
+              </p>
+            ) : lastLessonTitle ? (
+              <p className="text-xs text-gray-600 dark:text-gray-300 mb-3 line-clamp-1 italic">
+                📖 {lastLessonTitle}
+              </p>
+            ) : (
+              <div className="mb-2" />
+            )}
+
             <div className="mt-auto space-y-2">
               <ProgressBar
                 percentage={enrollment.progressPercentage}

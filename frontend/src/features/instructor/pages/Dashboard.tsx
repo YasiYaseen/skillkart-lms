@@ -57,99 +57,142 @@ function Dashboard() {
         fetchDashboard();
     }, []);
 
-    if (loading) return <div className="py-10 text-gray-500">Loading dashboard...</div>;
+    if (loading) {
+        return (
+            <div className="space-y-8 animate-pulse">
+                <div className="flex justify-between items-center">
+                    <div className="space-y-2">
+                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-48" />
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 h-32" />
+                    ))}
+                </div>
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 h-64" />
+            </div>
+        );
+    }
 
     return (
-        <div>
-            <div className="flex justify-between items-center mb-8">
+        <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                    <p className="text-sm text-gray-500 mt-1">Overview of your courses and students</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Instructor Dashboard</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Overview of your courses, earnings, and students</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex items-center gap-3">
+                    <Link
+                        to="/instructor/create-course"
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+                    >
+                        <span>+</span>
+                        <span>New Course</span>
+                    </Link>
                     <Link
                         to="/instructor/analytics"
-                        className="px-4 py-2 bg-blue-50 text-blue-600 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors"
+                        className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium text-sm rounded-xl transition-colors border border-indigo-100 dark:border-indigo-800/60"
                     >
-                        View Full Analytics →
+                        View Analytics →
                     </Link>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-xs">
-                    <p className="text-sm text-gray-500 mb-1">Total Enrollments</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.enrollments}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-xs hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Enrollments</p>
+                        <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm">👥</span>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.enrollments}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">All time student enrollments</p>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-xs">
-                    <p className="text-sm text-gray-500 mb-1">Total Earnings</p>
-                    <p className="text-3xl font-bold text-gray-900">${stats.earnings.toFixed(2)}</p>
+
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-xs hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Earnings</p>
+                        <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm">💰</span>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">${stats.earnings.toFixed(2)}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Net course sales revenue</p>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-xs">
-                    <p className="text-sm text-gray-500 mb-1">Active Courses</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.active}</p>
-                    <p className="text-xs text-gray-400 mt-2">{stats.draft} in draft</p>
+
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-xs hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Courses</p>
+                        <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm">📚</span>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.active}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{stats.draft} in draft status</p>
                 </div>
             </div>
 
             {/* Most Active Students */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs">
-                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                    <h2 className="text-lg font-semibold text-gray-900">Most Active Students</h2>
-                    <Link to="/instructor/students" className="text-xs text-blue-600 hover:underline font-medium">
-                        View all students →
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-xs">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Most Active Students</h2>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Top learners progressing through your courses</p>
+                    </div>
+                    <Link to="/instructor/students" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-1">
+                        <span>View all students</span>
+                        <span>→</span>
                     </Link>
                 </div>
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-gray-100 bg-gray-50/50">
-                            <th className="text-left py-3 px-6 text-gray-500 font-medium">#</th>
-                            <th className="text-left py-3 px-6 text-gray-500 font-medium">Student name</th>
-                            <th className="text-left py-3 px-6 text-gray-500 font-medium">Lessons Done</th>
-                            <th className="text-left py-3 px-6 text-gray-500 font-medium">Average Progress</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {recent.map((row, i) => (
-                            <tr key={row.id || i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                                <td className="py-4 px-6 text-gray-400">{i + 1}</td>
-                                <td className="py-4 px-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs uppercase">
-                                            {row.name.substring(0, 2)}
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-800 font-medium block">{row.name}</span>
-                                            <span className="text-gray-400 text-xs">{row.email}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="py-4 px-6 text-gray-700 font-medium">{row.totalCompletedLessons}</td>
-                                <td className="py-4 px-6">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                                            <div
-                                                className="bg-blue-600 h-2 rounded-full"
-                                                style={{ width: `${Math.min(100, row.averageProgressPercentage || 0)}%` }}
-                                            ></div>
-                                        </div>
-                                        <span className="text-xs text-gray-500 font-medium">
-                                            {row.averageProgressPercentage}%
-                                        </span>
-                                    </div>
-                                </td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/75 dark:bg-gray-900/50">
+                                <th className="text-left py-3 px-6 text-gray-500 dark:text-gray-400 font-semibold">#</th>
+                                <th className="text-left py-3 px-6 text-gray-500 dark:text-gray-400 font-semibold">Student</th>
+                                <th className="text-left py-3 px-6 text-gray-500 dark:text-gray-400 font-semibold">Lessons Done</th>
+                                <th className="text-left py-3 px-6 text-gray-500 dark:text-gray-400 font-semibold">Average Progress</th>
                             </tr>
-                        ))}
-                        {recent.length === 0 && (
-                            <tr>
-                                <td colSpan={4} className="py-10 text-center text-gray-500">
-                                    No active students yet.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60 bg-white dark:bg-gray-800">
+                            {recent.map((row, i) => (
+                                <tr key={row.id || i} className="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors">
+                                    <td className="py-4 px-6 text-gray-400 dark:text-gray-500 font-mono text-xs">{i + 1}</td>
+                                    <td className="py-4 px-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs uppercase border border-indigo-200 dark:border-indigo-800/50">
+                                                {row.name.substring(0, 2)}
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-900 dark:text-white font-medium block">{row.name}</span>
+                                                <span className="text-gray-400 dark:text-gray-500 text-xs">{row.email}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-4 px-6 text-gray-700 dark:text-gray-300 font-semibold">{row.totalCompletedLessons}</td>
+                                    <td className="py-4 px-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-28 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                <div
+                                                    className={`h-2 rounded-full transition-all ${row.averageProgressPercentage === 100 ? 'bg-emerald-500' : 'bg-indigo-600'}`}
+                                                    style={{ width: `${Math.min(100, row.averageProgressPercentage || 0)}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-xs text-gray-700 dark:text-gray-300 font-semibold">
+                                                {row.averageProgressPercentage}%
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {recent.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="py-12 text-center text-gray-500 dark:text-gray-400">
+                                        No active students yet.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

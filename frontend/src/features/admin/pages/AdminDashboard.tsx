@@ -30,8 +30,16 @@ export function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="text-gray-500">Loading admin stats...</div>
+      <div className="space-y-6 animate-pulse">
+        <div className="space-y-2">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-52" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <div key={idx} className="h-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -39,27 +47,54 @@ export function AdminDashboard() {
   if (!stats) return null;
 
   const statCards = [
-    { title: "Total Users", value: stats.totalUsers, link: "/admin/users" },
-    { title: "Students", value: stats.totalStudents, link: "/admin/users" },
-    { title: "Instructors", value: stats.totalInstructors, link: "/admin/users" },
-    { title: "Courses", value: stats.totalCourses, link: "/admin/courses" },
-    { title: "Enrollments", value: stats.totalEnrollments, link: "/admin/enrollments" },
+    { title: "Total Users", value: stats.totalUsers, link: "/admin/users", icon: "👥", color: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" },
+    { title: "Students", value: stats.totalStudents, link: "/admin/users", icon: "🎓", color: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" },
+    { title: "Instructors", value: stats.totalInstructors, link: "/admin/users", icon: "👨‍🏫", color: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" },
+    { title: "Courses", value: stats.totalCourses, link: "/admin/courses", icon: "📚", color: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" },
+    { title: "Enrollments", value: stats.totalEnrollments, link: "/admin/enrollments", icon: "📈", color: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" },
   ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-      <p className="text-gray-500 mb-8">Platform overview and statistics</p>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Platform overview and platform statistics</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/admin/courses"
+            className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-xs"
+          >
+            Moderate Courses
+          </Link>
+          <Link
+            to="/admin/audit-logs"
+            className="px-4 py-2 text-xs font-semibold rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors border border-gray-200 dark:border-gray-700"
+          >
+            Audit Logs
+          </Link>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((card, idx) => (
           <Link
             key={idx}
             to={card.link}
-            className="block p-6 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+            className="group block p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-600 transition-all"
           >
-            <h3 className="text-sm font-medium text-gray-500 mb-1">{card.title}</h3>
-            <p className="text-3xl font-bold text-gray-900">{card.value}</p>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.title}</span>
+              <span className={`p-2 rounded-xl text-sm ${card.color}`}>{card.icon}</span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              {card.value}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-1 font-medium">
+              <span>View details</span>
+              <span>→</span>
+            </p>
           </Link>
         ))}
       </div>

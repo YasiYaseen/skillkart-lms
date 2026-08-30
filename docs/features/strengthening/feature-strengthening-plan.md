@@ -354,41 +354,171 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 ---
 
+## 14. Course Details Page — Remaining Gaps
+
+**Current State (after strengthening):** Hero, instructor card, interactive star review, curriculum accordion, description, FAQ, reviews with edit/delete.
+
+**Gaps Identified:**
+
+| # | Task | Priority | Status |
+|---|---|---|---|
+| 14.1 | Add skeleton loading state (hero shimmer, curriculum shimmer, reviews shimmer) | High | Done |
+| 14.2 | Add rating distribution bar chart (★5: 60%, ★4: 25%, etc.) above review list | High | Not Started |
+| 14.3 | Make curriculum sections collapsible/expandable (accordion toggle per section) | Medium | Not Started |
+| 14.4 | Add total course duration summary ("14h 30m total · 52 lessons") in curriculum header | Medium | Not Started |
+| 14.5 | Add "What you'll learn" bullet list section (instructor-populated field on Course model) | Medium | Not Started |
+| 14.6 | Add proper 404 error state with back button and "Browse Courses" CTA instead of bare red text | Medium | Done |
+| 14.7 | Add reviews pagination (show 5, load more) to avoid slow load on popular courses | Medium | Not Started |
+| 14.8 | Add sort controls on reviews (Most Recent / Highest / Lowest Rated) | Medium | Not Started |
+
+---
+
+## 15. Student Dashboard — Empty & Progress States
+
+**Current State:** LearningStreakCard, RecentlyViewedCourses strip, In Progress / Completed grids, recommendations. Loading state uses shimmer skeleton cards.
+
+**Gaps Identified:**
+
+| # | Task | Priority | Status |
+|---|---|---|---|
+| 15.1 | Add skeleton loading cards while enrollments are fetching (4 shimmer cards) | High | Done |
+| 15.2 | Add illustrated empty state with icon for students with 0 enrollments | Medium | Done |
+| 15.3 | Show "Last lesson: {title}" subtitle on in-progress EnrollmentCards | Medium | Done |
+| 15.4 | Show completion date on completed course EnrollmentCards | Medium | Done |
+| 15.5 | Promote recommendations section above the course grids when there are 0 enrollments | Low | Not Started |
+
+---
+
+## 16. Instructor Dashboard & Analytics
+
+**Current State:** 3 stat cards (enrollments, earnings, active courses), most-active-students table, quick actions, dark mode support.
+
+**Gaps Identified:**
+
+| # | Task | Priority | Status |
+|---|---|---|---|
+| 16.1 | Add dark mode support to instructor Dashboard | High | Done |
+| 16.2 | Add enrollment trend spark-line or bar chart (past 7/30 days) to Dashboard | Medium | Not Started |
+| 16.3 | Add "Quick Actions" shortcuts on Dashboard (Create Course, View Students, View Analytics) | Medium | Done |
+| 16.4 | Show avg rating per course row in instructor MyCourses table | Medium | Not Started |
+| 16.5 | Add instructor MyCourses table skeleton loading | Low | Not Started |
+
+---
+
+## 17. Admin Dashboard & Tables
+
+**Current State:** 5 stat cards with dark mode and category icons, moderate courses and audit logs quick actions.
+
+**Gaps Identified:**
+
+| # | Task | Priority | Status |
+|---|---|---|---|
+| 17.1 | Add dark mode support to AdminDashboard stat cards | High | Done |
+| 17.2 | Add search/filter to EnrollmentList table (by student name, course name, or status) | High | Not Started |
+| 17.3 | Add pagination to all admin tables (Users, Courses, Enrollments) — loading all rows at once is not scalable | High | Not Started |
+| 17.4 | Add rejection reason modal when admin rejects a course (text input, sent to instructor via notification) | High | Not Started |
+| 17.5 | Add trend indicator badges to admin stat cards (e.g. "+12 this week") | Medium | Not Started |
+| 17.6 | Add enrollment/revenue chart (past 7 or 30 days) to Admin Dashboard | Medium | Not Started |
+| 17.7 | Add "View Course" quick-link in EnrollmentList rows | Low | Not Started |
+
+---
+
+## 18. Instructor Course Management — EditCourse & CreateCourse
+
+**Current State:** EditCourse has metadata form + FAQ editor only. No curriculum editing. CreateCourse has curriculum builder. No "What you'll learn" field anywhere.
+
+**Gaps Identified:**
+
+| # | Task | Priority | Status |
+|---|---|---|---|
+| 18.1 | Add curriculum editor tab/section to `EditCourse.tsx` (link to curriculum builder or embed section/lesson editor) | High | Not Started |
+| 18.2 | Add "What you'll learn" bullet list field to CreateCourse and EditCourse (stored on Course model) | Medium | Not Started |
+| 18.3 | Allow instructor self-unpublish (toggle published → draft) from MyCourses — backend endpoint exists | Medium | Not Started |
+| 18.4 | Remove hardcoded Unsplash fallback thumbnail in `MyCourses.tsx` — show branded SVG placeholder instead | Low | Not Started |
+| 18.5 | Add character counter on Course Title and Description fields in both Create/Edit forms | Low | Not Started |
+
+---
+
+## 19. Notifications — Remaining Polish
+
+**Current State:** Clickable notifications, "Mark all as read", pulsing bell. No individual dismiss, no empty state, no grouping.
+
+**Gaps Identified:**
+
+| # | Task | Priority | Status |
+|---|---|---|---|
+| 19.1 | Add individual dismiss (delete) button on each notification in the panel | Medium | Not Started |
+| 19.2 | Add empty state illustration/message when notification panel has 0 notifications | Low | Not Started |
+| 19.3 | Group notifications by date (Today / Yesterday / Older) for readability | Low | Not Started |
+
+---
+
+## 20. Certificates, Onboarding & Home
+
+**Current State:** My Certificates page has visual cards. VerifyCertificate has LinkedIn share + copy link. Onboarding page is connected to `completeOnboarding` in `auth.service.ts`.
+
+**Gaps Identified:**
+
+| # | Task | Priority | Status |
+|---|---|---|---|
+| 20.1 | Clean up obsolete Onboarding stub and ensure full API integration | Critical | Done |
+| 20.2 | Add "Download as Image" export using `html2canvas` on MyCertificatesPage or VerifyCertificatePage | Low | Not Started |
+| 20.3 | Add home page category quick-links (Web Dev, Design, Business) that pre-filter the catalog | Low | Not Started |
+
+---
+
 ## Implementation Priority Order
 
 ### 🔴 Critical Bugs — Fix First
 
-These are bugs that produce wrong data or broken behavior:
+All previously listed critical bugs are **Done** ✅. One new critical found:
 
-1. **11.1** — `isApproved: undefined` shows pending courses as "Approved" in admin
-2. **4.1** — Fake `oldPrice` computed client-side shown as real strikethrough price
-3. **4.2** — `studentCount: null` hardcoded — enrollment count never displays
-4. **5.1** — Fragile YouTube URL embed transform (breaks many URL formats)
-5. **5.2** — Fixed 600px PDF iframe height (broken on mobile)
-6. **5.3** — Progress % inconsistency (all lessons vs mandatory lessons between two endpoints)
-7. **0.1** — Side-effect in render body in `AuthModals.tsx`
-8. **0.2** — No 401 interceptor — silent session expiry with no logout
-9. **6.1** — `window.confirm()` for unenroll (inconsistent with UI)
-10. **10.1** — N+1 API calls in `StudentsEnrolled.tsx`
-11. **10.2** — Single-line `<input>` used for multi-paragraph text content items
-12. **7.1** — No auth guard on EnrollButton (confusing error for unauthenticated users)
+1. ✅ **11.1** — `isApproved: undefined` shows pending courses as "Approved"
+2. ✅ **4.1** — Fake `oldPrice` computed client-side
+3. ✅ **4.2** — `studentCount: null` hardcoded
+4. ✅ **5.1** — Fragile YouTube URL embed
+5. ✅ **5.2** — Fixed 600px PDF height
+6. ✅ **5.3** — Progress % inconsistency
+7. ✅ **0.1** — Side-effect in render body
+8. ✅ **0.2** — No 401 interceptor
+9. ✅ **6.1** — `window.confirm()` for unenroll
+10. ✅ **10.1** — N+1 API calls in StudentsEnrolled
+11. ✅ **10.2** — Single-line input for text content
+12. ✅ **7.1** — No auth guard on EnrollButton
+13. **20.1** — `Onboarding.tsx` submits nothing to the backend (data silently discarded) | **Not Started**
 
-### 🟡 High-Impact UX — Do Next
+### 🟡 High-Impact UX — Remaining
 
-13. **1.1, 1.2, 1.3** — Real courses on homepage, remove duplicate testimonials and lorem ipsum
-14. **5.4** — "Mark as Complete" → "✓ Completed" when already done
-15. **6.2, 6.3** — Resume button + progress bar on course cards
-16. **9.1, 9.2** — Interactive star rating + required validation in reviews
-17. **9.3** — Edit/delete own review
-18. **8.1, 8.2, 8.3, 8.4** — Quiz: per-question feedback, correct answers, attempt count, last score
-19. **12.1, 12.2** — Clickable notifications + mark all read
-20. **4.4, 4.5** — Interactive star rating widget + course skeleton loading state
-21. **10.3, 10.4** — Lesson/section delete + reorder in curriculum builder
+14. **14.1** — CourseDetailsPage skeleton loading (hero, curriculum, reviews shimmer)
+15. **14.2** — Rating distribution bar chart above review list
+16. **15.1** — Student MyCourses skeleton loading cards
+17. **15.2** — Illustrated empty state for 0-enrollment dashboard
+18. **15.3** — "Last lesson: {title}" on in-progress EnrollmentCards
+19. **15.4** — Completion date on completed EnrollmentCards
+20. **16.1** — Dark mode for instructor Dashboard
+21. **17.1** — Dark mode for AdminDashboard stat cards
+22. **17.2** — EnrollmentList search/filter
+23. **17.3** — Pagination on all admin tables
+24. **17.4** — Rejection reason modal when admin rejects course
+25. **18.1** — Curriculum editor tab in EditCourse
+26. **8.5** — Quiz question progress indicator ("Question 2 of 5")
+27. **0.5** — Forgot password flow
 
 ### 🟢 Polish — Do When Time Allows
 
-22. **2.1-2.3** — Profile avatar + bio + interests
-23. **3.1, 3.2** — Skeleton loaders + empty states in course catalog
-24. **5.5, 5.7** — Markdown rendering for text content + course completion overlay
-25. **11.2-11.5** — Admin search, pagination, preview, rejection reason
-26. **13.1, 13.2** — Certificate page cards + LinkedIn share
+28. **5.10** — Auto-advance to next lesson with 3-second countdown
+29. **9.4, 9.5** — Reviews pagination + sort (also **14.7, 14.8**)
+30. **14.3, 14.4** — Collapsible curriculum sections + duration summary
+31. **14.5** — "What you'll learn" section on CourseDetailsPage
+32. **14.6** — 404 error state with back button on CourseDetailsPage
+33. **16.2** — Enrollment trend chart on instructor Dashboard
+34. **16.3** — Quick Actions on instructor Dashboard
+35. **16.4** — Avg rating per course in instructor MyCourses
+36. **17.5, 17.6** — Trend badges + enrollment chart on AdminDashboard
+37. **18.2** — "What you'll learn" field in CreateCourse/EditCourse
+38. **18.3, 18.4, 18.5** — Self-unpublish, thumbnail placeholder, char counters
+39. **19.1** — Individual dismiss on notifications (also **12.3**)
+40. **19.2, 19.3** — Notification empty state + date grouping
+41. **13.3 / 20.2** — Download certificate as image
+42. **20.3** — Home page category quick-links
+43. **8.6** — Max attempt limit per quiz
