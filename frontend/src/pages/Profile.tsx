@@ -117,8 +117,9 @@ function Profile() {
                 interests,
                 socialLinks,
             });
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to update profile');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update profile';
+            toast.error(msg);
         } finally {
             setSaving(false);
         }
@@ -144,8 +145,9 @@ function Profile() {
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to change password');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to change password';
+            toast.error(msg);
         } finally {
             setChangingPassword(false);
         }

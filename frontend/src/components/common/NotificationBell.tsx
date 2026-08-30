@@ -3,10 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
 
+export interface AppNotification {
+    _id: string;
+    recipient?: string;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning';
+    link?: string;
+    read: boolean;
+    createdAt: string;
+}
+
 export default function NotificationBell() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [notifications, setNotifications] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -62,7 +73,7 @@ export default function NotificationBell() {
         }
     };
 
-    const handleNotificationClick = async (notification: any) => {
+    const handleNotificationClick = async (notification: AppNotification) => {
         if (!notification.read) {
             await markAsRead(notification._id);
         }

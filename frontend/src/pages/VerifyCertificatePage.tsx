@@ -2,14 +2,28 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '@/lib/api';
 
+export interface VerifiedCertificate {
+    certificateId: string;
+    student?: {
+        name?: string;
+    };
+    course?: {
+        title?: string;
+        instructor?: {
+            name?: string;
+        };
+    };
+    issuedAt: string;
+}
+
 function VerifyCertificatePage() {
     const { certificateId } = useParams<{ certificateId: string }>();
-    const [cert, setCert] = useState<any>(null);
+    const [cert, setCert] = useState<VerifiedCertificate | null>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
-        api.get(`/certificates/verify/${certificateId}`)
+        api.get<{ certificate: VerifiedCertificate }>(`/certificates/verify/${certificateId}`)
             .then(res => setCert(res.data.certificate))
             .catch(() => setNotFound(true))
             .finally(() => setLoading(false));

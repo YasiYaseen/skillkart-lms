@@ -3,8 +3,22 @@ import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { toast } from "react-toastify";
 
+export interface ModerationCourse {
+  _id: string;
+  title: string;
+  thumbnailUrl?: string;
+  status: string;
+  isApproved?: boolean;
+  isActive?: boolean;
+  level?: string;
+  instructor?: {
+    _id?: string;
+    name?: string;
+  };
+}
+
 export function CourseModeration() {
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<ModerationCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -15,7 +29,7 @@ export function CourseModeration() {
   const fetchCourses = () => {
     setLoading(true);
     api
-      .get("/admin/courses")
+      .get<{ courses: ModerationCourse[] }>("/admin/courses")
       .then((res) => {
         setCourses(res.data.courses || []);
       })
@@ -30,8 +44,9 @@ export function CourseModeration() {
       await api.patch(`/admin/courses/${courseId}/status`, updates);
       toast.success("Course status updated");
       setCourses(courses.map(c => c._id === courseId ? { ...c, ...updates } : c));
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update course status");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to update course status";
+      toast.error(msg);
     }
   };
 

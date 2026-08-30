@@ -2,8 +2,22 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { toast } from "react-toastify";
 
+export interface AdminEnrollment {
+  _id: string;
+  course?: {
+    _id?: string;
+    title?: string;
+  };
+  student?: {
+    _id?: string;
+    name?: string;
+  };
+  status: string;
+  createdAt: string;
+}
+
 export function EnrollmentList() {
-  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [enrollments, setEnrollments] = useState<AdminEnrollment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -13,9 +27,9 @@ export function EnrollmentList() {
   const fetchEnrollments = () => {
     setLoading(true);
     api
-      .get("/admin/enrollments")
+      .get<{ enrollments: AdminEnrollment[] }>("/admin/enrollments")
       .then((res) => {
-        setEnrollments(res.data.enrollments);
+        setEnrollments(res.data.enrollments || []);
       })
       .catch(() => {
         toast.error("Failed to load enrollments");

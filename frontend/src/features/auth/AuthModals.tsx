@@ -29,21 +29,22 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
         }
     }, [isOpen, initialMode]);
 
-    const handleAuthSuccess = async (token: string, user: any) => {
-        login(token, user);
+    const handleAuthSuccess = async (token: string, initialUser: AuthUser) => {
+        let currentUser = initialUser;
+        login(token, currentUser);
 
         try {
             const status = await getOnboardingStatus();
             if (status?.user) {
                 login(token, status.user);
-                user = status.user;
+                currentUser = status.user;
             }
         } catch {
             // Ignore sync error and fallback to login response payload
         }
 
         onClose();
-        if (!user.onboardingCompleted) {
+        if (!currentUser.onboardingCompleted) {
             navigate('/onboarding');
         }
     };
@@ -73,8 +74,9 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                 const { token, user } = await registerWithEmail({ name, email, password });
                 await handleAuthSuccess(token, user);
             }
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Authentication error');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Authentication error';
+            toast.error(msg);
         } finally {
             setLoading(false);
         }

@@ -3,18 +3,27 @@ import { api } from "@/lib/api";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 
+export interface AdminStats {
+  totalUsers: number;
+  totalStudents: number;
+  totalInstructors: number;
+  totalCourses: number;
+  totalEnrollments: number;
+}
+
 export function AdminDashboard() {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api
-      .get("/admin/stats")
+      .get<{ stats: AdminStats }>("/admin/stats")
       .then((res) => {
         setStats(res.data.stats);
       })
-      .catch((err) => {
-        toast.error(err.response?.data?.message || "Failed to load stats");
+      .catch((err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to load stats";
+        toast.error(msg);
       })
       .finally(() => setLoading(false));
   }, []);

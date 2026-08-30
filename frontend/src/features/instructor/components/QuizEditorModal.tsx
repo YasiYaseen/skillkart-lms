@@ -30,9 +30,9 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
         setQuestions(questions.filter((_, i) => i !== index));
     };
 
-    const handleQuestionChange = (index: number, field: string, value: any) => {
+    const handleQuestionChange = <K extends keyof Question>(index: number, field: K, value: Question[K]) => {
         const updated = [...questions];
-        (updated[index] as any)[field] = value;
+        updated[index] = { ...updated[index], [field]: value };
         setQuestions(updated);
     };
 
@@ -96,8 +96,9 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
             setQuestions([{ question: '', options: ['', ''], correctAnswer: 0 }]);
             setPassingPercentage(60);
             onClose();
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to save quiz');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save quiz';
+            toast.error(msg);
         } finally {
             setSaving(false);
         }

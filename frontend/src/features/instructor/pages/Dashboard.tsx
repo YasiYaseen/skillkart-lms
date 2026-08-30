@@ -1,11 +1,25 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 
+export interface ActiveStudent {
+    id?: string;
+    name: string;
+    email: string;
+    totalCompletedLessons: number;
+    averageProgressPercentage: number;
+}
+
+interface InstructorCourseItem {
+    _id: string;
+    title: string;
+    status: string;
+}
+
 function Dashboard() {
     const [stats, setStats] = useState({ enrollments: 0, earnings: 0, active: 0, draft: 0 });
-    const [recent, setRecent] = useState<any[]>([]);
+    const [recent, setRecent] = useState<ActiveStudent[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -13,14 +27,14 @@ function Dashboard() {
             try {
                 const [analyticsRes, coursesRes] = await Promise.all([
                     api.get('/instructor/analytics'),
-                    api.get('/courses?mine=true')
+                    api.get<{ courses: InstructorCourseItem[] }>('/courses?mine=true')
                 ]);
 
                 const summary = analyticsRes.data?.summary || {};
-                const courses = coursesRes.data?.courses || [];
+                const courses: InstructorCourseItem[] = coursesRes.data?.courses || [];
 
                 let tAct = 0, tDft = 0;
-                courses.forEach((c: any) => {
+                courses.forEach((c: InstructorCourseItem) => {
                     if (c.status === 'published') tAct++;
                     else tDft++;
                 });
@@ -34,7 +48,7 @@ function Dashboard() {
                     active: tAct,
                     draft: tDft,
                 });
-            } catch (err) {
+            } catch {
                 toast.error('Failed to load dashboard data');
             } finally {
                 setLoading(false);

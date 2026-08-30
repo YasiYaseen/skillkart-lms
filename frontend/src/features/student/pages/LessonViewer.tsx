@@ -33,14 +33,49 @@ function getEmbedVideoUrl(rawUrl: string): string {
     return rawUrl;
 }
 
+interface ViewerLessonItem {
+    _id: string;
+    lesson: string;
+    type: 'video' | 'pdf' | 'link' | 'text' | string;
+    content: {
+        text?: string;
+        url?: string;
+    };
+    order?: number;
+}
+
+interface ViewerLesson {
+    _id: string;
+    title: string;
+    durationMinutes?: number;
+    order?: number;
+    section?: string;
+    type?: string;
+}
+
+interface ViewerSection {
+    _id: string;
+    title: string;
+    order?: number;
+}
+
+interface ViewerCourse {
+    _id: string;
+    title: string;
+    instructor?: { _id: string; name: string } | string;
+    sections?: ViewerSection[];
+    lessons?: ViewerLesson[];
+    lessonItems?: ViewerLessonItem[];
+}
+
 function LessonViewer() {
     const { courseId, lessonId } = useParams();
     const navigate = useNavigate();
     
-    const [course, setCourse] = useState<any>(null);
-    const [sections, setSections] = useState<any[]>([]);
-    const [lessons, setLessons] = useState<any[]>([]);
-    const [items, setItems] = useState<any[]>([]);
+    const [course, setCourse] = useState<ViewerCourse | null>(null);
+    const [sections, setSections] = useState<ViewerSection[]>([]);
+    const [lessons, setLessons] = useState<ViewerLesson[]>([]);
+    const [items, setItems] = useState<ViewerLessonItem[]>([]);
     const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
     const [bookmarkedLessonIds, setBookmarkedLessonIds] = useState<string[]>([]);
     const [isBookmarked, setIsBookmarked] = useState(false);
@@ -55,7 +90,7 @@ function LessonViewer() {
         const fetchCourse = async () => {
             setLoading(true);
             try {
-                const courseRes = await api.get(`/courses/${courseId}`);
+                const courseRes = await api.get<{ course: ViewerCourse }>(`/courses/${courseId}`);
                 const c = courseRes.data.course;
                 setCourse(c);
                 setSections(c.sections || []);
@@ -76,7 +111,9 @@ function LessonViewer() {
         if (!courseId) return;
         try {
             const bookmarks = await fetchCourseBookmarks(courseId);
-            setBookmarkedLessonIds(bookmarks.map((b) => b.lesson?._id || (b.lesson as any)));
+            setBookmarkedLessonIds(
+                bookmarks.map((b) => (typeof b.lesson === 'object' && b.lesson?._id ? b.lesson._id : String(b.lesson)))
+            );
         } catch {
             // Silently fail for non-enrolled
         }
@@ -331,7 +368,7 @@ function LessonViewer() {
                         {activeTab === 'discussion' && (
                             <LessonDiscussion
                                 lessonId={lessonId!}
-                                courseInstructorId={course?.instructor?._id || course?.instructor}
+                                courseInstructorId={typeof course?.instructor === 'object' ? course.instructor._id : course?.instructor}
                             />
                         )}
 

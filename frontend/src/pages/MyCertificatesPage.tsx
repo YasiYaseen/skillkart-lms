@@ -3,12 +3,26 @@ import { api } from '@/lib/api';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
+export interface StudentCertificate {
+    _id: string;
+    certificateId: string;
+    course?: {
+        _id?: string;
+        title?: string;
+        thumbnailUrl?: string;
+        instructor?: {
+            name?: string;
+        };
+    };
+    issuedAt: string;
+}
+
 function MyCertificatesPage() {
-    const [certificates, setCertificates] = useState<any[]>([]);
+    const [certificates, setCertificates] = useState<StudentCertificate[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.get('/certificates/me')
+        api.get<{ certificates: StudentCertificate[] }>('/certificates/me')
             .then(res => setCertificates(res.data.certificates || []))
             .catch(() => toast.error('Failed to load certificates'))
             .finally(() => setLoading(false));

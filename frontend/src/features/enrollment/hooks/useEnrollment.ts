@@ -33,9 +33,10 @@ export function useEnrollment(courseId?: string) {
       const res = await enrollmentService.getCourseEnrollment(courseId);
       setEnrollment(res.data);
       setError(null);
-    } catch (err: any) {
-      if (err.response?.status !== 404) {
-        setError(err.response?.data?.message || "Failed to fetch enrollment");
+    } catch (err: unknown) {
+      const resp = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
+      if (resp?.status !== 404) {
+        setError(resp?.data?.message || "Failed to fetch enrollment");
       }
       setEnrollment(null);
     } finally {
@@ -55,8 +56,8 @@ export function useEnrollment(courseId?: string) {
       setEnrollment(res.data.enrollment || res.data);
       toast.success("Successfully enrolled!");
       return true;
-    } catch (err: any) {
-      const msg = err.response?.data?.message || "Failed to enroll";
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to enroll";
       toast.error(msg);
       setError(msg);
       return false;
@@ -71,8 +72,9 @@ export function useEnrollment(courseId?: string) {
       const res = await enrollmentService.updateProgress(enrollment._id, lessonId, completed);
       setEnrollment(res.data);
       return res.data;
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update progress");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to update progress";
+      toast.error(msg);
       throw err;
     }
   };
@@ -83,8 +85,9 @@ export function useEnrollment(courseId?: string) {
       await enrollmentService.cancelEnrollment(enrollment._id);
       setEnrollment({ ...enrollment, status: "cancelled" });
       toast.success("Enrollment cancelled");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to cancel enrollment");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to cancel enrollment";
+      toast.error(msg);
     }
   };
 

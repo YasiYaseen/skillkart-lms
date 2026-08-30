@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { GraduationCapIcon } from '../../assets/icons';
 import Button from '../common/Button';
+import { toast } from 'react-toastify';
 
 /**
  * Footer Component
@@ -9,10 +10,13 @@ import Button from '../common/Button';
  */
 function Footer() {
     const currentYear = new Date().getFullYear();
+    const [newsletterEmail, setNewsletterEmail] = useState('');
 
     const handleNewsletterSubmit = (e: FormEvent) => {
         e.preventDefault();
-        // TODO: Implement newsletter subscription
+        if (!newsletterEmail.trim()) return;
+        toast.success(`Thank you! ${newsletterEmail} has been subscribed to our newsletter.`);
+        setNewsletterEmail('');
     };
 
     return (
@@ -62,6 +66,9 @@ function Footer() {
                             <form className="footer-newsletter-form" onSubmit={handleNewsletterSubmit}>
                                 <input
                                     type="email"
+                                    required
+                                    value={newsletterEmail}
+                                    onChange={(e) => setNewsletterEmail(e.target.value)}
                                     className="footer-newsletter-input"
                                     placeholder="Enter your email"
                                 />

@@ -16,9 +16,91 @@ type CourseReview = {
     comment: string;
     createdAt: string;
     student?: {
+        _id?: string;
         name?: string;
-    };
+    } | string;
 };
+
+interface RawCourseDetailsLessonItem {
+    _id: string;
+    lesson: string;
+    type?: string;
+    content?: { text?: string; url?: string };
+    order?: number;
+}
+
+interface RawCourseDetailsLesson {
+    _id: string;
+    title: string;
+    durationMinutes?: number;
+    section: string;
+    order?: number;
+}
+
+interface RawCourseDetailsSection {
+    _id: string;
+    title: string;
+    order?: number;
+}
+
+interface RawCourseDetails {
+    _id: string;
+    title: string;
+    description?: string;
+    level: string;
+    instructor?: { _id?: string; name?: string } | string;
+    averageRating?: number;
+    reviewCount?: number;
+    studentCount?: number;
+    thumbnailUrl?: string;
+    price?: number;
+    durationMinutes?: number;
+    tags?: string[];
+    updatedAt?: string;
+    sections: RawCourseDetailsSection[];
+    lessons: RawCourseDetailsLesson[];
+    lessonItems?: RawCourseDetailsLessonItem[];
+}
+
+interface MappedLecture {
+    title: string;
+    duration: string;
+    items: RawCourseDetailsLessonItem[];
+}
+
+interface MappedSection {
+    id: string;
+    title: string;
+    lectureCount: number;
+    duration: string;
+    lectures: MappedLecture[];
+}
+
+interface DetailedCourseState {
+    id: string;
+    title: string;
+    subtitle: string;
+    instructor: string;
+    instructorId: string | null;
+    rating: number;
+    ratingCount: number;
+    studentCount: number;
+    thumbnail: string;
+    price: number;
+    oldPrice: number | null;
+    totalHours: number;
+    totalLessons: number;
+    level: string;
+    tags: string[];
+    lastUpdated: string;
+    description: string[];
+    structure: {
+        totalSections: number;
+        totalLectures: number;
+        totalDuration: string;
+        sections: MappedSection[];
+    };
+}
 
 // --- Icons ---
 const StarIcon = () => (
@@ -46,7 +128,7 @@ function CourseDetailsPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { isEnrolled, loading: enrollmentLoading } = useEnrollment(courseId);
-    const [course, setCourse] = useState<any>(null);
+    const [course, setCourse] = useState<DetailedCourseState | null>(null);
     const [reviews, setReviews] = useState<CourseReview[]>([]);
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewComment, setReviewComment] = useState('');
@@ -61,21 +143,21 @@ function CourseDetailsPage() {
         }
 
         Promise.all([
-            api.get(`/courses/${courseId}`),
-            api.get(`/courses/${courseId}/reviews`)
+            api.get<{ course: RawCourseDetails }>(`/courses/${courseId}`),
+            api.get<{ reviews: CourseReview[] }>(`/courses/${courseId}/reviews`)
         ])
             .then(([courseRes, reviewRes]) => {
                 const res = courseRes;
                 const c = res.data.course;
-                const mappedSections = c.sections.map((sec: any) => {
-                    const sectionLessons = c.lessons.filter((l: any) => l.section === sec._id);
+                const mappedSections: MappedSection[] = c.sections.map((sec: RawCourseDetailsSection) => {
+                    const sectionLessons = c.lessons.filter((l: RawCourseDetailsLesson) => l.section === sec._id);
                     return {
                         id: sec._id,
                         title: sec.title,
                         lectureCount: sectionLessons.length,
-                        duration: sectionLessons.reduce((acc: number, l: any) => acc + (l.durationMinutes || 0), 0) + ' m',
-                        lectures: sectionLessons.map((l: any) => {
-                            const lessonItems = (c.lessonItems || []).filter((i: any) => i.lesson === l._id);
+                        duration: sectionLessons.reduce((acc: number, l: RawCourseDetailsLesson) => acc + (l.durationMinutes || 0), 0) + ' m',
+                        lectures: sectionLessons.map((l: RawCourseDetailsLesson) => {
+                            const lessonItems = (c.lessonItems || []).filter((i: RawCourseDetailsLessonItem) => i.lesson === l._id);
                             return {
                                 title: l.title,
                                 duration: (l.durationMinutes || 0) + ' mins',
@@ -85,12 +167,15 @@ function CourseDetailsPage() {
                     };
                 });
 
+                const instructorName = typeof c.instructor === 'object' ? c.instructor?.name || 'Unknown Instructor' : 'Unknown Instructor';
+                const instructorId = typeof c.instructor === 'object' ? c.instructor?._id || null : (typeof c.instructor === 'string' ? c.instructor : null);
+
                 setCourse({
                     id: c._id,
                     title: c.title,
                     subtitle: c.description ? c.description.split('.')[0] + '.' : `${c.level.charAt(0).toUpperCase() + c.level.slice(1)} level course`,
-                    instructor: c.instructor?.name || 'Unknown Instructor',
-                    instructorId: c.instructor?._id || (typeof c.instructor === 'string' ? c.instructor : null),
+                    instructor: instructorName,
+                    instructorId,
                     rating: c.averageRating || 0,
                     ratingCount: c.reviewCount || 0,
                     studentCount: c.studentCount || 0,
@@ -112,15 +197,19 @@ function CourseDetailsPage() {
                 });
                 setReviews(reviewRes.data.reviews || []);
             })
-            .catch(err => {
-                toast.error(err.response?.data?.message || 'Failed to fetch course details');
+            .catch((err: unknown) => {
+                const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to fetch course details';
+                toast.error(msg);
             })
             .finally(() => {
                 setLoading(false);
             });
     }, [courseId]);
 
-    const myReview = reviews.find((r: any) => (r.student?._id && r.student._id === user?.id) || (typeof r.student === 'string' && r.student === user?.id));
+    const myReview = reviews.find((r: CourseReview) => {
+        const studentId = typeof r.student === 'object' ? r.student?._id : r.student;
+        return studentId && studentId === user?.id;
+    });
 
     const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -130,29 +219,30 @@ function CourseDetailsPage() {
         try {
             let res;
             if (myReview) {
-                res = await api.patch(`/courses/${courseId}/reviews/me`, {
+                res = await api.patch<{ summary: { averageRating: number; reviewCount: number } }>(`/courses/${courseId}/reviews/me`, {
                     rating: reviewRating,
                     comment: reviewComment,
                 });
                 toast.success('Review updated');
             } else {
-                res = await api.post(`/courses/${courseId}/reviews`, {
+                res = await api.post<{ summary: { averageRating: number; reviewCount: number } }>(`/courses/${courseId}/reviews`, {
                     rating: reviewRating,
                     comment: reviewComment,
                 });
                 toast.success('Review added');
             }
-            const reviewsRes = await api.get(`/courses/${courseId}/reviews`);
+            const reviewsRes = await api.get<{ reviews: CourseReview[] }>(`/courses/${courseId}/reviews`);
             setReviews(reviewsRes.data.reviews || []);
-            setCourse((current: any) => current ? {
+            setCourse((current) => current ? {
                 ...current,
                 rating: res.data.summary.averageRating,
                 ratingCount: res.data.summary.reviewCount,
             } : current);
             setReviewComment('');
             setReviewRating(5);
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to submit review');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to submit review';
+            toast.error(msg);
         } finally {
             setSubmittingReview(false);
         }
@@ -161,10 +251,10 @@ function CourseDetailsPage() {
     const handleDeleteReview = async () => {
         if (!courseId) return;
         try {
-            const res = await api.delete(`/courses/${courseId}/reviews/me`);
-            const reviewsRes = await api.get(`/courses/${courseId}/reviews`);
+            const res = await api.delete<{ summary: { averageRating: number; reviewCount: number } }>(`/courses/${courseId}/reviews/me`);
+            const reviewsRes = await api.get<{ reviews: CourseReview[] }>(`/courses/${courseId}/reviews`);
             setReviews(reviewsRes.data.reviews || []);
-            setCourse((current: any) => current ? {
+            setCourse((current) => current ? {
                 ...current,
                 rating: res.data.summary.averageRating,
                 ratingCount: res.data.summary.reviewCount,

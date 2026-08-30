@@ -2,8 +2,19 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 
+export interface EnrolledStudent {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string;
+    courseTitle: string;
+    progressPercentage: number;
+    enrolledAt: string;
+    status: string;
+}
+
 export function StudentsEnrolled() {
-    const [students, setStudents] = useState<any[]>([]);
+    const [students, setStudents] = useState<EnrolledStudent[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCourse, setSelectedCourse] = useState('all');
@@ -11,7 +22,7 @@ export function StudentsEnrolled() {
     useEffect(() => {
         const fetchStudents = async () => {
             try {
-                const res = await api.get('/instructor/students');
+                const res = await api.get<{ students: EnrolledStudent[] }>('/instructor/students');
                 setStudents(res.data?.students || []);
             } catch {
                 toast.error('Failed to load students list');

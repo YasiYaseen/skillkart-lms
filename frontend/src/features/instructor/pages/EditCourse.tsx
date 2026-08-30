@@ -87,8 +87,9 @@ function EditCourse() {
             });
             toast.success('Course updated successfully!');
             navigate('/instructor/courses');
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to update course');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update course';
+            toast.error(msg);
         } finally {
             setSaving(false);
         }

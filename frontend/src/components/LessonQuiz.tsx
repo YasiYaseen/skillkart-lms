@@ -51,8 +51,9 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
       setSelectedAnswers(new Array(data.questions.length).fill(-1));
       setAttempts(data.totalAttempts || 0);
       if (data.latestAttempt) setResult(data.latestAttempt);
-    } catch (err: any) {
-      if (err?.response?.status === 404) {
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) {
         setNoQuiz(true);
       } else {
         toast.error('Failed to load quiz');

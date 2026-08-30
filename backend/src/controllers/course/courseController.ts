@@ -81,11 +81,12 @@ export async function createCourse(req: Request, res: Response) {
 
 export async function getCourses(req: Request, res: Response) {
   try {
-    const { q, search, level, tag, mine, sort } = req.query as {
+    const { q, search, level, tag, priceTier, mine, sort } = req.query as {
       q?: string;
       search?: string;
       level?: string;
       tag?: string;
+      priceTier?: string;
       mine?: string;
       sort?: string;
     };
@@ -113,6 +114,19 @@ export async function getCourses(req: Request, res: Response) {
       filter.tags = { $in: [new RegExp(`^${tag.trim()}$`, "i")] };
     }
 
+    if (priceTier === "free") {
+      filter.$and = filter.$and || [];
+      (filter.$and as Array<Record<string, unknown>>).push({
+        $or: [{ isPaid: false }, { price: 0 }, { price: null }],
+      });
+    } else if (priceTier === "under-20") {
+      filter.price = { $gt: 0, $lte: 20 };
+    } else if (priceTier === "under-50") {
+      filter.price = { $gt: 0, $lte: 50 };
+    } else if (priceTier === "paid") {
+      filter.price = { $gt: 0 };
+    }
+
     if (searchQuery) {
       // Find instructors matching the search term
       const matchingUsers = await User.find({
@@ -131,7 +145,11 @@ export async function getCourses(req: Request, res: Response) {
         searchConditions.push({ instructor: { $in: matchingInstructorIds } });
       }
 
-      filter.$or = searchConditions;
+      if (filter.$and) {
+        (filter.$and as Array<Record<string, unknown>>).push({ $or: searchConditions });
+      } else {
+        filter.$or = searchConditions;
+      }
     }
 
     const courses = await Course.find(filter)

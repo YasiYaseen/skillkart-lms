@@ -49,8 +49,9 @@ export default function FileUpload({
       // but if we use a proxy or API prefix, we can just use the relative URL.
       // Let's pass the URL exactly as returned by the backend.
       onUploadSuccess(fileUrl);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to upload file');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to upload file';
+      setError(msg);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {

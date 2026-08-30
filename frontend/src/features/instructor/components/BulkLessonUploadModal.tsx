@@ -16,7 +16,7 @@ interface BulkLessonUploadModalProps {
   sectionTitle?: string;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: (lessons: any[]) => void;
+  onSuccess?: () => void;
 }
 
 export function BulkLessonUploadModal({

@@ -4,7 +4,32 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { QuizEditorModal } from '../components/QuizEditorModal';
 import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
-import { FileUpload } from '@components/common';
+import { Button, FileUpload } from '@/components/common';
+
+export interface CourseLessonItem {
+    _id: string;
+    type: string;
+    content: {
+        text?: string;
+        url?: string;
+    };
+    order: number;
+}
+
+export interface CourseLesson {
+    _id: string;
+    title: string;
+    durationMinutes: number;
+    order: number;
+    items?: CourseLessonItem[];
+}
+
+export interface CourseSection {
+    _id: string;
+    title: string;
+    order: number;
+    lessons: CourseLesson[];
+}
 
 const LEVEL_OPTIONS = [
     { label: 'Beginner', value: 'beginner' },
@@ -30,7 +55,7 @@ function CreateCourse() {
     const [creatingCourse, setCreatingCourse] = useState(false);
 
     // Curriculum state
-    const [sections, setSections] = useState<any[]>([]);
+    const [sections, setSections] = useState<CourseSection[]>([]);
     const [newSectionTitle, setNewSectionTitle] = useState('');
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
@@ -80,8 +105,9 @@ function CreateCourse() {
             setCourseId(res.data.course._id);
             setStep(2);
             toast.success('Course created! Now add curriculum.');
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to create course');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create course';
+            toast.error(msg);
         } finally {
             setCreatingCourse(false);
         }
@@ -103,16 +129,37 @@ function CreateCourse() {
         }
     };
 
+    const handleDeleteSection = async (sectionId: string) => {
+        try {
+            await api.delete(`/sections/${sectionId}`);
+            setSections(sections.filter((s) => s._id !== sectionId));
+            toast.success('Section deleted');
+        } catch {
+            toast.error('Failed to delete section');
+        }
+    };
+
+    const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= sections.length) return;
+        const updated = [...sections];
+        const temp = updated[index];
+        updated[index] = updated[targetIndex];
+        updated[targetIndex] = temp;
+        setSections(updated);
+    };
+
     const handleAddLesson = async (e: React.FormEvent, sectionId: string) => {
         e.preventDefault();
         try {
             const sec = sections.find((s) => s._id === sectionId);
+            if (!sec) return;
             const res = await api.post(`/sections/${sectionId}/lessons`, {
                 title: newLessonTitle,
                 durationMinutes: Number(newLessonDuration),
                 order: sec.lessons.length + 1,
             });
-            const updatedSection = {
+            const updatedSection: CourseSection = {
                 ...sec,
                 lessons: [...sec.lessons, { ...res.data.lesson, items: [] }],
             };
@@ -125,11 +172,41 @@ function CreateCourse() {
         }
     };
 
+    const handleDeleteLesson = async (sectionId: string, lessonId: string) => {
+        try {
+            await api.delete(`/lessons/${lessonId}`);
+            setSections(
+                sections.map((s) =>
+                    s._id === sectionId
+                        ? { ...s, lessons: s.lessons.filter((l) => l._id !== lessonId) }
+                        : s
+                )
+            );
+            toast.success('Lesson deleted');
+        } catch {
+            toast.error('Failed to delete lesson');
+        }
+    };
+
+    const handleMoveLesson = (sectionId: string, index: number, direction: 'up' | 'down') => {
+        const sec = sections.find((s) => s._id === sectionId);
+        if (!sec) return;
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= sec.lessons.length) return;
+        const updatedLessons = [...sec.lessons];
+        const temp = updatedLessons[index];
+        updatedLessons[index] = updatedLessons[targetIndex];
+        updatedLessons[targetIndex] = temp;
+        setSections(sections.map((s) => (s._id === sectionId ? { ...s, lessons: updatedLessons } : s)));
+    };
+
     const handleAddItem = async (e: React.FormEvent, sectionId: string, lessonId: string) => {
         e.preventDefault();
         try {
             const sec = sections.find((s) => s._id === sectionId);
-            const lesson = sec.lessons.find((l: any) => l._id === lessonId);
+            if (!sec) return;
+            const lesson = sec.lessons.find((l) => l._id === lessonId);
+            if (!lesson) return;
 
             let content: Record<string, string>;
             if (newItemType === 'video' || newItemType === 'link' || newItemType === 'pdf') {
@@ -148,10 +225,10 @@ function CreateCourse() {
             const updatedItems = createdItem
                 ? [...(lesson.items || []), createdItem]
                 : [...(lesson.items || [])];
-            const updatedLesson = { ...lesson, items: updatedItems };
-            const updatedSection = {
+            const updatedLesson: CourseLesson = { ...lesson, items: updatedItems };
+            const updatedSection: CourseSection = {
                 ...sec,
-                lessons: sec.lessons.map((l: any) => (l._id === lessonId ? updatedLesson : l)),
+                lessons: sec.lessons.map((l) => (l._id === lessonId ? updatedLesson : l)),
             };
 
             setSections(sections.map((s) => (s._id === sectionId ? updatedSection : s)));
@@ -169,8 +246,9 @@ function CreateCourse() {
             await api.patch(`/courses/${courseId}/publish`);
             toast.success('Course Published Successfully!');
             navigate('/instructor/courses');
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Publish failed');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Publish failed';
+            toast.error(msg);
         }
     };
 
@@ -408,7 +486,7 @@ function CreateCourse() {
                                 <div className="p-6">
                                     {/* Lessons list */}
                                     <div className="space-y-3 mb-4">
-                                        {sec.lessons.map((les: any, lIdx: number) => (
+                                        {sec.lessons.map((les: CourseLesson, lIdx: number) => (
                                             <div key={les._id} className="p-4 border border-gray-100 rounded-lg bg-gray-50/50">
                                                 <div className="flex justify-between items-center mb-2">
                                                     <div className="flex items-center gap-2">
@@ -463,7 +541,7 @@ function CreateCourse() {
                                                 {/* Lesson items preview */}
                                                 {les.items && les.items.length > 0 && (
                                                     <div className="mt-2 pl-4 border-l-2 border-blue-200 space-y-1">
-                                                        {les.items.map((item: any) => (
+                                                        {les.items.map((item: CourseLessonItem) => (
                                                             <div key={item._id} className="text-xs text-gray-600 flex items-center gap-2">
                                                                 <span className="uppercase font-mono text-[10px] bg-gray-200 px-1.5 py-0.5 rounded">
                                                                     {item.type}
@@ -570,14 +648,15 @@ function CreateCourse() {
                     sectionId={bulkUploadSectionId}
                     isOpen={Boolean(bulkUploadSectionId)}
                     onClose={() => setBulkUploadSectionId(null)}
-                    onSuccess={(newLessons) => {
-                        setSections(
-                            sections.map((sec) =>
-                                sec._id === bulkUploadSectionId
-                                    ? { ...sec, lessons: [...sec.lessons, ...newLessons.map(l => ({ ...l, items: [] }))] }
-                                    : sec
-                            )
-                        );
+                    onSuccess={async () => {
+                        if (courseId) {
+                            try {
+                                const res = await api.get<{ sections: CourseSection[] }>(`/courses/${courseId}/sections`);
+                                setSections(res.data.sections || []);
+                            } catch {
+                                // Ignore refresh error
+                            }
+                        }
                     }}
                 />
             )}

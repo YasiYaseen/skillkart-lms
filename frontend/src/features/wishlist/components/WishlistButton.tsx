@@ -62,8 +62,9 @@ export function WishlistButton({
         toast.success("Saved to wishlist");
         onToggle?.(true);
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update wishlist");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to update wishlist";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

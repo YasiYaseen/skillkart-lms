@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { EnrollmentCard } from '@/features/enrollment/components/EnrollmentCard';
+import { EnrollmentCard, EnrollmentCardProps } from '@/features/enrollment/components/EnrollmentCard';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import LearningStreakCard from '../components/LearningStreakCard';
 import CourseRecommendations from '@/components/course/CourseRecommendations';
 import RecentlyViewedCourses from '@/components/course/RecentlyViewedCourses';
 
+type EnrollmentItem = EnrollmentCardProps['enrollment'];
+
 function MyCourses() {
-    const [enrollments, setEnrollments] = useState<any[]>([]);
+    const [enrollments, setEnrollments] = useState<EnrollmentItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchEnrollments = async () => {
             try {
-                const res = await api.get('/enrollments/me');
+                const res = await api.get<{ data: EnrollmentItem[] }>('/enrollments/me');
                 setEnrollments(res.data.data || []);
-            } catch (err: any) {
-                toast.error(err.response?.data?.message || 'Failed to fetch your courses');
+            } catch (err: unknown) {
+                const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to fetch your courses';
+                toast.error(msg);
             } finally {
                 setLoading(false);
             }
@@ -31,8 +34,9 @@ function MyCourses() {
             await api.delete(`/enrollments/${enrollmentId}`);
             toast.success('Successfully unenrolled from the course');
             setEnrollments(prev => prev.filter(e => e._id !== enrollmentId));
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to unenroll');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to unenroll';
+            toast.error(msg);
         }
     };
 

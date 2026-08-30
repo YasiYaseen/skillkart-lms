@@ -10,9 +10,29 @@ const STATUS_BADGE: Record<string, string> = {
     archived: 'bg-gray-100 text-gray-500',
 };
 
+export interface InstructorCourse {
+    id: string;
+    title: string;
+    thumbnail: string;
+    earnings: number;
+    students: number;
+    status: string;
+    level: string;
+}
+
+interface RawInstructorCourse {
+    _id: string;
+    title: string;
+    thumbnailUrl?: string;
+    enrollmentCount?: number;
+    price?: number;
+    status: string;
+    level?: string;
+}
+
 function MyCourses() {
     const navigate = useNavigate();
-    const [courses, setCourses] = useState<any[]>([]);
+    const [courses, setCourses] = useState<InstructorCourse[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -20,9 +40,9 @@ function MyCourses() {
 
     const fetchCourses = useCallback(async () => {
         try {
-            const res = await api.get('/courses?mine=true');
-            const data = res.data.courses;
-            const mapped = data.map((c: any) => ({
+            const res = await api.get<{ courses: RawInstructorCourse[] }>('/courses?mine=true');
+            const data = res.data.courses || [];
+            const mapped: InstructorCourse[] = data.map((c: RawInstructorCourse) => ({
                 id: c._id,
                 title: c.title,
                 thumbnail: c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=100&h=60&fit=crop',
@@ -58,8 +78,9 @@ function MyCourses() {
                     ? { ...c, status: currentStatus === 'published' ? 'draft' : 'published' }
                     : c
             ));
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Action failed');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Action failed';
+            toast.error(msg);
         } finally {
             setTogglingId(null);
         }
@@ -71,8 +92,9 @@ function MyCourses() {
             await api.delete(`/courses/${courseId}`);
             toast.success('Course deleted');
             setCourses(prev => prev.filter(c => c.id !== courseId));
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Delete failed');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Delete failed';
+            toast.error(msg);
         } finally {
             setDeletingId(null);
             setConfirmDeleteId(null);

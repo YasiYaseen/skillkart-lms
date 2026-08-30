@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '@/lib/api';
 import CourseCard from '@/components/common/CourseCard';
@@ -25,6 +25,24 @@ interface InstructorStats {
     averageRating: number;
 }
 
+interface InstructorCourseData {
+    _id: string;
+    title: string;
+    thumbnailUrl?: string;
+    tags?: string[];
+    averageRating?: number;
+    reviewCount?: number;
+    price?: number;
+    level?: string;
+    enrollmentCount?: number;
+}
+
+interface InstructorProfileResponse {
+    instructor: InstructorData;
+    stats?: InstructorStats;
+    courses?: InstructorCourseData[];
+}
+
 function InstructorPublicProfile() {
     const { instructorId } = useParams<{ instructorId: string }>();
     const [instructor, setInstructor] = useState<InstructorData | null>(null);
@@ -34,7 +52,7 @@ function InstructorPublicProfile() {
         totalReviews: 0,
         averageRating: 0,
     });
-    const [courses, setCourses] = useState<any[]>([]);
+    const [courses, setCourses] = useState<InstructorCourseData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -43,14 +61,20 @@ function InstructorPublicProfile() {
         setLoading(true);
         setError(null);
 
-        api.get(`/users/instructor/${instructorId}`)
+        api.get<InstructorProfileResponse>(`/users/instructor/${instructorId}`)
             .then((res) => {
                 setInstructor(res.data.instructor);
-                setStats(res.data.stats || {});
+                setStats(res.data.stats || {
+                    totalCourses: 0,
+                    totalStudents: 0,
+                    totalReviews: 0,
+                    averageRating: 0,
+                });
                 setCourses(res.data.courses || []);
             })
-            .catch((err) => {
-                setError(err.response?.data?.message || 'Failed to load instructor profile');
+            .catch((err: unknown) => {
+                const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to load instructor profile';
+                setError(msg);
             })
             .finally(() => {
                 setLoading(false);

@@ -104,13 +104,13 @@ All MVP, Later, and Nice-To-Have features are technically implemented. However, 
 
 | # | Task | Priority | Status |
 |---|---|---|---|
-| 3.1 | Add skeleton loader cards (shimmer placeholders) during initial data fetch | High | Not Started |
-| 3.2 | Add empty state with illustration and helpful message when no results | High | Not Started |
-| 3.3 | Add "Free" badge on course cards where `isPaid === false` | High | Not Started |
-| 3.4 | Show total course duration on course cards (sum of lesson durations) | Medium | Not Started |
-| 3.5 | Add price range filter (Free / Under $20 / Under $50 / Any) | Medium | Not Started |
-| 3.6 | Add tag chip filters above the grid for one-click filtering | Medium | Not Started |
-| 3.7 | Show enrolled student count on each course card | Low | Not Started |
+| 3.1 | Add skeleton loader cards (shimmer placeholders) during initial data fetch | High | Done |
+| 3.2 | Add empty state with illustration and helpful message when no results | High | Done |
+| 3.3 | Add "Free" badge on course cards where `isPaid === false` | High | Done |
+| 3.4 | Show total course duration on course cards (sum of lesson durations) | Medium | Done |
+| 3.5 | Add price range filter (Free / Under $20 / Under $50 / Any) | Medium | Done |
+| 3.6 | Add tag chip filters above the grid for one-click filtering | Medium | Done |
+| 3.7 | Show enrolled student count on each course card | Low | Done |
 
 ---
 

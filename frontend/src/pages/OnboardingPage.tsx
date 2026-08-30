@@ -88,8 +88,9 @@ export default function OnboardingPage() {
       });
       toast.success('Welcome to SkillKart!');
       navigate('/', { replace: true });
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to save onboarding');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save onboarding';
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

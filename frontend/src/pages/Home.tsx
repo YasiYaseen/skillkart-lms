@@ -46,6 +46,19 @@ const COMPANIES = [
     { name: "PayPal", logo: "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" }
 ];
 
+interface RawHomeCourse {
+    _id: string;
+    title: string;
+    instructor?: { name?: string };
+    thumbnailUrl?: string;
+    averageRating?: number;
+    reviewCount?: number;
+    price?: number;
+    level?: string;
+    tags?: string[];
+    enrollmentCount?: number;
+}
+
 function Home() {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -54,10 +67,10 @@ function Home() {
     const [loadingCourses, setLoadingCourses] = useState(true);
 
     useEffect(() => {
-        api.get('/courses')
+        api.get<{ courses: RawHomeCourse[] }>('/courses')
             .then((res) => {
                 const raw = res.data?.courses || [];
-                const mapped: Course[] = raw.slice(0, 4).map((c: any) => ({
+                const mapped: Course[] = raw.slice(0, 4).map((c: RawHomeCourse) => ({
                     id: c._id,
                     title: c.title,
                     instructor: c.instructor?.name || 'Instructor',
