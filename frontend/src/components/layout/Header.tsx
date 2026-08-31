@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCapIcon } from '@assets/icons';
+import { BrandLogo } from '@components/common/BrandLogo';
 import Button from '@components/common/Button';
 import NotificationBell from '@components/common/NotificationBell';
 import ThemeToggle from '@components/common/ThemeToggle';
@@ -62,12 +62,7 @@ function Header() {
         <div className="container header-inner">
 
           {/* Logo */}
-          <Link to="/" className="header-logo">
-            <span className="header-logo-icon">
-              <GraduationCapIcon />
-            </span>
-            SkillKart
-          </Link>
+          <BrandLogo />
 
           {/* Actions */}
           <div className="header-actions">

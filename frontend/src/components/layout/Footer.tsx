@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, FormEvent } from 'react';
-import { GraduationCapIcon } from '../../assets/icons';
+import { BrandLogo } from '../common/BrandLogo';
 import Button from '../common/Button';
 import { toast } from 'react-toastify';
 import { api } from '@/lib/api';
@@ -40,13 +40,8 @@ function Footer() {
             <div className="container">
                 <div className="footer-inner">
                     {/* Brand Section */}
-                    <div className="footer-brand">
-                        <div className="footer-logo">
-                            <span className="footer-logo-icon">
-                                <GraduationCapIcon />
-                            </span>
-                            SkillKart
-                        </div>
+                    <div className="footer-brand space-y-3">
+                        <BrandLogo size="lg" />
                         <p className="footer-description">
                             SkillKart is a modern learning management system designed to help
                             instructors create courses and enable students to learn at their own pace.

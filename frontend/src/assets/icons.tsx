@@ -97,3 +97,31 @@ export function GraduationCapIcon({ className = '' }: IconProps) {
         </svg>
     );
 }
+
+export function SkillKartIcon({ className = 'w-8 h-8' }: IconProps) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 36 36"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <defs>
+                <linearGradient id="sk-icon-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#3B82F6" />
+                    <stop offset="100%" stopColor="#1D4ED8" />
+                </linearGradient>
+                <linearGradient id="sk-icon-cap" x1="6" y1="8" x2="30" y2="22" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#FFFFFF" />
+                    <stop offset="100%" stopColor="#E2E8F0" />
+                </linearGradient>
+            </defs>
+            <rect width="36" height="36" rx="9" fill="url(#sk-icon-grad)" />
+            <path d="M18 7.5L31 14.5L18 21.5L5 14.5L18 7.5Z" fill="url(#sk-icon-cap)" />
+            <path d="M10 17.5V23.5C10 26 13.5 28 18 28C22.5 28 26 26 26 23.5V17.5L18 22L10 17.5Z" fill="#BFDBFE" />
+            <path d="M31 14.5V22C31 23 29.8 24.5 29.8 25.5" stroke="#FBBF24" strokeWidth="1.8" strokeLinecap="round" />
+            <circle cx="31" cy="14.5" r="1.2" fill="#F59E0B" />
+            <path d="M18 12.5L18.7 14.2L20.5 15L18.7 15.8L18 17.5L17.3 15.8L15.5 15L17.3 14.2L18 12.5Z" fill="#1D4ED8" />
+        </svg>
+    );
+}

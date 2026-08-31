@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { GraduationCapIcon } from '@assets/icons';
+import { BrandLogo } from '@/components/common/BrandLogo';
 import { useAuth } from '@/features/auth/AuthContext';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 
@@ -96,12 +96,7 @@ export function InstructorLayout() {
         <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
             {/* Top Header */}
             <header className="h-16 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 bg-white dark:bg-gray-900 sticky top-0 z-50 transition-colors">
-                <Link to="/" className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
-                    <span className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-xs">
-                        <GraduationCapIcon className="w-[18px] h-[18px] text-white" />
-                    </span>
-                    SkillKart
-                </Link>
+                <BrandLogo subtitle="Instructor Studio" to="/instructor" />
 
                 <div className="flex items-center gap-4">
                     <ThemeToggle />
