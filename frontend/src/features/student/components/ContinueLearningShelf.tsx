@@ -61,24 +61,24 @@ export function ContinueLearningShelf() {
 
     if (enrollments.length === 0) {
         return (
-            <div className="rounded-xl bg-slate-900 text-white p-6 sm:p-8 border border-slate-800 shadow-sm">
+            <div className="rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xs">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div className="max-w-xl">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/15 text-blue-300 text-xs font-semibold mb-2.5 border border-blue-400/20">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 text-xs font-semibold mb-2.5 border border-blue-200 dark:border-blue-400/20">
                             <AcademicCapIcon className="w-3.5 h-3.5" />
                             <span>Learning Dashboard</span>
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-2">
+                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-2 text-slate-900 dark:text-white">
                             Ready to begin your learning path?
                         </h2>
-                        <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                        <p className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm leading-relaxed">
                             Explore courses across software development, data science, product leadership, and business strategy.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-3">
                         <Link
                             to="/courses"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm shadow-2xs transition-colors"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm shadow-xs transition-colors"
                         >
                             <span>Explore Catalog</span>
                             <ArrowRightIcon className="w-4 h-4" />
@@ -123,10 +123,10 @@ export function ContinueLearningShelf() {
             </div>
 
             {/* Featured Resume Spotlight Card */}
-            <div className="rounded-xl bg-slate-900 text-white p-5 sm:p-6 border border-slate-800 shadow-sm">
+            <div className="rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                     {/* Left: Thumbnail with Play Overlay */}
-                    <div className="lg:col-span-4 relative rounded-lg overflow-hidden aspect-16/10 group bg-slate-800">
+                    <div className="lg:col-span-4 relative rounded-lg overflow-hidden aspect-16/10 group bg-slate-100 dark:bg-slate-800">
                         <img
                             src={course.thumbnailUrl || fallbackThumb}
                             alt={course.title}
@@ -144,24 +144,24 @@ export function ContinueLearningShelf() {
 
                     {/* Middle: Course Info & Next Lesson */}
                     <div className="lg:col-span-5 flex flex-col justify-center space-y-2.5">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 text-[11px] font-medium w-fit border border-blue-400/20">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[11px] font-medium w-fit border border-blue-200 dark:border-blue-400/20">
                             <span>In Progress</span>
                         </div>
 
-                        <h3 className="text-lg sm:text-xl font-bold text-white leading-snug line-clamp-2">
+                        <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">
                             {course.title}
                         </h3>
 
-                        <p className="text-xs text-slate-400">
-                            Instructor: <span className="font-medium text-slate-200">{course.instructor?.name || 'Instructor'}</span>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Instructor: <span className="font-medium text-slate-700 dark:text-slate-200">{course.instructor?.name || 'Instructor'}</span>
                         </p>
 
                         {/* Next Up Lesson */}
-                        <div className="p-3 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center gap-2.5">
-                            <BookOpenIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                        <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 flex items-center gap-2.5">
+                            <BookOpenIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                             <div className="truncate flex-1">
-                                <p className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Up Next</p>
-                                <p className="text-xs font-medium text-slate-100 truncate">
+                                <p className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400 tracking-wider">Up Next</p>
+                                <p className="text-xs font-medium text-slate-800 dark:text-slate-100 truncate">
                                     {lastLesson ? lastLesson.title : 'Resume next module'}
                                 </p>
                             </div>
@@ -169,19 +169,19 @@ export function ContinueLearningShelf() {
                     </div>
 
                     {/* Right: Progress & Action */}
-                    <div className="lg:col-span-3 flex flex-col justify-center items-start lg:items-end space-y-3.5 border-t lg:border-t-0 lg:border-l border-slate-800 pt-4 lg:pt-0 lg:pl-6">
+                    <div className="lg:col-span-3 flex flex-col justify-center items-start lg:items-end space-y-3.5 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 pt-4 lg:pt-0 lg:pl-6">
                         <div className="w-full text-left lg:text-right">
                             <div className="flex items-center justify-between lg:justify-end gap-3 mb-1.5">
-                                <span className="text-xs text-slate-400 font-normal">Progress</span>
-                                <span className="text-xs font-bold text-white font-mono">{progress}%</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Progress</span>
+                                <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">{progress}%</span>
                             </div>
-                            <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                                 <div
-                                    className="bg-blue-500 h-full rounded-full transition-all duration-300"
+                                    className="bg-blue-600 dark:bg-blue-500 h-full rounded-full transition-all duration-300"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
-                            <p className="text-[11px] text-slate-400 mt-1">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                                 {primaryEnrollment.completedLessonIds?.length || 0} of {primaryEnrollment.totalLessonsCount || 0} lessons completed
                             </p>
                         </div>
@@ -196,7 +196,7 @@ export function ContinueLearningShelf() {
                             </button>
                             <Link
                                 to={`/courses/${course._id}`}
-                                className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-center font-medium text-xs transition-colors border border-slate-700/60"
+                                className="w-full py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-center font-medium text-xs transition-colors border border-slate-200 dark:border-slate-700/60"
                             >
                                 View Syllabus
                             </Link>

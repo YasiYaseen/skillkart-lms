@@ -115,19 +115,19 @@ export function LearnerHome() {
     return (
         <div className="container py-8 space-y-10">
             {/* 1. Dynamic Hero Welcome & Search Hub */}
-            <section className="rounded-xl bg-slate-900 text-white p-6 sm:p-8 md:p-10 border border-slate-800 shadow-sm">
+            <section className="rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-8 md:p-10 border border-slate-200 dark:border-slate-800 shadow-xs">
                 <div className="max-w-3xl space-y-4">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/15 border border-blue-400/20 text-blue-300 text-xs font-semibold">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-50 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-400/20 text-blue-700 dark:text-blue-300 text-xs font-semibold">
                         <span>{greeting}, {user?.name?.split(' ')[0] || 'Learner'}</span>
-                        <span className="w-1 h-1 rounded-full bg-blue-400" />
-                        <span className="text-slate-300">SkillKart Learning Hub</span>
+                        <span className="w-1 h-1 rounded-full bg-blue-500 dark:bg-blue-400" />
+                        <span className="text-slate-600 dark:text-slate-300">SkillKart Learning Hub</span>
                     </div>
 
-                    <h1 className="text-2xl sm:text-4xl font-bold tracking-tight leading-tight text-white">
+                    <h1 className="text-2xl sm:text-4xl font-bold tracking-tight leading-tight text-slate-900 dark:text-white">
                         Build verified skills with expert-led courses.
                     </h1>
 
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
                         Explore rigorous, project-based courses across software engineering, data science, product design, finance, and leadership.
                     </p>
 
@@ -143,7 +143,7 @@ export function LearnerHome() {
 
                     {/* Topic Badges */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
-                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] mr-1">
+                        <span className="text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px] mr-1">
                             Popular:
                         </span>
                         {[
@@ -157,7 +157,7 @@ export function LearnerHome() {
                             <button
                                 key={t.tag}
                                 onClick={() => navigate(`/courses?tag=${encodeURIComponent(t.tag)}`)}
-                                className="px-2.5 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white transition-colors cursor-pointer text-xs font-medium"
+                                className="px-2.5 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer text-xs font-medium"
                             >
                                 {t.label}
                             </button>
@@ -166,56 +166,56 @@ export function LearnerHome() {
                 </div>
 
                 {/* Quick Learner Stats Quicklinks */}
-                <div className="mt-8 pt-6 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <Link
                         to="/my-courses"
-                        className="p-3.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 transition-colors flex items-center gap-3 group"
+                        className="p-3.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition-colors flex items-center gap-3 group"
                     >
-                        <div className="w-9 h-9 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                             <AcademicCapIcon className="w-5 h-5" />
                         </div>
                         <div className="truncate">
-                            <p className="text-[11px] text-slate-400">Enrolled Courses</p>
-                            <p className="text-xs sm:text-sm font-semibold text-white group-hover:text-blue-300 transition-colors">My Learning →</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Enrolled Courses</p>
+                            <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">My Learning →</p>
                         </div>
                     </Link>
 
                     <Link
                         to="/study-hub"
-                        className="p-3.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 transition-colors flex items-center gap-3 group"
+                        className="p-3.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition-colors flex items-center gap-3 group"
                     >
-                        <div className="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                             <DocumentTextIcon className="w-5 h-5" />
                         </div>
                         <div className="truncate">
-                            <p className="text-[11px] text-slate-400">Study Notes</p>
-                            <p className="text-xs sm:text-sm font-semibold text-white group-hover:text-indigo-300 transition-colors">Study Hub →</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Study Notes</p>
+                            <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">Study Hub →</p>
                         </div>
                     </Link>
 
                     <Link
                         to="/my-certificates"
-                        className="p-3.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 transition-colors flex items-center gap-3 group"
+                        className="p-3.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition-colors flex items-center gap-3 group"
                     >
-                        <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                             <TrophyIcon className="w-5 h-5" />
                         </div>
                         <div className="truncate">
-                            <p className="text-[11px] text-slate-400">Credentials</p>
-                            <p className="text-xs sm:text-sm font-semibold text-white group-hover:text-amber-300 transition-colors">Certificates →</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Credentials</p>
+                            <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">Certificates →</p>
                         </div>
                     </Link>
 
                     <Link
                         to="/wishlist"
-                        className="p-3.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 transition-colors flex items-center gap-3 group"
+                        className="p-3.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition-colors flex items-center gap-3 group"
                     >
-                        <div className="w-9 h-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-lg bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                             <HeartIcon className="w-5 h-5" />
                         </div>
                         <div className="truncate">
-                            <p className="text-[11px] text-slate-400">Saved Courses</p>
-                            <p className="text-xs sm:text-sm font-semibold text-white group-hover:text-rose-300 transition-colors">Wishlist →</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Saved Courses</p>
+                            <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-300 transition-colors">Wishlist →</p>
                         </div>
                     </Link>
                 </div>
@@ -343,17 +343,17 @@ export function LearnerHome() {
             </div>
 
             {/* 11. Browse All Catalog CTA */}
-            <section className="rounded-xl bg-slate-900 text-white p-6 sm:p-8 md:p-10 text-center space-y-3 border border-slate-800 shadow-sm">
+            <section className="rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-8 md:p-10 text-center space-y-3 border border-slate-200 dark:border-slate-800 shadow-xs">
                 <h2 className="text-xl sm:text-2xl font-bold">
                     Looking for a specific skill or certification?
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-lg mx-auto">
                     Search our complete catalog of over {feed?.totalPublishedCourses || '150+'} courses with faceted filters, prerequisites, and level paths.
                 </p>
                 <div className="pt-2">
                     <Link
                         to="/courses"
-                        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm shadow-2xs transition-colors"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm shadow-xs transition-colors"
                     >
                         <span>Explore Full Catalog</span>
                         <ArrowRightIcon className="w-4 h-4" />
