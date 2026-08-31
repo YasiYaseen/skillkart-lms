@@ -55,17 +55,25 @@ export async function checkout(req: Request, res: Response) {
       return res.status(404).json({ message: "Courses not found." });
     }
 
-    // Calculate subtotal and build order items
+    const commissionRate = settings?.platformCommissionRate ?? 20;
+    const payoutShareRate = settings?.instructorPayoutShare ?? 80;
+
+    // Calculate subtotal and build order items with baseline payouts
     let subtotal = 0;
     const items: IOrderItem[] = courses.map((c) => {
       const price = typeof c.price === "number" ? c.price : 0;
       subtotal += price;
+      const baseInstructorPayout = Math.round(price * (payoutShareRate / 100) * 100) / 100;
+      const basePlatformFee = Math.round((price - baseInstructorPayout) * 100) / 100;
       return {
         course: new Types.ObjectId(c._id.toString()),
         title: c.title,
         originalPrice: price,
         discountAmount: 0,
+        discountFundedBy: "none",
         finalPrice: price,
+        instructorPayout: baseInstructorPayout,
+        platformFee: basePlatformFee,
       };
     });
 
@@ -85,52 +93,127 @@ export async function checkout(req: Request, res: Response) {
         const meetsMinPurchase = !coupon.minPurchaseAmount || subtotal >= coupon.minPurchaseAmount;
 
         if (isNotExpired && hasRedemptions && meetsMinPurchase) {
-          appliedCoupon = coupon;
-          if (coupon.course) {
-            // Find item corresponding to the specific course
+          const fundedBy = coupon.fundedBy || (coupon.creatorRole === "admin" ? "platform" : "instructor");
+          const scope = coupon.scope || (coupon.course ? "single_course" : coupon.creatorRole === "admin" ? "platform_global" : "instructor_all");
+
+          if (scope === "single_course" || coupon.course) {
+            // Course-specific coupon
             const targetItem = items.find(
               (it) => it.course.toString() === coupon.course?.toString()
             );
             if (targetItem) {
-              const itemDiscount =
+              appliedCoupon = coupon;
+              let itemDiscount =
                 coupon.discountType === "percentage"
                   ? (targetItem.originalPrice * coupon.discountValue) / 100
                   : Math.min(targetItem.originalPrice, coupon.discountValue);
 
-              const finalItemDiscount = coupon.maxDiscountAmount
-                ? Math.min(itemDiscount, coupon.maxDiscountAmount)
-                : itemDiscount;
+              if (coupon.maxDiscountAmount && itemDiscount > coupon.maxDiscountAmount) {
+                itemDiscount = coupon.maxDiscountAmount;
+              }
 
-              targetItem.discountAmount = Math.round(finalItemDiscount * 100) / 100;
+              // If platform-funded, cap discount at platform commission to prevent deficit
+              if (fundedBy === "platform") {
+                const maxAllowedPlatformDiscount = (targetItem.originalPrice * commissionRate) / 100;
+                itemDiscount = Math.min(itemDiscount, maxAllowedPlatformDiscount);
+              }
+
+              targetItem.discountAmount = Math.round(itemDiscount * 100) / 100;
+              targetItem.discountFundedBy = fundedBy;
               targetItem.finalPrice = Math.max(0, targetItem.originalPrice - targetItem.discountAmount);
+
+              if (fundedBy === "platform") {
+                // Instructor receives guaranteed 100% of baseline
+                targetItem.instructorPayout = Math.round(targetItem.originalPrice * (payoutShareRate / 100) * 100) / 100;
+                targetItem.platformFee = Math.max(0, Math.round((targetItem.finalPrice - targetItem.instructorPayout) * 100) / 100);
+              } else {
+                // Instructor funds discount
+                targetItem.instructorPayout = Math.round(targetItem.finalPrice * (payoutShareRate / 100) * 100) / 100;
+                targetItem.platformFee = Math.round(targetItem.finalPrice * (commissionRate / 100) * 100) / 100;
+              }
+
               discountTotal = targetItem.discountAmount;
             }
+          } else if (scope === "instructor_all" || (coupon.creatorRole === "instructor" && coupon.instructor)) {
+            // Instructor catalog coupon: apply ONLY to courses by this instructor
+            const instructorIdStr = coupon.instructor ? String(coupon.instructor) : "";
+            const instructorCourseIds = new Set(
+              courses
+                .filter((c) => {
+                  const cInst = c.instructor as any;
+                  const cInstructorId = String(cInst?._id || cInst || "");
+                  return cInstructorId === instructorIdStr;
+                })
+                .map((c) => c._id.toString())
+            );
+
+            const applicableItems = items.filter((it) => instructorCourseIds.has(it.course.toString()));
+
+            if (applicableItems.length > 0) {
+              appliedCoupon = coupon;
+              let instSubtotal = applicableItems.reduce((acc, it) => acc + it.originalPrice, 0);
+
+              let rawDiscount =
+                coupon.discountType === "percentage"
+                  ? (instSubtotal * coupon.discountValue) / 100
+                  : Math.min(instSubtotal, coupon.discountValue);
+
+              if (coupon.maxDiscountAmount && rawDiscount > coupon.maxDiscountAmount) {
+                rawDiscount = coupon.maxDiscountAmount;
+              }
+
+              let totalAllocated = 0;
+              applicableItems.forEach((it, idx) => {
+                let itemDisc = 0;
+                if (idx === applicableItems.length - 1) {
+                  itemDisc = Math.round((rawDiscount - totalAllocated) * 100) / 100;
+                } else {
+                  itemDisc = Math.round(((it.originalPrice / instSubtotal) * rawDiscount) * 100) / 100;
+                  totalAllocated += itemDisc;
+                }
+
+                it.discountAmount = itemDisc;
+                it.discountFundedBy = "instructor";
+                it.finalPrice = Math.max(0, it.originalPrice - it.discountAmount);
+                it.instructorPayout = Math.round(it.finalPrice * (payoutShareRate / 100) * 100) / 100;
+                it.platformFee = Math.round(it.finalPrice * (commissionRate / 100) * 100) / 100;
+                discountTotal += it.discountAmount;
+              });
+            }
           } else {
-            // Global cart discount distributed across items
-            const rawDiscount =
+            // Platform global coupon: applies across all items with protected instructor payouts
+            appliedCoupon = coupon;
+            let rawDiscount =
               coupon.discountType === "percentage"
                 ? (subtotal * coupon.discountValue) / 100
                 : Math.min(subtotal, coupon.discountValue);
 
-            const cappedDiscount = coupon.maxDiscountAmount
-              ? Math.min(rawDiscount, coupon.maxDiscountAmount)
-              : rawDiscount;
-
-            discountTotal = Math.round(cappedDiscount * 100) / 100;
-
-            // Distribute discount proportionally across items
-            if (subtotal > 0) {
-              let allocatedDiscount = 0;
-              items.forEach((it, idx) => {
-                if (idx === items.length - 1) {
-                  it.discountAmount = Math.round((discountTotal - allocatedDiscount) * 100) / 100;
-                } else {
-                  it.discountAmount = Math.round(((it.originalPrice / subtotal) * discountTotal) * 100) / 100;
-                  allocatedDiscount += it.discountAmount;
-                }
-                it.finalPrice = Math.max(0, it.originalPrice - it.discountAmount);
-              });
+            if (coupon.maxDiscountAmount && rawDiscount > coupon.maxDiscountAmount) {
+              rawDiscount = coupon.maxDiscountAmount;
             }
+
+            let totalAllocated = 0;
+            items.forEach((it, idx) => {
+              let itemDisc = 0;
+              if (idx === items.length - 1) {
+                itemDisc = Math.round((rawDiscount - totalAllocated) * 100) / 100;
+              } else {
+                itemDisc = Math.round(((it.originalPrice / subtotal) * rawDiscount) * 100) / 100;
+                totalAllocated += itemDisc;
+              }
+
+              // Platform subsidy cap per item
+              const maxAllowedPlatformDisc = Math.round(it.originalPrice * (commissionRate / 100) * 100) / 100;
+              itemDisc = Math.min(itemDisc, maxAllowedPlatformDisc);
+
+              it.discountAmount = itemDisc;
+              it.discountFundedBy = "platform";
+              it.finalPrice = Math.max(0, it.originalPrice - it.discountAmount);
+              // PROTECTED BASELINE PAYOUT
+              it.instructorPayout = Math.round(it.originalPrice * (payoutShareRate / 100) * 100) / 100;
+              it.platformFee = Math.max(0, Math.round((it.finalPrice - it.instructorPayout) * 100) / 100);
+              discountTotal += it.discountAmount;
+            });
           }
         }
       }

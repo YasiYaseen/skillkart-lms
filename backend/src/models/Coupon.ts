@@ -2,10 +2,15 @@ import { Schema, model, type Document, type Types } from "mongoose";
 
 export interface ICoupon extends Document {
   code: string;
+  title?: string;
+  creatorRole: "admin" | "instructor";
+  scope: "single_course" | "instructor_all" | "platform_global";
+  fundedBy: "platform" | "instructor";
+  isPublic: boolean;
   discountType: "percentage" | "fixed";
   discountValue: number;
   course?: Types.ObjectId;
-  instructor: Types.ObjectId;
+  instructor?: Types.ObjectId;
   minPurchaseAmount: number;
   maxDiscountAmount?: number;
   maxRedemptions?: number;
@@ -26,6 +31,32 @@ const CouponSchema = new Schema<ICoupon>(
       uppercase: true,
       index: true,
     },
+    title: {
+      type: String,
+      trim: true,
+    },
+    creatorRole: {
+      type: String,
+      enum: ["admin", "instructor"],
+      default: "instructor",
+      index: true,
+    },
+    scope: {
+      type: String,
+      enum: ["single_course", "instructor_all", "platform_global"],
+      default: "instructor_all",
+      index: true,
+    },
+    fundedBy: {
+      type: String,
+      enum: ["platform", "instructor"],
+      default: "instructor",
+    },
+    isPublic: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     discountType: {
       type: String,
       enum: ["percentage", "fixed"],
@@ -44,7 +75,6 @@ const CouponSchema = new Schema<ICoupon>(
     instructor: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
       index: true,
     },
     minPurchaseAmount: {

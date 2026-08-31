@@ -85,8 +85,12 @@ export async function getInstructorEarnings(req: Request, res: Response) {
         if (courseMap[itemCourseId]) {
           const itemFinalPrice = Number(item.finalPrice) || 0;
           const itemDiscount = Number(item.discountAmount) || 0;
-          const fee = Math.round(itemFinalPrice * 0.20 * 100) / 100;
-          const takeHome = Math.round(itemFinalPrice * 0.80 * 100) / 100;
+          const takeHome = typeof item.instructorPayout === "number"
+            ? item.instructorPayout
+            : Math.round(itemFinalPrice * 0.80 * 100) / 100;
+          const fee = typeof item.platformFee === "number"
+            ? item.platformFee
+            : Math.round((itemFinalPrice - takeHome) * 100) / 100;
 
           courseMap[itemCourseId].unitsSold += 1;
           courseMap[itemCourseId].grossRevenue += itemFinalPrice;
@@ -120,8 +124,8 @@ export async function getInstructorEarnings(req: Request, res: Response) {
       }
     }
 
-    const totalPlatformFees = Math.round(totalGrossSales * 0.20 * 100) / 100;
-    const totalLifetimeNetEarnings = Math.round(totalGrossSales * 0.80 * 100) / 100;
+    const totalPlatformFees = Object.values(courseMap).reduce((acc, c) => acc + c.platformFee, 0);
+    const totalLifetimeNetEarnings = Object.values(courseMap).reduce((acc, c) => acc + c.netEarnings, 0);
 
     // 3. Fetch instructor payout history
     const payouts = await Payout.find({ instructor: instructorId }).sort({ createdAt: -1 }).lean();
@@ -207,18 +211,22 @@ export async function requestInstructorPayout(req: Request, res: Response) {
       "items.course": { $in: courseIds },
     }).lean();
 
-    let totalGrossSales = 0;
+    let totalLifetimeNetEarnings = 0;
     const courseIdSet = new Set(courseIds.map((id) => id.toString()));
 
     for (const order of orders) {
       for (const item of order.items) {
         if (item.course && courseIdSet.has(item.course.toString())) {
-          totalGrossSales += Number(item.finalPrice) || 0;
+          const itemFinalPrice = Number(item.finalPrice) || 0;
+          const takeHome = typeof item.instructorPayout === "number"
+            ? item.instructorPayout
+            : Math.round(itemFinalPrice * 0.80 * 100) / 100;
+          totalLifetimeNetEarnings += takeHome;
         }
       }
     }
 
-    const totalLifetimeNetEarnings = Math.round(totalGrossSales * 0.80 * 100) / 100;
+    totalLifetimeNetEarnings = Math.round(totalLifetimeNetEarnings * 100) / 100;
 
     const existingPayouts = await Payout.find({
       instructor: instructorId,
@@ -284,8 +292,8 @@ export async function exportEarningsCsv(req: Request, res: Response) {
       "Student Email",
       "Course Title",
       "Sale Price ($)",
-      "Platform Fee 20% ($)",
-      "Instructor Net 80% ($)",
+      "Platform Fee ($)",
+      "Instructor Net ($)",
       "Payment Status",
     ];
 
@@ -301,8 +309,12 @@ export async function exportEarningsCsv(req: Request, res: Response) {
       for (const item of order.items) {
         if (item.course && courseIdSet.has(item.course.toString())) {
           const itemFinalPrice = Number(item.finalPrice) || 0;
-          const fee = Math.round(itemFinalPrice * 0.20 * 100) / 100;
-          const takeHome = Math.round(itemFinalPrice * 0.80 * 100) / 100;
+          const takeHome = typeof item.instructorPayout === "number"
+            ? item.instructorPayout
+            : Math.round(itemFinalPrice * 0.80 * 100) / 100;
+          const fee = typeof item.platformFee === "number"
+            ? item.platformFee
+            : Math.round((itemFinalPrice - takeHome) * 100) / 100;
 
           const student = (order.student && typeof order.student === "object" ? order.student : null) as { name?: string; email?: string } | null;
           const billing = order.paymentMetadata && typeof order.paymentMetadata === "object" && "billingDetails" in order.paymentMetadata

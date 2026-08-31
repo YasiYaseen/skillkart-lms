@@ -5,7 +5,10 @@ export interface IOrderItem {
   title: string;
   originalPrice: number;
   discountAmount: number;
+  discountFundedBy?: "platform" | "instructor" | "none";
   finalPrice: number;
+  instructorPayout?: number;
+  platformFee?: number;
 }
 
 export type PaymentMethod = "simulated" | "free" | "stripe" | "razorpay" | "paypal" | "card" | "express" | "upi";
@@ -52,9 +55,22 @@ const OrderItemSchema = new Schema<IOrderItem>(
       default: 0,
       min: 0,
     },
+    discountFundedBy: {
+      type: String,
+      enum: ["platform", "instructor", "none"],
+      default: "none",
+    },
     finalPrice: {
       type: Number,
       required: true,
+      min: 0,
+    },
+    instructorPayout: {
+      type: Number,
+      min: 0,
+    },
+    platformFee: {
+      type: Number,
       min: 0,
     },
   },

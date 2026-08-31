@@ -256,9 +256,11 @@ export async function getFinancialReports(req: Request, res: Response) {
     let grossVolume = 0;
     let totalDiscount = 0;
     let totalSubtotal = 0;
+    let totalPlatformCommission = 0;
+    let totalInstructorPayouts = 0;
     const paymentMethodsCount: Record<string, { count: number; volume: number }> = {};
     const coursesMap: Record<string, { title: string; unitsSold: number; revenue: number; instructorName: string }> = {};
-    const instructorsMap: Record<string, { name: string; email: string; unitsSold: number; grossRevenue: number }> = {};
+    const instructorsMap: Record<string, { name: string; email: string; unitsSold: number; grossRevenue: number; estimatedPayout: number }> = {};
     const timeSeriesMap: Record<string, { date: string; revenue: number; count: number; discounts: number }> = {};
 
     for (const order of orders) {
@@ -315,18 +317,29 @@ export async function getFinancialReports(req: Request, res: Response) {
         coursesMap[courseIdStr].revenue += itemPrice;
 
         // Aggregate Instructor
+        const itemTakeHome = typeof item.instructorPayout === "number"
+          ? item.instructorPayout
+          : Math.round(itemPrice * 0.80 * 100) / 100;
+        const itemFee = typeof item.platformFee === "number"
+          ? item.platformFee
+          : Math.round((itemPrice - itemTakeHome) * 100) / 100;
+
+        totalPlatformCommission += itemFee;
+        totalInstructorPayouts += itemTakeHome;
+
         if (!instructorsMap[instructorId]) {
-          instructorsMap[instructorId] = { name: instructorName, email: instructorEmail, unitsSold: 0, grossRevenue: 0 };
+          instructorsMap[instructorId] = { name: instructorName, email: instructorEmail, unitsSold: 0, grossRevenue: 0, estimatedPayout: 0 };
         }
         instructorsMap[instructorId].unitsSold += 1;
         instructorsMap[instructorId].grossRevenue += itemPrice;
+        instructorsMap[instructorId].estimatedPayout += itemTakeHome;
       }
     }
 
     const totalOrdersCount = orders.length;
     const averageOrderValue = totalOrdersCount > 0 ? Math.round((grossVolume / totalOrdersCount) * 100) / 100 : 0;
-    const platformCommission = Math.round(grossVolume * 0.20 * 100) / 100;
-    const instructorPayouts = Math.round(grossVolume * 0.80 * 100) / 100;
+    const platformCommission = Math.round(totalPlatformCommission * 100) / 100;
+    const instructorPayouts = Math.round(totalInstructorPayouts * 100) / 100;
 
     // Sort time series chronologically
     const timeSeries = Object.values(timeSeriesMap).sort((a, b) => a.date.localeCompare(b.date));
@@ -341,9 +354,11 @@ export async function getFinancialReports(req: Request, res: Response) {
     const topInstructors = Object.entries(instructorsMap)
       .map(([id, data]) => ({
         instructorId: id,
-        ...data,
+        name: data.name,
+        email: data.email,
+        unitsSold: data.unitsSold,
         grossRevenue: Math.round(data.grossRevenue * 100) / 100,
-        estimatedPayout: Math.round(data.grossRevenue * 0.80 * 100) / 100,
+        estimatedPayout: Math.round(data.estimatedPayout * 100) / 100,
       }))
       .sort((a, b) => b.grossRevenue - a.grossRevenue)
       .slice(0, 6);

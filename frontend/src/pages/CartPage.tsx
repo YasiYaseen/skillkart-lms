@@ -3,7 +3,13 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { useAuth } from '@/features/auth/AuthContext';
-import { validateCouponCode, processCheckout, type OrderRecord } from '@/features/student/api/cart';
+import {
+  validateCouponCode,
+  processCheckout,
+  fetchFeaturedCoupons,
+  type FeaturedCoupon,
+  type OrderRecord,
+} from '@/features/student/api/cart';
 import { addToWishlist } from '@/features/wishlist';
 import { PaymentCardSimulator, type PaymentFormState } from '@/components/cart/PaymentCardSimulator';
 import { api } from '@/lib/api';
@@ -19,11 +25,6 @@ import {
   BoltIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon, LockClosedIcon } from '@heroicons/react/20/solid';
-
-const POPULAR_PROMOS = [
-  { code: 'WELCOME20', label: '20% OFF Welcome Bonus' },
-  { code: 'SKILL50', label: '$50 OFF Super Saver' },
-];
 
 export default function CartPage() {
   const { cart, removeFromCart, clearCart, cartTotal, addToCart } = useCart();
@@ -44,9 +45,13 @@ export default function CartPage() {
     discountType: 'percentage' | 'fixed';
     description: string;
     discountTotal: number;
+    scope?: string;
+    creatorRole?: string;
+    applicableItemsCount?: number;
   } | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [featuredPromos, setFeaturedPromos] = useState<FeaturedCoupon[]>([]);
 
   // Billing Details
   const [billingName, setBillingName] = useState(user?.name || '');
@@ -74,6 +79,13 @@ export default function CartPage() {
 
   const discountTotal = appliedCoupon ? appliedCoupon.discountTotal : 0;
   const finalTotal = Math.max(0, Math.round((cartTotal - discountTotal) * 100) / 100);
+
+  // Load featured coupons from database
+  useEffect(() => {
+    fetchFeaturedCoupons()
+      .then((promos) => setFeaturedPromos(promos))
+      .catch(() => setFeaturedPromos([]));
+  }, []);
 
   // Load recommended courses
   useEffect(() => {
@@ -105,6 +117,9 @@ export default function CartPage() {
           discountType: res.coupon.discountType,
           description: res.coupon.description,
           discountTotal: res.discountTotal,
+          scope: res.coupon.scope,
+          creatorRole: res.coupon.creatorRole,
+          applicableItemsCount: res.applicableItemsCount,
         });
         setCouponInput(res.coupon.code);
         toast.success(`Coupon "${res.coupon.code}" applied! You saved ${formatAmount(res.discountTotal)}`);
@@ -549,18 +564,27 @@ export default function CartPage() {
             </h3>
 
             {appliedCoupon ? (
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-                    ✓ {appliedCoupon.code}
-                  </span>
-                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs animate-fadeIn">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-300">
+                      ✓ {appliedCoupon.code}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      {appliedCoupon.scope === 'single_course'
+                        ? '1 Course'
+                        : appliedCoupon.scope === 'instructor_all'
+                        ? `${appliedCoupon.applicableItemsCount || 1} Instructor Course(s)`
+                        : 'Site-Wide'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block">
                     {appliedCoupon.description} applied (-{formatAmount(discountTotal)})
                   </span>
                 </div>
                 <button
                   onClick={handleRemoveCoupon}
-                  className="text-xs text-rose-600 hover:underline font-semibold cursor-pointer"
+                  className="text-xs text-rose-600 hover:text-rose-700 hover:underline font-semibold cursor-pointer shrink-0"
                 >
                   Remove
                 </button>
@@ -596,23 +620,26 @@ export default function CartPage() {
                   )}
                 </form>
 
-                {/* Popular Promo Pills */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block mb-1.5 font-medium">Quick Offer Codes:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {POPULAR_PROMOS.map((promo) => (
-                      <button
-                        key={promo.code}
-                        type="button"
-                        onClick={() => handleApplyCoupon(promo.code)}
-                        className="text-[10px] px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer"
-                      >
-                        <TagIcon className="w-3 h-3 text-blue-500" />
-                        <span>{promo.code}</span>
-                      </button>
-                    ))}
+                {/* Dynamic Featured Platform Promo Pills */}
+                {featuredPromos.length > 0 && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 block mb-1.5 font-medium">Featured Offers:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {featuredPromos.map((promo) => (
+                        <button
+                          key={promo.code}
+                          type="button"
+                          onClick={() => handleApplyCoupon(promo.code)}
+                          className="text-[10px] px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <TagIcon className="w-3 h-3 text-blue-500" />
+                          <span>{promo.code}</span>
+                          <span className="text-slate-400 font-normal">({promo.discountType === 'percentage' ? `${promo.discountValue}% off` : `$${promo.discountValue} off`})</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>
