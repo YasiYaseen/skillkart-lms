@@ -12,6 +12,20 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { MarkdownRenderer } from '@/components/common';
+import {
+    AcademicCapIcon,
+    ClockIcon as ClockIconSolid,
+    CheckCircleIcon,
+    ShieldCheckIcon,
+    ShoppingCartIcon,
+    BoltIcon,
+    CheckIcon,
+    ArrowRightIcon,
+    BookOpenIcon,
+    SignalIcon,
+    SparklesIcon,
+    MagnifyingGlassIcon,
+} from '@heroicons/react/20/solid';
 
 function formatMinutes(totalMins: number) {
     if (!totalMins || totalMins <= 0) return '0m';
@@ -357,12 +371,12 @@ function CourseDetailsSkeleton() {
 
                     {/* Right Column Skeleton */}
                     <div className="space-y-6">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden p-6 space-y-6 shadow-sm">
-                            <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-2xl w-full" />
-                            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-28" />
-                            <div className="space-y-3">
-                                <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-xl w-full" />
-                                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl w-full" />
+                        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden p-5 space-y-5 shadow-2xs">
+                            <div className="aspect-video bg-slate-200 dark:bg-slate-700 rounded-lg w-full" />
+                            <div className="h-7 bg-slate-200 dark:bg-slate-700 rounded-md w-28" />
+                            <div className="space-y-2.5">
+                                <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded-lg w-full" />
+                                <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded-lg w-full" />
                             </div>
                         </div>
                     </div>
@@ -379,25 +393,25 @@ function CourseDetailsSkeleton() {
     if (!course) {
         return (
             <div className="min-h-[70vh] flex items-center justify-center px-4">
-                <div className="max-w-md w-full text-center bg-white dark:bg-gray-800 rounded-3xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl">
-                        🔍
+                <div className="max-w-md w-full text-center bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                    <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-900/40">
+                        <MagnifyingGlassIcon className="w-7 h-7" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Course Not Found</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1.5">Course Not Found</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
                         The course you are looking for may have been removed, unpublished, or the link is incorrect.
                     </p>
-                    <div className="flex justify-center gap-3">
+                    <div className="flex justify-center gap-2.5">
                         <button
                             type="button"
                             onClick={() => navigate(-1)}
-                            className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                         >
                             Go Back
                         </button>
                         <Link
                             to="/courses"
-                            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors shadow-xs"
+                            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors shadow-2xs"
                         >
                             Browse All Courses
                         </Link>
@@ -761,49 +775,48 @@ function CourseDetailsSkeleton() {
 
                     {/* Right Column (Sticky Card) */}
                     <div className="lg:col-span-1">
-                        <div className="sticky top-4 space-y-6">
+                        <div className="sticky top-20 space-y-6">
 
                             {/* Course Card */}
-                            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                                 {/* Thumbnail */}
-                                <div className="relative aspect-video">
+                                <div className="relative aspect-16/10 bg-slate-100 dark:bg-slate-800">
                                     <img
                                         src={course.thumbnail}
                                         alt={course.title}
                                         className="w-full h-full object-cover"
                                     />
-                                    <div className="absolute inset-0 bg-black/10"></div>
                                 </div>
 
-                                <div className="p-6">
+                                <div className="p-5 sm:p-6">
                                     {/* Price */}
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                                    <div className="flex items-center gap-3 mb-5">
+                                        <span className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
                                             {formatPrice(course.price)}
                                         </span>
                                         {course.oldPrice && (
-                                            <span className="text-lg text-gray-400 line-through">{formatAmount(course.oldPrice)}</span>
+                                            <span className="text-sm text-slate-400 line-through">{formatAmount(course.oldPrice)}</span>
                                         )}
                                     </div>
 
                                     {/* Stats Summary */}
-                                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-6">
-                                        <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center gap-1">
                                             <StarIcon />
-                                            <span>{course.rating > 0 ? course.rating.toFixed(1) : 'N/A'}</span>
+                                            <span className="font-semibold text-slate-700 dark:text-slate-300">{course.rating > 0 ? course.rating.toFixed(1) : 'New'}</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center gap-1">
                                             <ClockIcon />
                                             <span>{course.structure.totalDuration}</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center gap-1">
                                             <BookIcon />
                                             <span>{course.totalLessons} lessons</span>
                                         </div>
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="space-y-2.5 mb-6">
+                                    <div className="space-y-2.5 mb-5">
                                         {courseId && (
                                             <EnrollButton
                                                 courseId={courseId}
@@ -826,18 +839,20 @@ function CourseDetailsSkeleton() {
                                                     }
                                                     navigate('/cart?step=payment');
                                                 }}
-                                                className="w-full py-3 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5"
+                                                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                                             >
-                                                <span>⚡ Buy Now (Instant Checkout)</span>
+                                                <BoltIcon className="w-4 h-4" />
+                                                <span>Instant Checkout</span>
                                             </button>
                                         )}
                                         {courseId && !isEnrolled && (
                                             isInCart(courseId) ? (
                                                 <button
                                                     onClick={() => navigate('/cart')}
-                                                    className="w-full py-2.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl font-bold text-xs hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center gap-2"
+                                                    className="w-full py-2.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg font-medium text-xs hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                                 >
-                                                    <span>🛒 In Cart &bull; Go to Cart →</span>
+                                                    <CheckIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                    <span>In Cart &bull; Go to Cart</span>
                                                 </button>
                                             ) : (
                                                 <button
@@ -851,9 +866,10 @@ function CourseDetailsSkeleton() {
                                                         });
                                                         toast.success('Course added to your cart!');
                                                     }}
-                                                    className="w-full py-2.5 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-xl font-bold text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                                                    className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                                 >
-                                                    <span>🛒 Add to Cart</span>
+                                                    <ShoppingCartIcon className="w-4 h-4 text-slate-500" />
+                                                    <span>Add to Cart</span>
                                                 </button>
                                             )
                                         )}
@@ -861,30 +877,33 @@ function CourseDetailsSkeleton() {
                                             <WishlistButton courseId={courseId} variant="button" />
                                         )}
 
-                                        <p className="text-[11px] text-gray-400 text-center pt-1 font-medium">
-                                            🛡️ 30-Day Money-Back Guarantee &bull; Lifetime Access
-                                        </p>
+                                        <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 pt-2">
+                                            <ShieldCheckIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                            <span>30-Day Money-Back Guarantee &bull; Lifetime Access</span>
+                                        </div>
                                     </div>
 
                                     {/* Course Quick Stats */}
-                                    <div className="pt-4 border-t border-gray-100 dark:border-gray-700/60">
-                                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Course includes</h3>
-                                        <ul className="space-y-2.5">
-                                            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
-                                                <span className="text-indigo-500">📚</span>
-                                                <span>{course.totalLessons} lesson{course.totalLessons !== 1 ? 's' : ''}</span>
+                                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                                        <h3 className="font-semibold text-slate-900 dark:text-white mb-2.5 text-xs uppercase tracking-wider">
+                                            Course Details
+                                        </h3>
+                                        <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                                            <li className="flex items-center gap-2">
+                                                <BookOpenIcon className="w-4 h-4 text-slate-400 shrink-0" />
+                                                <span>{course.totalLessons} total lessons & exercises</span>
                                             </li>
-                                            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
-                                                <span className="text-indigo-500">⏱️</span>
-                                                <span>{course.structure.totalDuration} on-demand content</span>
+                                            <li className="flex items-center gap-2">
+                                                <ClockIconSolid className="w-4 h-4 text-slate-400 shrink-0" />
+                                                <span>{course.structure.totalDuration} on-demand video & reading</span>
                                             </li>
-                                            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
-                                                <span className="text-indigo-500">🎯</span>
+                                            <li className="flex items-center gap-2">
+                                                <SignalIcon className="w-4 h-4 text-slate-400 shrink-0" />
                                                 <span className="capitalize">{course.level ?? 'All'} level</span>
                                             </li>
-                                            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
-                                                <span className="text-indigo-500">♾️</span>
-                                                <span>Full lifetime access</span>
+                                            <li className="flex items-center gap-2">
+                                                <AcademicCapIcon className="w-4 h-4 text-slate-400 shrink-0" />
+                                                <span>Verified certificate upon completion</span>
                                             </li>
                                         </ul>
                                     </div>

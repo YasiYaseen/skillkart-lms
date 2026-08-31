@@ -31,7 +31,7 @@ interface CourseRecommendationsProps {
 
 export default function CourseRecommendations({
   title = "Recommended for You",
-  subtitle = "Based on your interests and popular courses",
+  subtitle = "Curated courses tailored to your recent learning activity",
   limit = 4,
 }: CourseRecommendationsProps) {
   const [courses, setCourses] = useState<RecommendedCourse[]>([]);
@@ -57,13 +57,12 @@ export default function CourseRecommendations({
 
   if (loading) {
     return (
-      <div className="space-y-4 animate-pulse">
-        <div className="h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="h-56 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
-          <div className="h-56 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
-          <div className="h-56 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
-          <div className="h-56 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
+      <div className="space-y-3 animate-pulse">
+        <div className="h-5 w-40 bg-slate-200 dark:bg-slate-800 rounded"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-52 bg-slate-100 dark:bg-slate-800/60 rounded-xl"></div>
+          ))}
         </div>
       </div>
     );
@@ -75,66 +74,66 @@ export default function CourseRecommendations({
   const { formatPrice } = useCurrency();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <SparklesIcon className="w-6 h-6 text-amber-500" />
-            {title}
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <SparklesIcon className="w-4 h-4 text-amber-500" />
+            <span>{title}</span>
           </h2>
           {subtitle && (
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>
           )}
         </div>
         <Link
           to="/courses"
-          className="text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+          className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
         >
           View all courses &rarr;
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {displayCourses.map((course) => (
           <Link
             key={course._id}
             to={`/courses/${course._id}`}
-            className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all flex flex-col"
+            className="group bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-2xs border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col"
           >
-            <div className="aspect-video w-full overflow-hidden bg-gray-100 dark:bg-gray-700 relative">
+            <div className="aspect-16/10 w-full overflow-hidden bg-slate-100 dark:bg-slate-800 relative">
               {course.thumbnailUrl ? (
                 <img
                   src={course.thumbnailUrl}
                   alt={course.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  <BookOpenIcon className="w-10 h-10" />
+                <div className="w-full h-full flex items-center justify-center text-slate-400">
+                  <BookOpenIcon className="w-8 h-8" />
                 </div>
               )}
               {course.level && (
-                <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/90 dark:bg-gray-900/90 text-gray-800 dark:text-gray-200 capitalize backdrop-blur-sm">
+                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-300 capitalize border border-slate-200/50 dark:border-slate-800/50">
                   {course.level}
                 </span>
               )}
             </div>
 
-            <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
+            <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
               <div>
-                <h3 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                <h3 className="font-semibold text-xs text-slate-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {course.title}
                 </h3>
                 {course.instructor?.name && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    by {course.instructor.name}
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    {course.instructor.name}
                   </p>
                 )}
               </div>
 
-              <div className="pt-2 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                 <Rating value={course.averageRating || 0} count={course.reviewCount} />
-                <div className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
+                <div className="font-bold text-xs text-slate-900 dark:text-white">
                   {course.isPaid && course.price ? formatPrice(course.price) : "Free"}
                 </div>
               </div>

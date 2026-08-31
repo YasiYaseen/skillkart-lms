@@ -7,6 +7,7 @@ import {
   type LessonComment,
 } from '../api/comments';
 import { toast } from 'react-toastify';
+import { ChatBubbleLeftRightIcon } from '@heroicons/react/20/solid';
 
 interface Props {
   lessonId: string;
@@ -100,7 +101,6 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
     try {
       setDeletingId(commentId);
       await deleteLessonComment(lessonId, commentId);
-      // Remove the comment and any replies that had it as parent
       setComments((prev) =>
         prev.filter((c) => c._id !== commentId && c.parentComment !== commentId)
       );
@@ -131,14 +131,14 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Top Question / Comment Form */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs transition-colors">
-        <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs transition-colors">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
           <span>Ask a Question / Join the Discussion</span>
-          <span className="text-xs font-normal text-gray-500 dark:text-gray-400">({comments.length} total)</span>
+          <span className="text-xs font-normal text-slate-500 dark:text-slate-400">({comments.length} total)</span>
         </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3.5">
           Have a question about this lesson or want to share feedback? Post below for peers and instructors to see.
         </p>
         <form onSubmit={handlePostComment} className="space-y-3">
@@ -149,13 +149,13 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
             rows={3}
             required
             minLength={2}
-            className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white placeholder-slate-400 rounded-lg px-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-sans"
           />
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={submitting || !content.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
             >
               {submitting ? 'Posting...' : 'Post Comment'}
             </button>
@@ -165,23 +165,23 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
 
       {/* Comment List */}
       {loading ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="animate-pulse bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 h-32" />
+            <div key={n} className="animate-pulse bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 h-28" />
           ))}
         </div>
       ) : topLevelComments.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
-          <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
-            💬
+        <div className="text-center py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-blue-100 dark:border-blue-900/60">
+            <ChatBubbleLeftRightIcon className="w-6 h-6" />
           </div>
-          <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">No comments on this lesson yet</h4>
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+          <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">No comments on this lesson yet</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             Be the first to start a conversation or ask a question about the learning material!
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {topLevelComments.map((comment) => {
             const replies = repliesByParentId[comment._id] || [];
             const isReplying = replyingToId === comment._id;
@@ -194,33 +194,33 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
             return (
               <div
                 key={comment._id}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs transition-colors hover:shadow-sm"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs transition-colors"
               >
                 {/* Main Comment Header */}
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <img
                       src={authorAvatar}
                       alt={comment.user?.name || 'User'}
-                      className="w-10 h-10 rounded-full object-cover border border-gray-100 dark:border-gray-700"
+                      className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                        <span className="font-semibold text-xs text-slate-900 dark:text-white">
                           {comment.user?.name || 'Unknown User'}
                         </span>
                         {comment.user?.role === 'instructor' && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                             Instructor
                           </span>
                         )}
                         {comment.user?.role === 'admin' && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                             Admin
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-gray-400">{timeAgo(comment.createdAt)}</span>
+                      <span className="text-[10px] text-slate-400">{timeAgo(comment.createdAt)}</span>
                     </div>
                   </div>
 
@@ -229,22 +229,22 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                       onClick={() => handleDelete(comment._id)}
                       disabled={deletingId === comment._id}
                       title="Delete comment"
-                      className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-50 disabled:opacity-40"
+                      className="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded hover:bg-rose-50 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                       </svg>
                     </button>
                   )}
                 </div>
 
                 {/* Comment Body */}
-                <div className="mt-3 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed pl-13">
+                <div className="mt-2.5 text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed pl-10.5">
                   {comment.content}
                 </div>
 
                 {/* Action Bar */}
-                <div className="mt-4 pl-13 flex items-center gap-4 border-t border-gray-100 dark:border-gray-800 pt-3">
+                <div className="mt-3 pl-10.5 flex items-center gap-3 border-t border-slate-100 dark:border-slate-800 pt-2.5">
                   <button
                     onClick={() => {
                       if (isReplying) {
@@ -255,16 +255,16 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                         setReplyContent('');
                       }
                     }}
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1.5 transition-colors"
+                    className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 transition-colors cursor-pointer"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
                     </svg>
                     {isReplying ? 'Cancel Reply' : 'Reply'}
                   </button>
 
                   {replies.length > 0 && (
-                    <span className="text-xs text-gray-400 font-medium">
+                    <span className="text-[11px] text-slate-400 font-medium">
                       {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
                     </span>
                   )}
@@ -274,7 +274,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                 {isReplying && (
                   <form
                     onSubmit={(e) => handlePostReply(comment._id, e)}
-                    className="mt-4 pl-13 space-y-3"
+                    className="mt-3 pl-10.5 space-y-2.5"
                   >
                     <textarea
                       value={replyContent}
@@ -283,7 +283,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                       rows={2}
                       required
                       autoFocus
-                      className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                      className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none bg-slate-50 dark:bg-slate-850 text-slate-900 dark:text-white placeholder-slate-400"
                     />
                     <div className="flex items-center justify-end gap-2">
                       <button
@@ -292,14 +292,14 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                           setReplyingToId(null);
                           setReplyContent('');
                         }}
-                        className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+                        className="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={submittingReply || !replyContent.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-md transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
                       >
                         {submittingReply ? 'Replying...' : 'Post Reply'}
                       </button>
@@ -309,7 +309,7 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
 
                 {/* Threaded Replies List */}
                 {replies.length > 0 && (
-                  <div className="mt-4 pl-10 space-y-3 border-l-2 border-blue-100 dark:border-blue-900/60 ml-5">
+                  <div className="mt-3 pl-8 space-y-2.5 border-l border-blue-200 dark:border-blue-900/60 ml-4">
                     {replies.map((reply) => {
                       const replyAvatar =
                         reply.user?.avatar ||
@@ -320,32 +320,32 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                       return (
                         <div
                           key={reply._id}
-                          className="bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/60 rounded-xl p-4 transition-colors"
+                          className="bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-lg p-3 transition-colors"
                         >
                           <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-2">
                               <img
                                 src={replyAvatar}
                                 alt={reply.user?.name || 'User'}
-                                className="w-7 h-7 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                                className="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                               />
                               <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-xs text-gray-900 dark:text-white">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-semibold text-xs text-slate-900 dark:text-white">
                                     {reply.user?.name || 'Unknown User'}
                                   </span>
                                   {reply.user?.role === 'instructor' && (
-                                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
+                                    <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                                       Instructor
                                     </span>
                                   )}
                                   {reply.user?.role === 'admin' && (
-                                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
+                                    <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                                       Admin
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-[11px] text-gray-400">
+                                <span className="text-[10px] text-slate-400">
                                   {timeAgo(reply.createdAt)}
                                 </span>
                               </div>
@@ -356,16 +356,16 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                                 onClick={() => handleDelete(reply._id)}
                                 disabled={deletingId === reply._id}
                                 title="Delete reply"
-                                className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 disabled:opacity-40"
+                                className="text-slate-400 hover:text-rose-500 transition-colors p-0.5 rounded hover:bg-rose-50 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                 </svg>
                               </button>
                             )}
                           </div>
 
-                          <div className="mt-2 text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed pl-9.5">
+                          <div className="mt-1.5 text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed pl-8">
                             {reply.content}
                           </div>
                         </div>
@@ -381,3 +381,5 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
     </div>
   );
 }
+
+export default LessonDiscussion;

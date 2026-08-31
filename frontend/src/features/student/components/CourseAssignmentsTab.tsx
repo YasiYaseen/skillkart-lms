@@ -5,6 +5,7 @@ import {
   type AssignmentItem,
 } from '../api/assignments';
 import FileUpload from '@/components/common/FileUpload';
+import { FolderIcon, LinkIcon, DocumentTextIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
 
 interface CourseAssignmentsTabProps {
   courseId: string;
@@ -329,7 +330,7 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
             {/* Submission Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Submission Format
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -338,13 +339,16 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
                       key={type}
                       type="button"
                       onClick={() => setSubmissionType(type)}
-                      className={`py-2 px-3 rounded-xl text-xs font-semibold capitalize border transition-all ${
+                      className={`py-2 px-3 rounded-lg text-xs font-semibold capitalize border transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
                         submissionType === type
-                          ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-600 text-indigo-700 dark:text-indigo-300 shadow-xs'
-                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                          ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-600 text-blue-700 dark:text-blue-300 shadow-2xs'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
-                      {type === 'file' ? '📁 File Upload' : type === 'link' ? '🔗 External URL' : '📝 Text Entry'}
+                      {type === 'file' && <FolderIcon className="w-3.5 h-3.5" />}
+                      {type === 'link' && <LinkIcon className="w-3.5 h-3.5" />}
+                      {type === 'text' && <DocumentTextIcon className="w-3.5 h-3.5" />}
+                      <span>{type === 'file' ? 'File Upload' : type === 'link' ? 'External URL' : 'Text Entry'}</span>
                     </button>
                   ))}
                 </div>
@@ -352,7 +356,7 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
 
               {submissionType === 'file' && (
                 <div className="space-y-2">
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                     Upload Project Archive / Document (ZIP, PDF, DOCX, Code)
                   </label>
                   <FileUpload
@@ -365,8 +369,9 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
                     }}
                   />
                   {fileUrl && (
-                    <div className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-1 bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-lg">
-                      <span>✓ Ready:</span>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-1 bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                      <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
+                      <span>Ready:</span>
                       <a href={fileUrl} target="_blank" rel="noreferrer" className="underline truncate max-w-xs font-mono">
                         {fileName || fileUrl}
                       </a>

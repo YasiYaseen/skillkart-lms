@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import LearningStreakCard from '../components/LearningStreakCard';
 import CourseRecommendations from '@/components/course/CourseRecommendations';
 import RecentlyViewedCourses from '@/components/course/RecentlyViewedCourses';
+import { AcademicCapIcon, ArrowRightIcon } from '@heroicons/react/20/solid';
 
 type EnrollmentItem = EnrollmentCardProps['enrollment'];
 
@@ -85,20 +86,20 @@ function MyCourses() {
                     </div>
                 </div>
             ) : enrollments.length === 0 ? (
-                <div className="text-center py-16 px-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xs border border-gray-100 dark:border-gray-700">
-                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-4 text-2xl shadow-xs">
-                        🎓
+                <div className="text-center py-16 px-6 bg-white dark:bg-slate-900 rounded-xl shadow-2xs border border-slate-200 dark:border-slate-800">
+                    <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-900/60">
+                        <AcademicCapIcon className="w-7 h-7" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Start your learning journey</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Start your learning journey</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-5">
                         You haven't enrolled in any courses yet. Browse our catalog of expert-led courses and start building your skills today.
                     </p>
                     <Link
                         to="/courses"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-all shadow-md hover:shadow-indigo-500/25"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors shadow-2xs"
                     >
                         <span>Explore Courses</span>
-                        <span>→</span>
+                        <ArrowRightIcon className="w-3.5 h-3.5" />
                     </Link>
                 </div>
             ) : (

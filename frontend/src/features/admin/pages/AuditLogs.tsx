@@ -53,12 +53,12 @@ export default function AuditLogs() {
 
   const getActionBadgeColor = (action: string) => {
     if (action.includes("ACTIVATED") || action.includes("APPROVED")) {
-      return "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+      return "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
     }
     if (action.includes("DEACTIVATED") || action.includes("DELETED")) {
-      return "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800";
+      return "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800";
     }
-    return "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800";
+    return "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800";
   };
 
   return (
@@ -66,26 +66,26 @@ export default function AuditLogs() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <ClipboardDocumentListIcon className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <ClipboardDocumentListIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             Admin Audit Logs
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Track and monitor administrative actions and security events across the platform.
           </p>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
-          <FunnelIcon className="w-4 h-4" /> Filters:
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-2xs border border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+          <FunnelIcon className="w-4 h-4 text-slate-400" /> Filters:
         </div>
 
         <select
           value={selectedAction}
           onChange={(e) => setSelectedAction(e.target.value)}
-          className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white outline-none"
         >
           <option value="">All Actions</option>
           <option value="USER_ACTIVATED">USER_ACTIVATED</option>
@@ -96,7 +96,7 @@ export default function AuditLogs() {
         <select
           value={selectedTargetType}
           onChange={(e) => setSelectedTargetType(e.target.value)}
-          className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white outline-none"
         >
           <option value="">All Target Types</option>
           <option value="user">User</option>
@@ -112,7 +112,7 @@ export default function AuditLogs() {
               setSelectedAction("");
               setSelectedTargetType("");
             }}
-            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
           >
             Clear Filters
           </button>
@@ -120,44 +120,44 @@ export default function AuditLogs() {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xs border border-slate-200 dark:border-slate-800 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">Loading audit logs...</div>
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs">Loading audit logs...</div>
         ) : logs.length === 0 ? (
-          <div className="p-12 text-center text-gray-500 dark:text-gray-400">
-            <ShieldCheckIcon className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-            <p className="font-semibold text-gray-700 dark:text-gray-300">No audit logs found</p>
-            <p className="text-xs text-gray-400 mt-1">Actions taken by administrators will be recorded here.</p>
+          <div className="p-12 text-center text-slate-500 dark:text-slate-400 space-y-2">
+            <ShieldCheckIcon className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />
+            <p className="font-semibold text-xs text-slate-700 dark:text-slate-300">No audit logs found</p>
+            <p className="text-[11px] text-slate-400">Actions taken by administrators will be recorded here.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold uppercase tracking-wider">
+              <thead className="bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-4">Admin</th>
-                  <th className="py-3.5 px-4">Action</th>
-                  <th className="py-3.5 px-4">Target</th>
-                  <th className="py-3.5 px-4">IP Address</th>
-                  <th className="py-3.5 px-4">Date & Time</th>
-                  <th className="py-3.5 px-4 text-right">Details</th>
+                  <th className="py-3 px-4">Admin</th>
+                  <th className="py-3 px-4">Action</th>
+                  <th className="py-3 px-4">Target</th>
+                  <th className="py-3 px-4">IP Address</th>
+                  <th className="py-3 px-4">Date & Time</th>
+                  <th className="py-3 px-4 text-right">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {logs.map((log) => {
                   const isExpanded = expandedLogId === log._id;
                   return (
                     <React.Fragment key={log._id}>
-                      <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-750/50 transition-colors">
-                        <td className="py-3.5 px-4">
-                          <div className="font-semibold text-gray-900 dark:text-white">
+                      <tr className="hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-slate-900 dark:text-white">
                             {log.admin?.name || "Unknown Admin"}
                           </div>
-                          <div className="text-gray-500 dark:text-gray-400 text-[11px]">{log.admin?.email}</div>
+                          <div className="text-slate-500 dark:text-slate-400 text-[11px]">{log.admin?.email}</div>
                         </td>
 
-                        <td className="py-3.5 px-4">
+                        <td className="py-3 px-4">
                           <span
-                            className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getActionBadgeColor(
+                            className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${getActionBadgeColor(
                               log.action
                             )}`}
                           >
@@ -165,27 +165,27 @@ export default function AuditLogs() {
                           </span>
                         </td>
 
-                        <td className="py-3.5 px-4">
-                          <div className="font-medium text-gray-800 dark:text-gray-200 capitalize">
-                            <span className="text-gray-400 font-normal">[{log.targetType}]</span>{" "}
+                        <td className="py-3 px-4">
+                          <div className="font-medium text-slate-800 dark:text-slate-200 capitalize">
+                            <span className="text-slate-400 font-normal">[{log.targetType}]</span>{" "}
                             {log.targetName || log.targetId}
                           </div>
-                          <div className="text-[10px] text-gray-400 font-mono">{log.targetId}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{log.targetId}</div>
                         </td>
 
-                        <td className="py-3.5 px-4 font-mono text-gray-500 dark:text-gray-400">
+                        <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">
                           {log.ipAddress || "—"}
                         </td>
 
-                        <td className="py-3.5 px-4 text-gray-600 dark:text-gray-300">
+                        <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
                           {new Date(log.createdAt).toLocaleString()}
                         </td>
 
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3 px-4 text-right">
                           <button
                             type="button"
                             onClick={() => setExpandedLogId(isExpanded ? null : log._id)}
-                            className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
                           >
                             {isExpanded ? "Hide" : "View"}
                             <ChevronDownIcon
@@ -198,13 +198,13 @@ export default function AuditLogs() {
                       </tr>
 
                       {isExpanded && log.details && (
-                        <tr className="bg-gray-50/80 dark:bg-gray-900/50">
+                        <tr className="bg-slate-50 dark:bg-slate-850">
                           <td colSpan={6} className="p-4">
-                            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
-                              <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
+                              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
                                 Event Payload & Details:
                               </div>
-                              <pre className="text-[11px] font-mono text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap">
+                              <pre className="text-[11px] font-mono text-slate-800 dark:text-slate-200 overflow-x-auto whitespace-pre-wrap">
                                 {JSON.stringify(log.details, null, 2)}
                               </pre>
                             </div>

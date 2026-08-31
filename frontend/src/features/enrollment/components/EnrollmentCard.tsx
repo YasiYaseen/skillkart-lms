@@ -2,6 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ProgressBar } from "./ProgressBar";
 import { Modal, Button } from "@/components/common";
+import {
+  AcademicCapIcon,
+  BookOpenIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ArrowRightIcon,
+} from "@heroicons/react/20/solid";
 
 export interface EnrollmentCardProps {
   enrollment: {
@@ -39,82 +46,83 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
     ? enrollment.lastAccessedLessonId?.title
     : undefined;
 
-  const learnHref = lessonId
-    ? `/learn/${c._id}/${lessonId}`
-    : `/learn/${c._id}`;
-
-  const completionDate = enrollment.completedAt || enrollment.updatedAt;
-
-  const confirmUnenroll = () => {
-    setShowUnenrollModal(false);
-    onUnenroll?.(enrollment._id);
-  };
+  const completionDate = enrollment.completedAt || enrollment.updatedAt || enrollment.createdAt;
+  const targetUrl = lessonId ? `/courses/${c._id}/lessons/${lessonId}` : `/courses/${c._id}`;
 
   return (
     <>
-      <div className={`group relative bg-white dark:bg-gray-800 rounded-2xl shadow-xs hover:shadow-md border overflow-hidden transition-all duration-300 flex flex-col ${
-        completed ? 'border-emerald-200 dark:border-emerald-800/50' : 'border-gray-200 dark:border-gray-700'
-      }`}>
-
-        {/* Completed badge */}
-        {completed && (
-          <div className="absolute top-2.5 left-2.5 z-10 bg-emerald-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            Completed
-          </div>
-        )}
-
-        {/* Unenroll button */}
+      <div className="group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs hover:shadow-xs transition-colors flex flex-col h-full">
+        {/* Unenroll / Drop Action */}
         {onUnenroll && !completed && (
           <button
+            type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setShowUnenrollModal(true);
             }}
+            className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-lg bg-black/40 text-white/80 hover:text-white hover:bg-black/70 backdrop-blur-xs transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
             title="Unenroll from course"
-            className="absolute top-2.5 right-2.5 z-10 bg-white/90 dark:bg-gray-800/90 hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-500 p-1.5 rounded-full shadow-xs transition-colors opacity-0 group-hover:opacity-100"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         )}
 
-        <Link to={learnHref} className="flex flex-col flex-grow">
-          {/* Thumbnail with hover overlay */}
-          <div className="relative aspect-video overflow-hidden bg-gray-100 dark:bg-gray-700">
+        <Link
+          to={targetUrl}
+          className="flex flex-col h-full focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl"
+        >
+          {/* Thumbnail */}
+          <div className="relative aspect-video overflow-hidden bg-slate-100 dark:bg-slate-800">
             <img
               src={thumbnailUrl}
               alt={c.title}
-              className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${completed ? 'opacity-85' : ''}`}
+              className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
             />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white font-semibold bg-indigo-600 px-4 py-1.5 rounded-full text-xs shadow-md">
-                {completed ? 'Review Course' : 'Resume Learning →'}
+            {/* Status Overlay Badge */}
+            <div className="absolute top-2 left-2 flex items-center gap-1.5">
+              {completed ? (
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-600 text-white flex items-center gap-1 shadow-2xs">
+                  <CheckCircleIcon className="w-3 h-3" />
+                  Completed
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-900/80 backdrop-blur-xs text-white shadow-2xs">
+                  {enrollment.progressPercentage > 0 ? `${enrollment.progressPercentage}% Done` : 'Not Started'}
+                </span>
+              )}
+            </div>
+
+            {/* Resume / Review prompt hover */}
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <span className="text-white font-semibold bg-blue-600 px-3 py-1 rounded-lg text-xs shadow-2xs flex items-center gap-1">
+                <span>{completed ? 'Review Course' : 'Resume Learning'}</span>
+                <ArrowRightIcon className="w-3 h-3" />
               </span>
             </div>
           </div>
 
           {/* Card Body */}
-          <div className="p-5 flex flex-col flex-grow">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-1 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+          <div className="p-4 flex flex-col flex-grow">
+            <h3 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm mb-0.5 line-clamp-2 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
               {c.title}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-1">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-2 line-clamp-1">
               By {c.instructor?.name || 'Instructor'}
             </p>
 
             {/* Subtitle: Last lesson or completion date */}
             {completed && completionDate ? (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-3 font-medium flex items-center gap-1">
-                <span>✓ Completed on {new Date(completionDate).toLocaleDateString()}</span>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mb-2 font-medium flex items-center gap-1">
+                <CheckCircleIcon className="w-3.5 h-3.5" />
+                <span>Completed on {new Date(completionDate).toLocaleDateString()}</span>
               </p>
             ) : lastLessonTitle ? (
-              <p className="text-xs text-gray-600 dark:text-gray-300 mb-3 line-clamp-1 italic">
-                📖 {lastLessonTitle}
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 mb-2 line-clamp-1 flex items-center gap-1">
+                <BookOpenIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{lastLessonTitle}</span>
               </p>
             ) : (
               <div className="mb-2" />
@@ -126,19 +134,21 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
                 size="sm"
                 color={completed ? 'green' : 'blue'}
               />
-              <div className="text-xs text-gray-400 dark:text-gray-500 flex justify-between items-center">
+              <div className="text-[11px] text-slate-400 dark:text-slate-500 flex justify-between items-center">
                 <span>{enrollment.completedLessonsCount ?? 0} / {enrollment.totalLessonsCount ?? 0} lessons</span>
-                <span className={`font-semibold ${completed ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                <span className={`font-semibold ${completed ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
                   {enrollment.progressPercentage}%
                 </span>
               </div>
-              <div className="pt-2 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
-                <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">
-                  {completed ? 'Review Course →' : 'Continue Learning →'}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-xs font-medium text-blue-600 dark:text-blue-400 group-hover:underline flex items-center gap-1">
+                  <span>{completed ? 'Review Course' : 'Continue Learning'}</span>
+                  <ArrowRightIcon className="w-3 h-3" />
                 </span>
                 {completed && (
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                    🎓 Certificate
+                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                    <AcademicCapIcon className="w-3 h-3" />
+                    <span>Certificate</span>
                   </span>
                 )}
               </div>
@@ -151,23 +161,26 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
       {showUnenrollModal && (
         <Modal isOpen={showUnenrollModal} onClose={() => setShowUnenrollModal(false)}>
           <div className="text-center p-2">
-            <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-4 text-xl">
-              ⚠️
+            <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3 border border-rose-200 dark:border-rose-800">
+              <ExclamationTriangleIcon className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Unenroll from Course?</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              Are you sure you want to unenroll from <strong className="text-gray-800 dark:text-gray-200">"{c.title}"</strong>? Your completed lesson history will remain saved if you enroll again.
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">Unenroll from Course?</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+              Are you sure you want to unenroll from <strong className="text-slate-800 dark:text-slate-200">"{c.title}"</strong>? Your completed lesson history will remain saved if you enroll again.
             </p>
-            <div className="flex justify-center gap-3">
+            <div className="flex justify-center gap-2">
               <Button variant="secondary" onClick={() => setShowUnenrollModal(false)}>
                 Cancel
               </Button>
               <button
                 type="button"
-                onClick={confirmUnenroll}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors shadow-xs"
+                onClick={() => {
+                  setShowUnenrollModal(false);
+                  onUnenroll?.(enrollment._id);
+                }}
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition-colors cursor-pointer shadow-2xs"
               >
-                Yes, Unenroll
+                Confirm Unenroll
               </button>
             </div>
           </div>

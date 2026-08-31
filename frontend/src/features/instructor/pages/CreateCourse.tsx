@@ -6,6 +6,7 @@ import { QuizEditorModal } from '../components/QuizEditorModal';
 import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { Button, FileUpload } from '@/components/common';
 import { useCurrency } from '@/context/CurrencyContext';
+import { ArrowUpTrayIcon, TrashIcon, AcademicCapIcon, PlusIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 export interface CourseLessonItem {
     _id: string;
@@ -617,27 +618,28 @@ function CreateCourse() {
                                             Section {sIdx + 1}: {sec.title}
                                         </h3>
                                     </div>
-                                    <div className="flex items-center gap-2.5">
+                                    <div className="flex items-center gap-2">
                                         <button
                                             type="button"
                                             onClick={() => setBulkUploadSectionId(sec._id)}
-                                            className="text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-3 py-1.5 rounded-lg font-medium transition-colors border border-blue-200 dark:border-blue-800 shadow-2xs"
+                                            className="text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-2.5 py-1.5 rounded-lg font-medium transition-colors border border-blue-200 dark:border-blue-800 shadow-2xs flex items-center gap-1 cursor-pointer"
                                         >
-                                            ⚡ Bulk Add Lessons
+                                            <ArrowUpTrayIcon className="w-3.5 h-3.5" />
+                                            <span>Bulk Add Lessons</span>
                                         </button>
                                         <button
                                             onClick={() => setActiveSectionId(activeSectionId === sec._id ? null : sec._id)}
-                                            className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 px-3 py-1.5 rounded-lg"
+                                            className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 px-2.5 py-1.5 rounded-lg cursor-pointer"
                                         >
                                             {activeSectionId === sec._id ? 'Cancel' : '+ Add Lesson'}
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => handleDeleteSection(sec._id)}
-                                            className="text-xs text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 dark:hover:bg-red-950/40 rounded"
+                                            className="text-xs text-rose-500 hover:text-rose-700 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer"
                                             title="Delete Section"
                                         >
-                                            🗑️
+                                            <TrashIcon className="w-4 h-4" />
                                         </button>
                                     </div>
                                 </div>
@@ -646,7 +648,7 @@ function CreateCourse() {
                                     {/* Lessons list */}
                                     <div className="space-y-3 mb-4">
                                         {sec.lessons.map((les: CourseLesson, lIdx: number) => (
-                                            <div key={les._id} className="p-4 border border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-gray-800/50">
+                                            <div key={les._id} className="p-4 border border-slate-100 dark:border-slate-800 rounded-lg bg-slate-50/50 dark:bg-slate-800/50">
                                                 <div className="flex justify-between items-center mb-2">
                                                     <div className="flex items-center gap-2">
                                                         <div className="flex flex-col gap-0.5">
@@ -654,7 +656,7 @@ function CreateCourse() {
                                                                 type="button"
                                                                 disabled={lIdx === 0}
                                                                 onClick={() => handleMoveLesson(sec._id, lIdx, 'up')}
-                                                                className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-20 leading-none"
+                                                                className="text-[10px] text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-20 leading-none cursor-pointer"
                                                                 title="Move Lesson Up"
                                                             >
                                                                 ▲
@@ -663,36 +665,37 @@ function CreateCourse() {
                                                                 type="button"
                                                                 disabled={lIdx === sec.lessons.length - 1}
                                                                 onClick={() => handleMoveLesson(sec._id, lIdx, 'down')}
-                                                                className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-20 leading-none"
+                                                                className="text-[10px] text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-20 leading-none cursor-pointer"
                                                                 title="Move Lesson Down"
                                                             >
                                                                 ▼
                                                             </button>
                                                         </div>
-                                                        <span className="font-semibold text-sm text-gray-700 dark:text-gray-200">
+                                                        <span className="font-semibold text-xs text-slate-700 dark:text-slate-200">
                                                             Lesson {lIdx + 1}: {les.title} ({les.durationMinutes} mins)
                                                         </span>
                                                     </div>
-                                                    <div className="space-x-2 flex items-center">
+                                                    <div className="space-x-1.5 flex items-center">
                                                         <button
                                                             onClick={() => setActiveLessonId(activeLessonId === les._id ? null : les._id)}
-                                                            className="text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                                                            className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium cursor-pointer"
                                                         >
                                                             {activeLessonId === les._id ? 'Cancel Item' : '+ Add Content'}
                                                         </button>
                                                         <button
                                                             onClick={() => setQuizLessonId(les._id)}
-                                                            className="text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-3 py-1.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 font-medium"
+                                                            className="text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 font-medium flex items-center gap-1 cursor-pointer"
                                                         >
-                                                            ⚡ Quiz
+                                                            <AcademicCapIcon className="w-3.5 h-3.5" />
+                                                            <span>Quiz</span>
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => handleDeleteLesson(sec._id, les._id)}
-                                                            className="text-xs text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40"
+                                                            className="text-xs text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
                                                             title="Delete Lesson"
                                                         >
-                                                            ✕
+                                                            <TrashIcon className="w-3.5 h-3.5" />
                                                         </button>
                                                     </div>
                                                 </div>

@@ -1,17 +1,5 @@
 import React, { useState } from 'react';
-
-// Icons
-const ChevronDownIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500 dark:text-gray-400">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-  </svg>
-);
-
-const PlayIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0">
-    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm14.024-.983a1.125 1.125 0 010 1.966l-5.603 3.113A1.125 1.125 0 019 15.113V8.887c0-.857.921-1.4 1.671-.983l5.603 3.113z" clipRule="evenodd" />
-  </svg>
-);
+import { ChevronDownIcon, PlayIcon } from '@heroicons/react/20/solid';
 
 interface Lecture {
   title: string;
@@ -57,11 +45,11 @@ const CourseStructure: React.FC<CourseStructureProps> = ({ sections, totalSectio
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700 p-6 md:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xs border border-slate-200 dark:border-slate-800 p-5 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Course Curriculum</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-1">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Course Curriculum</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
             {totalSections} section{totalSections !== 1 ? 's' : ''} • {totalLectures} lesson{totalLectures !== 1 ? 's' : ''} • {totalDuration} total length
           </p>
         </div>
@@ -69,51 +57,51 @@ const CourseStructure: React.FC<CourseStructureProps> = ({ sections, totalSectio
           <button
             type="button"
             onClick={toggleAll}
-            className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 self-start sm:self-auto py-1 px-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 transition-colors"
+            className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 self-start sm:self-auto py-1 px-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 transition-colors cursor-pointer"
           >
             {allOpen ? 'Collapse all sections' : 'Expand all sections'}
           </button>
         )}
       </div>
 
-      <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden divide-y divide-slate-200 dark:divide-slate-800">
         {sections.map((section, secIdx) => {
           const isOpen = openSections.includes(section.id);
           return (
             <div key={section.id} className="group">
               {/* Section Header */}
               <div
-                className="bg-gray-50 dark:bg-gray-900/50 p-4 flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/40 transition-colors select-none"
+                className="bg-slate-50 dark:bg-slate-850 p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none"
                 onClick={() => toggleSection(section.id)}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-                    <ChevronDownIcon />
+                <div className="flex items-center gap-2.5">
+                  <div className={`transform transition-transform duration-200 text-slate-500 ${isOpen ? 'rotate-180 text-blue-600' : ''}`}>
+                    <ChevronDownIcon className="w-4 h-4" />
                   </div>
-                  <span className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">
+                  <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
                     Section {secIdx + 1}: {section.title.replace(/^Section\s*\d+\s*:\s*/i, '')}
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
                   {section.lectureCount} lesson{section.lectureCount !== 1 ? 's' : ''} • {section.duration}
                 </div>
               </div>
 
               {/* Section Content (Lectures) */}
               {isOpen && section.lectures.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700/50">
+                <div className="bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
                   {section.lectures.map((lecture, idx) => (
                     <div
                       key={idx}
-                      className="p-3.5 pl-10 md:pl-12 flex items-center justify-between hover:bg-gray-50/75 dark:hover:bg-gray-700/30 transition-colors"
+                      className="p-3 pl-8 sm:pl-10 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <PlayIcon />
-                        <span className="text-gray-800 dark:text-gray-200 text-sm font-medium">
+                      <div className="flex items-center gap-2.5">
+                        <PlayIcon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">
                           {lecture.title}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+                      <span className="text-[11px] text-slate-400 font-mono">
                         {lecture.duration}
                       </span>
                     </div>
@@ -122,7 +110,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({ sections, totalSectio
               )}
 
               {isOpen && section.lectures.length === 0 && (
-                <div className="p-4 text-center text-gray-400 dark:text-gray-500 text-xs italic bg-white dark:bg-gray-800">
+                <div className="p-3.5 text-center text-slate-400 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900">
                   No lessons in this section yet.
                 </div>
               )}
@@ -130,7 +118,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({ sections, totalSectio
           );
         })}
         {sections.length === 0 && (
-          <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+          <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-xs">
             Curriculum content is being prepared by the instructor.
           </div>
         )}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/20/solid';
 
 interface MarkdownRendererProps {
   content: string;
@@ -325,11 +326,13 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
         >
           {copied ? (
             <>
-              <span className="text-emerald-400">✓</span> Copied
+              <CheckIcon className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Copied</span>
             </>
           ) : (
             <>
-              <span>📋</span> Copy code
+              <ClipboardDocumentIcon className="w-3.5 h-3.5 text-slate-400" />
+              <span>Copy code</span>
             </>
           )}
         </button>

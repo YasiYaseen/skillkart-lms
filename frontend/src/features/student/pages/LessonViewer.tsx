@@ -13,6 +13,19 @@ import {
     fetchCourseBookmarks,
 } from '@/features/student/api/bookmarks';
 import { MarkdownRenderer } from '@components/common';
+import {
+    AcademicCapIcon,
+    BookmarkIcon,
+    CheckBadgeIcon,
+    CheckIcon,
+    DocumentTextIcon,
+    LinkIcon,
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    StarIcon,
+    XMarkIcon,
+    Bars3Icon,
+} from '@heroicons/react/20/solid';
 
 function getEmbedVideoUrl(rawUrl: string): string {
     if (!rawUrl) return '';
@@ -198,7 +211,7 @@ function LessonViewer() {
             if (p.isCompleted || p.progressPercentage === 100) {
                 setShowCompletionModal(true);
             } else {
-                toast.success('Lesson completed! 🎉');
+                toast.success('Lesson marked as completed.');
                 if (nextLesson) {
                     navigate(`/learn/${courseId}/${nextLesson._id}`);
                 }
@@ -216,7 +229,7 @@ function LessonViewer() {
             setIsBookmarked(res.bookmarked);
             if (res.bookmarked) {
                 setBookmarkedLessonIds((prev) => Array.from(new Set([...prev, lessonId])));
-                toast.success('Lesson bookmarked!');
+                toast.success('Lesson bookmarked');
             } else {
                 setBookmarkedLessonIds((prev) => prev.filter((id) => id !== lessonId));
                 toast.info('Bookmark removed');
@@ -228,50 +241,52 @@ function LessonViewer() {
         }
     };
 
-    if (loading) return <div className="text-center py-20 text-gray-500 dark:text-gray-400">Loading lesson...</div>;
-    if (!course) return <div className="text-center py-20 text-red-500">Course not found</div>;
+    if (loading) return <div className="text-center py-20 text-xs text-slate-500 dark:text-slate-400">Loading lesson...</div>;
+    if (!course) return <div className="text-center py-20 text-xs text-rose-500">Course not found</div>;
 
     return (
-        <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden bg-gray-50 dark:bg-gray-900">
+        <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-slate-900">
             {/* Mobile Header / Toggle Bar */}
-            <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div className="md:hidden flex items-center justify-between p-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                 <button
                     onClick={() => setShowMobileSidebar(!showMobileSidebar)}
-                    className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1.5 rounded-lg"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 cursor-pointer"
                 >
-                    <span>{showMobileSidebar ? '✕ Close Curriculum' : '☰ Course Curriculum'}</span>
-                    <span className="text-gray-400 font-normal">({progressPercentage}%)</span>
+                    {showMobileSidebar ? <XMarkIcon className="w-4 h-4" /> : <Bars3Icon className="w-4 h-4" />}
+                    <span>Curriculum ({progressPercentage}%)</span>
                 </button>
-                <Link to={`/courses/${courseId}`} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">
-                    ← Course Info
+                <Link to={`/courses/${courseId}`} className="text-xs text-slate-500 dark:text-slate-400 hover:underline flex items-center gap-1">
+                    <ArrowLeftIcon className="w-3 h-3" />
+                    <span>Course Info</span>
                 </Link>
             </div>
 
             {/* Sidebar (Curriculum) */}
-            <div className={`w-full md:w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto shrink-0 ${showMobileSidebar ? 'block absolute inset-0 z-40 md:relative' : 'hidden md:block'}`}>
-                <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+            <div className={`w-full md:w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 overflow-y-auto shrink-0 ${showMobileSidebar ? 'block absolute inset-0 z-40 md:relative' : 'hidden md:block'}`}>
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center justify-between mb-2">
-                        <Link to={`/courses/${courseId}`} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
-                            ← Course Overview
+                        <Link to={`/courses/${courseId}`} className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                            <ArrowLeftIcon className="w-3 h-3" />
+                            <span>Course Overview</span>
                         </Link>
                         {showMobileSidebar && (
-                            <button onClick={() => setShowMobileSidebar(false)} className="md:hidden text-xs text-gray-400 font-bold">
-                                ✕
+                            <button onClick={() => setShowMobileSidebar(false)} className="md:hidden text-slate-400 p-1 cursor-pointer">
+                                <XMarkIcon className="w-4 h-4" />
                             </button>
                         )}
                     </div>
-                    <h2 className="text-base font-bold text-gray-900 dark:text-white leading-snug mb-3 line-clamp-2">{course.title}</h2>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-snug mb-2.5 line-clamp-2">{course.title}</h2>
                     
                     {/* Progress Bar UI */}
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 flex justify-between">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex justify-between">
                         <span>{completedLessonIds.length} of {lessons.length} lessons</span>
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{progressPercentage}%</span>
+                        <span className="font-semibold text-blue-600 dark:text-blue-400">{progressPercentage}%</span>
                     </div>
-                    <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 mb-2 overflow-hidden">
-                        <div className="bg-indigo-600 h-2 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-1.5 overflow-hidden">
+                        <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
                     </div>
                     {remainingMinutes > 0 && (
-                        <p className="text-[11px] text-gray-400">~{remainingMinutes} min remaining</p>
+                        <p className="text-[10px] text-slate-400">~{remainingMinutes} min remaining</p>
                     )}
                 </div>
                 
@@ -279,8 +294,8 @@ function LessonViewer() {
                     {sections.map((sec, sIdx) => {
                         const secLessons = lessons.filter(l => l.section === sec._id);
                         return (
-                            <div key={sec._id} className="border-b border-gray-100 dark:border-gray-700/60">
-                                <div className="bg-gray-50 dark:bg-gray-800/80 px-5 py-3 font-bold text-gray-700 dark:text-gray-300 text-xs">
+                            <div key={sec._id} className="border-b border-slate-100 dark:border-slate-800">
+                                <div className="bg-slate-50 dark:bg-slate-850 px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
                                     Section {sIdx + 1}: {sec.title.replace(/^Section\s*\d+\s*:\s*/i, '')}
                                 </div>
                                 <div className="flex flex-col">
@@ -294,26 +309,26 @@ function LessonViewer() {
                                                 key={les._id} 
                                                 to={`/learn/${courseId}/${les._id}`}
                                                 onClick={() => setShowMobileSidebar(false)}
-                                                className={`px-5 py-3 text-xs transition-colors border-l-4 ${
+                                                className={`px-4 py-2.5 text-xs transition-colors border-l-2 ${
                                                     isActive 
-                                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-600 text-indigo-700 dark:text-indigo-300 font-semibold' 
-                                                        : 'border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+                                                        ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-600 text-blue-700 dark:text-blue-300 font-semibold' 
+                                                        : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
                                                 }`}
                                             >
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="flex items-start gap-2">
-                                                        <span className="text-gray-400 font-mono mt-0.5">{lIdx + 1}.</span>
+                                                        <span className="text-slate-400 font-mono text-[11px] mt-0.5">{lIdx + 1}.</span>
                                                         <span className="line-clamp-2">{les.title}</span>
                                                     </div>
                                                     <div className="flex items-center gap-1.5 shrink-0">
                                                         {les.durationMinutes && (
-                                                            <span className="text-[10px] text-gray-400">{les.durationMinutes}m</span>
+                                                            <span className="text-[10px] text-slate-400">{les.durationMinutes}m</span>
                                                         )}
                                                         {isLessonBookmarked && (
-                                                            <span title="Bookmarked" className="text-amber-500 text-xs">🔖</span>
+                                                            <BookmarkIcon className="w-3.5 h-3.5 text-amber-500" />
                                                         )}
                                                         {isCompleted && (
-                                                            <span className="text-emerald-500 font-bold">✓</span>
+                                                            <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
                                                         )}
                                                     </div>
                                                 </div>
@@ -328,81 +343,67 @@ function LessonViewer() {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-10">
+            <div className="flex-1 overflow-y-auto p-6 md:p-8">
                 {!activeLesson ? (
                     <div className="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto">
-                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
+                        <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 text-slate-400">
+                            <AcademicCapIcon className="w-6 h-6" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Select a lesson</h3>
-                        <p className="text-gray-500 dark:text-gray-400">Choose a lesson from the curriculum sidebar to continue your learning journey.</p>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Select a lesson</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Choose a lesson from the curriculum sidebar to continue your learning.</p>
                     </div>
                 ) : (
                     <div className="max-w-4xl mx-auto">
                         {/* Tab bar */}
-                        <div className="flex items-center gap-1 mb-6 border-b border-gray-200 overflow-x-auto">
+                        <div className="flex items-center gap-1 mb-6 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
                             <button
                                 onClick={() => setActiveTab('lesson')}
-                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                                className={`px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap cursor-pointer ${
                                     activeTab === 'lesson'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                 }`}
                             >
                                 Lesson Content
                             </button>
                             <button
                                 onClick={() => setActiveTab('notes')}
-                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                                className={`px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                     activeTab === 'notes'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                 }`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                </svg>
                                 Notes
                             </button>
                             <button
                                 onClick={() => setActiveTab('discussion')}
-                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                                className={`px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                     activeTab === 'discussion'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                 }`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
-                                </svg>
                                 Discussion
                             </button>
                             <button
                                 onClick={() => setActiveTab('announcements')}
-                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                                className={`px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                     activeTab === 'announcements'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                 }`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" />
-                                </svg>
                                 Announcements
                             </button>
                             <button
                                 onClick={() => setActiveTab('assignments')}
-                                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                                className={`px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                     activeTab === 'assignments'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                 }`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                                </svg>
                                 Assignments & Projects
                             </button>
                         </div>
@@ -437,13 +438,13 @@ function LessonViewer() {
 
                         {/* Lesson Content tab */}
                         {activeTab === 'lesson' && (
-                        <div className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm rounded-2xl overflow-hidden transition-colors">
-                            <div className="p-6 md:p-8 bg-gray-900 text-white flex flex-wrap justify-between items-center gap-4">
+                        <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-xl overflow-hidden transition-colors">
+                            <div className="p-6 md:p-8 bg-slate-900 text-white flex flex-wrap justify-between items-center gap-4">
                                 <div>
                                     <span className="text-xs text-blue-400 font-semibold tracking-wider uppercase">
                                         Lesson {lessonIndex + 1}
                                     </span>
-                                    <h1 className="text-2xl font-bold">{activeLesson.title}</h1>
+                                    <h1 className="text-xl font-bold">{activeLesson.title}</h1>
                                 </div>
 
                                 <div className="flex items-center gap-3">
@@ -452,38 +453,25 @@ function LessonViewer() {
                                         onClick={handleToggleBookmark}
                                         disabled={togglingBookmark}
                                         title={isBookmarked ? 'Remove bookmark' : 'Bookmark this lesson'}
-                                        className={`px-3.5 py-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold ${
+                                        className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
                                             isBookmarked
                                                 ? 'bg-amber-500/20 border-amber-400 text-amber-300 hover:bg-amber-500/30'
-                                                : 'bg-white/10 border-white/20 text-gray-200 hover:bg-white/20'
+                                                : 'bg-white/10 border-white/20 text-slate-200 hover:bg-white/20'
                                         }`}
                                     >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                            fill={isBookmarked ? 'currentColor' : 'none'}
-                                            stroke="currentColor"
-                                            strokeWidth={isBookmarked ? 0 : 2}
-                                            className="w-4 h-4 text-amber-400"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
-                                            />
-                                        </svg>
+                                        <BookmarkIcon className="w-3.5 h-3.5 text-amber-400" />
                                         <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
                                     </button>
 
                                     {completedLessonIds.includes(activeLesson._id) ? (
                                         <div className="flex items-center gap-2">
-                                            <span className="bg-emerald-500/20 border border-emerald-400 text-emerald-300 px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                                                <span>✓</span>
+                                            <span className="bg-emerald-500/20 border border-emerald-400 text-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                                                <CheckIcon className="w-3.5 h-3.5 text-emerald-400" />
                                                 <span>Completed</span>
                                             </span>
                                             <button
                                                 onClick={handleProgress}
-                                                className="bg-white/10 hover:bg-white/20 text-gray-200 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
+                                                className="bg-white/10 hover:bg-white/20 text-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                                                 title="Mark again to refresh progress"
                                             >
                                                 Update
@@ -493,7 +481,7 @@ function LessonViewer() {
                                         <button
                                             onClick={handleProgress}
                                             disabled={!quizPassed && activeLesson.type === 'quiz'}
-                                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
                                         >
                                             Mark as Complete
                                         </button>
@@ -501,10 +489,10 @@ function LessonViewer() {
                                 </div>
                             </div>
                         
-                            <div className="p-6 md:p-8 space-y-8">
+                            <div className="p-6 md:p-8 space-y-6">
                                 {activeItems.length === 0 ? (
-                                    <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
-                                        <p className="text-gray-500 dark:text-gray-400">No content available for this lesson yet.</p>
+                                    <div className="text-center py-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">No content available for this lesson yet.</p>
                                     </div>
                                 ) : (
                                     activeItems.map((item) => {
@@ -516,7 +504,7 @@ function LessonViewer() {
                                             return (
                                                 <div key={item._id} className="item-content">
                                                     <div className="aspect-video bg-black rounded-xl overflow-hidden mb-4 relative drop-shadow-md">
-                                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
                                                             {embedUrl.includes('youtube.com') || embedUrl.includes('player.vimeo.com') ? (
                                                                 <iframe
                                                                     className="w-full h-full"
@@ -538,11 +526,11 @@ function LessonViewer() {
                                             const url = content.url || '';
                                             return (
                                                 <div key={item._id} className="item-content">
-                                                    <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-                                                        <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                                                            <span className="text-red-500 text-xl">📄</span>
-                                                            <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm">PDF Resource</span>
-                                                            <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-sm text-blue-600 hover:underline font-medium">Open in new tab ↗</a>
+                                                    <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                                                        <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                                            <DocumentTextIcon className="w-4 h-4 text-rose-500" />
+                                                            <span className="font-semibold text-slate-700 dark:text-slate-300 text-xs">PDF Resource</span>
+                                                            <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-blue-600 hover:underline font-medium">Open in new tab ↗</a>
                                                         </div>
                                                         <iframe src={url} className="w-full h-[65vh] min-h-[400px] border-0" title="PDF viewer" />
                                                     </div>
@@ -556,23 +544,23 @@ function LessonViewer() {
                                                         href={url}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="flex items-center gap-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-xl p-5 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors group"
+                                                        className="flex items-center gap-3.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-xl p-4 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors group"
                                                     >
-                                                        <div className="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center shrink-0 text-lg group-hover:bg-blue-700 transition-colors">
-                                                            🔗
+                                                        <div className="w-9 h-9 bg-blue-600 text-white rounded-lg flex items-center justify-center shrink-0 group-hover:bg-blue-700 transition-colors">
+                                                            <LinkIcon className="w-4 h-4" />
                                                         </div>
                                                         <div className="overflow-hidden">
-                                                            <p className="font-semibold text-blue-700 text-sm">External Resource</p>
-                                                            <p className="text-blue-500 text-xs truncate">{url}</p>
+                                                            <p className="font-semibold text-blue-700 text-xs">External Resource</p>
+                                                            <p className="text-blue-500 text-[11px] truncate">{url}</p>
                                                         </div>
-                                                        <span className="ml-auto text-blue-400 text-lg shrink-0">↗</span>
+                                                        <span className="ml-auto text-blue-400 text-sm shrink-0">↗</span>
                                                     </a>
                                                 </div>
                                             );
                                         } else {
                                             return (
                                                 <div key={item._id} className="item-content">
-                                                    <div className="bg-white dark:bg-gray-800/90 p-6 md:p-8 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs">
+                                                    <div className="bg-white dark:bg-slate-800/90 p-5 md:p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
                                                         <MarkdownRenderer content={content.text || ''} />
                                                     </div>
                                                 </div>
@@ -588,22 +576,24 @@ function LessonViewer() {
                                 />
 
                                 {/* Navigation Buttons */}
-                                <div className="flex justify-between items-center mt-10 pt-6 border-t border-gray-100 dark:border-gray-700">
+                                <div className="flex justify-between items-center mt-10 pt-6 border-t border-slate-100 dark:border-slate-800">
                                     {prevLesson ? (
                                         <button
                                             onClick={() => navigate(`/learn/${courseId}/${prevLesson._id}`)}
-                                            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold text-sm transition-colors"
+                                            className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-xs transition-colors cursor-pointer"
                                         >
-                                            ← Previous Lesson
+                                            <ArrowLeftIcon className="w-3.5 h-3.5" />
+                                            <span>Previous Lesson</span>
                                         </button>
                                     ) : <div />}
 
                                     {nextLesson && (
                                         <button
                                             onClick={() => navigate(`/learn/${courseId}/${nextLesson._id}`)}
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-sm"
+                                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold shadow-2xs transition-colors text-xs flex items-center gap-1.5 cursor-pointer"
                                         >
-                                            Next Lesson →
+                                            <span>Next Lesson</span>
+                                            <ArrowRightIcon className="w-3.5 h-3.5" />
                                         </button>
                                     )}
                                 </div>
@@ -618,33 +608,37 @@ function LessonViewer() {
             {/* Course Completion Modal Overlay */}
             {showCompletionModal && (
                 <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="w-20 h-20 bg-gradient-to-tr from-amber-400 to-amber-200 rounded-full flex items-center justify-center text-4xl mx-auto mb-5 shadow-lg">
-                            🏆
+                    <div className="bg-white dark:bg-slate-900 rounded-xl p-6 sm:p-8 max-w-md w-full text-center shadow-xl border border-slate-200 dark:border-slate-800 space-y-4">
+                        <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto">
+                            <CheckBadgeIcon className="w-8 h-8" />
                         </div>
-                        <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
-                            Course Completed!
-                        </h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                            You've mastered <strong className="text-gray-900 dark:text-white">{course?.title}</strong>. Your verifiable certificate has been issued!
-                        </p>
-                        <div className="space-y-3">
+                        <div className="space-y-1">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                                Course Completed!
+                            </h2>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                You've mastered <strong className="text-slate-900 dark:text-white">{course?.title}</strong>. Your verifiable certificate has been issued.
+                            </p>
+                        </div>
+                        <div className="space-y-2 pt-2">
                             <Link
                                 to="/certificates"
-                                className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md text-sm"
+                                className="inline-flex items-center justify-center gap-1.5 w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors shadow-2xs text-xs"
                             >
-                                View & Download Certificate 🎓
+                                <AcademicCapIcon className="w-4 h-4" />
+                                <span>View & Download Certificate</span>
                             </Link>
                             <Link
                                 to={`/courses/${courseId}`}
-                                className="block w-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-2.5 px-4 rounded-xl transition-all text-sm"
+                                className="inline-flex items-center justify-center gap-1.5 w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold py-2 px-4 rounded-lg transition-colors text-xs"
                             >
-                                Leave a Course Review ⭐
+                                <StarIcon className="w-4 h-4 text-amber-500" />
+                                <span>Leave a Course Review</span>
                             </Link>
                             <button
                                 type="button"
                                 onClick={() => setShowCompletionModal(false)}
-                                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 mt-2 font-medium"
+                                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 mt-2 font-medium cursor-pointer"
                             >
                                 Close & Keep Exploring
                             </button>

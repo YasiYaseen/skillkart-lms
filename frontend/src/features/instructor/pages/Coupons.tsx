@@ -9,6 +9,15 @@ import {
   type InstructorCoupon,
 } from '../api/coupons';
 import { useCurrency } from '@/context/CurrencyContext';
+import {
+  TagIcon,
+  FireIcon,
+  CheckCircleIcon,
+  PlusIcon,
+  ClipboardDocumentIcon,
+  SparklesIcon,
+  XMarkIcon,
+} from '@heroicons/react/20/solid';
 
 interface Course {
   _id: string;
@@ -28,20 +37,25 @@ export function Coupons() {
   const [discountValue, setDiscountValue] = useState<number>(20);
   const [courseId, setCourseId] = useState<string>('');
   const [minPurchaseAmount, setMinPurchaseAmount] = useState<number>(0);
-  const [maxDiscountAmount, setMaxDiscountAmount] = useState<number | ''>('');
-  const [maxRedemptions, setMaxRedemptions] = useState<number | ''>('');
+  const [maxRedemptions, setMaxRedemptions] = useState<number>(0);
   const [expiresAt, setExpiresAt] = useState<string>('');
-  const [saving, setSaving] = useState(false);
+  const [description, setDescription] = useState<string>('');
+  const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [couponsData, coursesRes] = await Promise.all([
+      const [cData, crsRes] = await Promise.all([
         fetchInstructorCoupons(),
-        api.get('/courses?mine=true'),
+        api.get('/instructor/courses').catch(() => ({ data: { courses: [] } })),
       ]);
-      setCoupons(couponsData);
-      setCourses(coursesRes.data.courses || []);
+      setCoupons(cData);
+      setCourses(crsRes.data?.courses || []);
     } catch {
       toast.error('Failed to load coupons or courses');
     } finally {
@@ -49,92 +63,98 @@ export function Coupons() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const openCreateModal = () => {
+    setEditingCouponId(null);
     setCode('');
     setDiscountType('percentage');
     setDiscountValue(20);
     setCourseId('');
     setMinPurchaseAmount(0);
-    setMaxDiscountAmount('');
-    setMaxRedemptions('');
+    setMaxRedemptions(0);
     setExpiresAt('');
+    setDescription('');
     setShowModal(true);
   };
 
-  const handleCreateCoupon = async (e: React.FormEvent) => {
+  const openEditModal = (coupon: InstructorCoupon) => {
+    setEditingCouponId(coupon._id);
+    setCode(coupon.code);
+    setDiscountType(coupon.discountType);
+    setDiscountValue(coupon.discountValue);
+    setCourseId(coupon.applicableCourse || '');
+    setMinPurchaseAmount(coupon.minPurchaseAmount || 0);
+    setMaxRedemptions(coupon.maxRedemptions || 0);
+    setExpiresAt(coupon.expiresAt ? coupon.expiresAt.split('T')[0] : '');
+    setDescription(coupon.description || '');
+    setShowModal(true);
+  };
+
+  const handleSaveCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
-      toast.error('Coupon code is required');
+      toast.warn('Please provide a coupon code (e.g. FLASH50)');
       return;
     }
 
-    setSaving(true);
+    setSubmitting(true);
     try {
-      await createInstructorCoupon({
+      const payload = {
         code: code.trim().toUpperCase(),
         discountType,
         discountValue: Number(discountValue),
-        courseId: courseId || null,
-        minPurchaseAmount: Number(minPurchaseAmount) || 0,
-        maxDiscountAmount: maxDiscountAmount !== '' ? Number(maxDiscountAmount) : null,
-        maxRedemptions: maxRedemptions !== '' ? Number(maxRedemptions) : null,
-        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
-      });
+        applicableCourse: courseId || undefined,
+        minPurchaseAmount: Number(minPurchaseAmount),
+        maxRedemptions: Number(maxRedemptions),
+        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+        description: description.trim(),
+      };
 
-      toast.success(`Coupon "${code.toUpperCase()}" created successfully!`);
+      if (editingCouponId) {
+        await updateInstructorCoupon(editingCouponId, payload);
+        toast.success(`Coupon "${payload.code}" updated successfully!`);
+      } else {
+        await createInstructorCoupon(payload);
+        toast.success(`Coupon "${payload.code}" created successfully!`);
+      }
+
       setShowModal(false);
       loadData();
     } catch (err: unknown) {
-      const errObj = err as { response?: { data?: { message?: string } } };
-      const errorMsg = errObj?.response?.data?.message || 'Failed to create coupon';
-      toast.error(errorMsg);
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save coupon';
+      toast.error(msg);
     } finally {
-      setSaving(false);
+      setSubmitting(false);
     }
   };
 
-  const handleToggleActive = async (coupon: InstructorCoupon) => {
-    try {
-      await updateInstructorCoupon(coupon._id, { isActive: !coupon.isActive });
-      toast.success(`Coupon "${coupon.code}" ${coupon.isActive ? 'deactivated' : 'activated'}`);
-      loadData();
-    } catch {
-      toast.error('Failed to update coupon status');
+  const handleDeleteCoupon = async (couponId: string, couponCode: string) => {
+    if (!window.confirm(`Are you sure you want to deactivate and delete "${couponCode}"?`)) {
+      return;
     }
-  };
-
-  const handleDelete = async (couponId: string) => {
-    if (!window.confirm('Are you sure you want to delete this coupon?')) return;
     try {
       await deleteInstructorCoupon(couponId);
-      toast.success('Coupon deleted');
+      toast.success(`Coupon "${couponCode}" removed`);
       loadData();
-    } catch {
-      toast.error('Failed to delete coupon');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete coupon';
+      toast.error(msg);
     }
   };
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    toast.success(`Copied "${code}" to clipboard!`);
-  };
-
-  const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesRedeemed || 0), 0);
+  const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesUsed || 0), 0);
   const activeCouponsCount = coupons.filter((c) => c.isActive).length;
 
-  // Simulator calculation for modal
-  const sampleOriginal = 100;
-  const sampleDiscount = discountType === 'percentage'
-    ? (sampleOriginal * Number(discountValue || 0)) / 100
-    : Math.min(sampleOriginal, Number(discountValue || 0));
-  const sampleFinal = Math.max(0, sampleOriginal - sampleDiscount);
-
   if (loading) {
-    return <div className="text-gray-500 dark:text-gray-400 py-16 text-center">Loading coupons manager...</div>;
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-7 bg-slate-200 dark:bg-slate-800 rounded w-48" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="h-20 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+          <div className="h-20 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+          <div className="h-20 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -142,69 +162,74 @@ export function Coupons() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Coupons & Promo Discounts</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Create promotional discount campaigns to boost course enrollments and sales.
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Coupons & Promotions
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Create and track promotional discounts to incentivize student enrollment.
           </p>
         </div>
 
         <button
           onClick={openCreateModal}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-colors shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
         >
-          <span>+ Create Promo Coupon</span>
+          <PlusIcon className="w-4 h-4" />
+          <span>Create Coupon</span>
         </button>
       </div>
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold">
-            🏷️
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <TagIcon className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Total Promo Codes</div>
-            <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{coupons.length}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Promo Codes</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white">{coupons.length}</div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
-            🔥
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <FireIcon className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Total Redemptions</div>
-            <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{totalRedemptions}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Redemptions</div>
+            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{totalRedemptions}</div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold">
-            ⚡
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <CheckCircleIcon className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Currently Active</div>
-            <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{activeCouponsCount}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Currently Active</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white">{activeCouponsCount}</div>
           </div>
         </div>
       </div>
 
       {/* Coupons Table */}
       {coupons.length === 0 ? (
-        <div className="text-center py-16 px-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
-          <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
-            🏷️
+        <div className="text-center py-16 px-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3 max-w-md mx-auto">
+          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+            <TagIcon className="w-6 h-6" />
           </div>
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">No promo coupons created</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
-            Create your first promo code (e.g. 50% off or {symbol}20 off) for your students.
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">No promo coupons created</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+            Create your first promo code (e.g. 20% off or {symbol}20 off) for your students.
           </p>
-          <button
-            onClick={openCreateModal}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-500 transition-colors"
-          >
-            Create First Coupon
-          </button>
+          <div className="pt-2">
+            <button
+              onClick={openCreateModal}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-500 transition-colors cursor-pointer shadow-2xs"
+            >
+              Create First Coupon
+            </button>
+          </div>
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xs">
@@ -232,9 +257,9 @@ export function Coupons() {
                         <button
                           onClick={() => handleCopyCode(coupon.code)}
                           title="Copy Code to Clipboard"
-                          className="text-gray-400 hover:text-blue-600 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                          className="text-slate-400 hover:text-blue-600 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
                         >
-                          📋
+                          <ClipboardDocumentIcon className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -366,9 +391,10 @@ export function Coupons() {
 
               {/* Live Preview Calculation Pill */}
               <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 flex items-center justify-between text-xs">
-                <span className="text-blue-900 dark:text-blue-200">
-                  💡 <strong>Simulator Preview:</strong> A {formatAmount(100)} course will cost{' '}
-                  <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{formatAmount(sampleFinal)}</strong> for students (saves {formatAmount(sampleDiscount)})
+                <span className="text-blue-900 dark:text-blue-200 flex items-center gap-1.5 flex-wrap">
+                  <SparklesIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span><strong>Simulator Preview:</strong> A {formatAmount(100)} course will cost{' '}
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{formatAmount(sampleFinal)}</strong> for students (saves {formatAmount(sampleDiscount)})</span>
                 </span>
               </div>
 

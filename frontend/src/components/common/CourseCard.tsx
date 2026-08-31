@@ -4,6 +4,13 @@ import { WishlistButton } from '@/features/wishlist';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { toast } from 'react-toastify';
+import {
+    ClockIcon,
+    AcademicCapIcon,
+    UserGroupIcon,
+    ShoppingCartIcon,
+    CheckIcon,
+} from '@heroicons/react/20/solid';
 
 export interface Course {
     id: string | number;
@@ -27,9 +34,9 @@ interface CourseCardProps {
 }
 
 const LEVEL_BADGE_STYLES: Record<string, string> = {
-    beginner: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-    intermediate: 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-    advanced: 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+    beginner: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+    intermediate: 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+    advanced: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
 };
 
 function formatDuration(minutes?: number) {
@@ -43,7 +50,7 @@ function formatDuration(minutes?: number) {
 
 /**
  * CourseCard Component
- * Displays individual course information in a card format
+ * Refined, content-led course presentation
  */
 export function CourseCard({ course, className = '', showWishlist = true }: CourseCardProps) {
     const {
@@ -85,39 +92,43 @@ export function CourseCard({ course, className = '', showWishlist = true }: Cour
         <div className="relative group/card flex flex-col h-full">
             <Link
                 to={`/courses/${id}`}
-                className={`course-card flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs hover:shadow-lg transition-all overflow-hidden group ${className}`}
+                className={`flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden group ${className}`}
             >
                 {/* Thumbnail & Level Badge */}
-                <div className="relative aspect-video w-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+                <div className="relative aspect-16/10 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                     <img
                         src={thumbnail}
                         alt={title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                         loading="lazy"
                     />
-                    {level && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shadow-xs ${LEVEL_BADGE_STYLES[level] || 'bg-gray-50 text-gray-700'}`}>
-                            {level.charAt(0).toUpperCase() + level.slice(1)}
-                        </span>
-                    )}
-                    {isFree && (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-xs">
-                            FREE
-                        </span>
-                    )}
+                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                        {level && (
+                            <span className={`text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-md border backdrop-blur-xs ${LEVEL_BADGE_STYLES[level] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                                {level}
+                            </span>
+                        )}
+                        {isFree && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-600 text-white shadow-2xs">
+                                Free
+                            </span>
+                        )}
+                    </div>
                 </div>
 
-                <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+                <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
                     {showWishlist && id && (
                         <WishlistButton courseId={String(id)} variant="icon" />
                     )}
                 </div>
 
-                <div className="p-5 flex flex-col flex-1">
-                    <h3 className="font-bold text-gray-900 dark:text-white text-base leading-snug line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-1">
+                <div className="p-4 sm:p-5 flex flex-col flex-1">
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-1">
                         {title}
                     </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2.5">by {instructor}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-normal mb-2.5">
+                        {instructor}
+                    </p>
 
                     {/* Tags */}
                     {tags.length > 0 && (
@@ -125,52 +136,59 @@ export function CourseCard({ course, className = '', showWishlist = true }: Cour
                             {tags.slice(0, 3).map((t, idx) => (
                                 <span
                                     key={idx}
-                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
+                                    className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60"
                                 >
-                                    #{t}
+                                    {t}
                                 </span>
                             ))}
                         </div>
                     )}
 
                     {/* Course Metadata (Duration / Lessons / Enrollment) */}
-                    <div className="flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-400 mb-3 mt-auto pt-2 border-t border-gray-50 dark:border-gray-700/60">
+                    <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mb-3 mt-auto pt-2.5 border-t border-slate-100 dark:border-slate-800">
                         {formatDuration(durationMinutes) && (
                             <span className="flex items-center gap-1">
-                                <span>⏱</span> {formatDuration(durationMinutes)}
+                                <ClockIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{formatDuration(durationMinutes)}</span>
                             </span>
                         )}
                         {totalLessons && totalLessons > 0 && (
                             <span className="flex items-center gap-1">
-                                <span>📚</span> {totalLessons} lessons
+                                <AcademicCapIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{totalLessons} lessons</span>
                             </span>
                         )}
                         {enrollmentCount > 0 && (
-                            <span className="flex items-center gap-1 ml-auto">
-                                <span>👥</span> {enrollmentCount.toLocaleString()}
+                            <span className="flex items-center gap-1 ml-auto text-[11px]">
+                                <UserGroupIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{enrollmentCount.toLocaleString()}</span>
                             </span>
                         )}
                     </div>
 
                     {/* Footer: Rating, Price & Quick Cart Button */}
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700 gap-2">
+                    <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-slate-800 gap-2">
                         <Rating value={rating} count={reviewCount} />
                         <div className="flex items-center gap-2">
-                            <span className={`text-base font-extrabold ${isFree ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+                            <span className={`text-sm sm:text-base font-bold ${isFree ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
                                 {formatPrice(price)}
                             </span>
 
                             {!isFree && id && (
                                 <button
                                     onClick={handleAddToCart}
-                                    title={inCart ? 'Already in Cart' : 'Add to Shopping Cart'}
-                                    className={`p-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center ${
+                                    title={inCart ? 'In cart' : 'Add to cart'}
+                                    className={`p-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center cursor-pointer ${
                                         inCart
                                             ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 border border-emerald-200 dark:border-emerald-800'
-                                            : 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white'
+                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white'
                                     }`}
                                 >
-                                    {inCart ? '✓' : '🛒'}
+                                    {inCart ? (
+                                        <CheckIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                    ) : (
+                                        <ShoppingCartIcon className="w-4 h-4" />
+                                    )}
                                 </button>
                             )}
                         </div>

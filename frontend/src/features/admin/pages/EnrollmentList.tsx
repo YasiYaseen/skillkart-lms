@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { toast } from "react-toastify";
 import { Pagination } from "@/components/common";
+import { AcademicCapIcon } from "@heroicons/react/20/solid";
 
 export interface AdminEnrollment {
   _id: string;
@@ -78,12 +79,12 @@ export function EnrollmentList() {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
+      <div className="space-y-4 animate-pulse">
         <div className="flex justify-between items-center">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-48" />
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl w-64" />
+          <div className="h-7 bg-slate-200 dark:bg-slate-700 rounded-lg w-48" />
+          <div className="h-9 bg-slate-200 dark:bg-slate-700 rounded-lg w-60" />
         </div>
-        <div className="h-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl" />
+        <div className="h-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl" />
       </div>
     );
   }
@@ -92,24 +93,27 @@ export function EnrollmentList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Enrollments</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <AcademicCapIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            Enrollments
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Track and oversee student enrollments across all platform courses.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <input
             type="text"
             placeholder="Search student or course..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="px-3.5 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           <select
             value={statusFilter}
             onChange={(e) => handleStatusChange(e.target.value)}
-            className="px-3.5 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="all">All Statuses</option>
             <option value="active">Active</option>
@@ -119,64 +123,64 @@ export function EnrollmentList() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xs overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-900/50">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-xs">
+            <thead className="bg-slate-50 dark:bg-slate-850">
               <tr>
-                <th className="px-6 py-3.5 text-left font-semibold text-gray-700 dark:text-gray-300">Course</th>
-                <th className="px-6 py-3.5 text-left font-semibold text-gray-700 dark:text-gray-300">Student</th>
-                <th className="px-6 py-3.5 text-left font-semibold text-gray-700 dark:text-gray-300">Status</th>
-                <th className="px-6 py-3.5 text-left font-semibold text-gray-700 dark:text-gray-300">Enrolled At</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Course</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Student</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Status</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Enrolled At</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
               {paginatedEnrollments.map((enr) => (
-                <tr key={enr._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                  <td className="px-6 py-4">
+                <tr key={enr._id} className="hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors">
+                  <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-900 dark:text-white">{enr.course?.title || "Unknown Course"}</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">{enr.course?.title || "Unknown Course"}</span>
                       {enr.course?._id && (
                         <Link
                           to={`/courses/${enr.course._id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium ml-1"
+                          className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium ml-1"
                         >
                           ↗
                         </Link>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-5 py-3.5 whitespace-nowrap">
                     <div>
-                      <span className="font-medium text-gray-800 dark:text-gray-200 block">{enr.student?.name || "Unknown Student"}</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200 block">{enr.student?.name || "Unknown Student"}</span>
                       {enr.student?.email && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{enr.student.email}</span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500">{enr.student.email}</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-5 py-3.5 whitespace-nowrap">
                     <span
-                      className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                      className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
                         enr.status === "completed"
-                          ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
+                          ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
                           : enr.status === "active"
-                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                          ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
                       }`}
                     >
                       {enr.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 text-xs">
+                  <td className="px-5 py-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400 text-xs">
                     {new Date(enr.createdAt).toLocaleDateString()}
                   </td>
                 </tr>
               ))}
               {paginatedEnrollments.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={4} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                     {searchQuery || statusFilter !== "all"
                       ? "No enrollments matching your search criteria."
                       : "No enrollments found."}

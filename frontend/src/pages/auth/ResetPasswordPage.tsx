@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Button, Input } from '@/components/common';
 import { resetPasswordWithToken } from '@/features/auth/auth.service';
 import { toast } from 'react-toastify';
+import { LockClosedIcon, CheckCircleIcon, ArrowLeftIcon } from '@heroicons/react/20/solid';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -56,25 +57,27 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-gray-50 dark:bg-gray-900 transition-colors">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-            🔐
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50 dark:bg-slate-950 transition-colors">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mx-auto mb-3 border border-blue-100 dark:border-blue-900/60">
+            <LockClosedIcon className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
             Reset Your Password
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Choose a strong new password for your SkillKart account.
           </p>
         </div>
 
         {success ? (
-          <div className="text-center space-y-6">
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl">
-              <div className="text-emerald-600 dark:text-emerald-400 text-3xl mb-2">✅</div>
-              <p className="font-bold text-emerald-900 dark:text-emerald-200 text-base mb-1">
+          <div className="text-center space-y-5">
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center mx-auto mb-2">
+                <CheckCircleIcon className="w-6 h-6" />
+              </div>
+              <p className="font-bold text-emerald-900 dark:text-emerald-200 text-sm mb-0.5">
                 Password Reset Successfully
               </p>
               <p className="text-xs text-emerald-700 dark:text-emerald-400">
@@ -84,16 +87,16 @@ export default function ResetPasswordPage() {
 
             <Button
               className="w-full justify-center"
-              size="lg"
+              size="md"
               onClick={() => navigate('/')}
             >
               Back to Home & Sign In
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {errorMsg && (
-              <div className="p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-300">
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-lg text-xs text-rose-700 dark:text-rose-300">
                 {errorMsg}
               </div>
             )}
@@ -125,18 +128,19 @@ export default function ResetPasswordPage() {
             <Button
               type="submit"
               disabled={!token || loading}
-              className="w-full justify-center mt-4"
-              size="lg"
+              className="w-full justify-center mt-2"
+              size="md"
             >
               {loading ? 'Updating Password...' : 'Save New Password'}
             </Button>
 
-            <div className="text-center pt-2">
+            <div className="text-center pt-1">
               <Link
                 to="/"
-                className="text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium"
+                className="text-xs text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium inline-flex items-center gap-1"
               >
-                ← Return to Home
+                <ArrowLeftIcon className="w-3 h-3" />
+                <span>Return to Home</span>
               </Link>
             </div>
           </form>
@@ -145,4 +149,3 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
-

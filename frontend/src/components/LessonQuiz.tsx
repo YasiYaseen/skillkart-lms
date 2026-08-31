@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import {
+  ClipboardDocumentCheckIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+  CheckIcon,
+} from '@heroicons/react/20/solid';
 
 interface Question {
   question: string;
@@ -20,10 +27,8 @@ interface QuestionResult {
 }
 
 interface QuizData {
-  questions: Question[];
   passingPercentage: number;
-  latestAttempt: LatestAttempt | null;
-  totalAttempts?: number;
+  questions: Question[];
 }
 
 interface LessonQuizProps {
@@ -42,22 +47,24 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
   const [attempts, setAttempts] = useState<number>(0);
 
   const fetchQuiz = useCallback(async () => {
-    setLoading(true);
-    setNoQuiz(false);
     try {
+      setLoading(true);
       const res = await api.get(`/lessons/${lessonId}/quiz`);
-      const data: QuizData = res.data;
-      setQuiz(data);
-      setSelectedAnswers(new Array(data.questions.length).fill(-1));
-      setAttempts(data.totalAttempts || 0);
-      if (data.latestAttempt) setResult(data.latestAttempt);
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) {
-        setNoQuiz(true);
+      if (res.data.hasQuiz && res.data.quiz) {
+        setQuiz(res.data.quiz);
+        setNoQuiz(false);
+        setSelectedAnswers(new Array(res.data.quiz.questions.length).fill(-1));
+        if (res.data.latestAttempt) {
+          setResult(res.data.latestAttempt);
+        }
+        if (typeof res.data.totalAttempts === 'number') {
+          setAttempts(res.data.totalAttempts);
+        }
       } else {
-        toast.error('Failed to load quiz');
+        setNoQuiz(true);
       }
+    } catch {
+      setNoQuiz(true);
     } finally {
       setLoading(false);
     }
@@ -65,15 +72,12 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
 
   useEffect(() => {
     fetchQuiz();
-    setResult(null);
-    setQuestionResults(null);
   }, [fetchQuiz]);
 
-  const handleSelect = (qIndex: number, oIndex: number) => {
-    if (result?.passed) return;
+  const handleSelect = (qIdx: number, oIdx: number) => {
     setSelectedAnswers((prev) => {
       const next = [...prev];
-      next[qIndex] = oIndex;
+      next[qIdx] = oIdx;
       return next;
     });
   };
@@ -94,13 +98,13 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
       setQuestionResults(qResults || null);
       if (typeof tAttempts === 'number') setAttempts(tAttempts);
       if (passed) {
-        toast.success(`🎉 You passed with ${score}%!`);
+        toast.success(`Assessment passed with ${score}%!`);
         onQuizPassed?.();
       } else {
-        toast.error(`You scored ${score}%. Need ${passingPercentage}% to pass. Review your answers below!`);
+        toast.error(`You scored ${score}%. Need ${passingPercentage}% to pass. Review your answers below.`);
       }
     } catch {
-      toast.error('Failed to submit quiz');
+      toast.error('Failed to submit assessment');
     } finally {
       setSubmitting(false);
     }
@@ -123,108 +127,91 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
   const correctCount = questionResults?.filter((r) => r.isCorrect).length ?? 0;
 
   return (
-    <div className="mt-8 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-xs">
-      <div className="bg-gray-900 text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <div className="mt-8 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs bg-white dark:bg-slate-900">
+      <div className="bg-slate-900 text-white px-5 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <span>⚡</span>
+          <h2 className="text-base font-bold flex items-center gap-2">
+            <ClipboardDocumentCheckIcon className="w-5 h-5 text-blue-400" />
             <span>Lesson Assessment</span>
           </h2>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {quiz.questions.length} questions • Passing score: {quiz.passingPercentage}%
-            {attempts > 0 && ` • Attempt #${attempts}`}
+          <p className="text-xs text-slate-400 mt-0.5">
+            {quiz.questions.length} questions &bull; Passing score: {quiz.passingPercentage}%
+            {attempts > 0 && ` &bull; Attempt #${attempts}`}
           </p>
         </div>
         {result && (
           <span
-            className={`text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 ${
+            className={`text-xs font-semibold px-3 py-1 rounded-md flex items-center gap-1.5 ${
               result.passed
-                ? 'bg-emerald-500 text-white'
-                : 'bg-red-500 text-white'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-rose-600 text-white'
             }`}
           >
-            <span>{result.passed ? '✓' : '✕'}</span>
-            <span>{result.passed ? `Passed • ${result.score}%` : `Score • ${result.score}%`}</span>
+            {result.passed ? <CheckCircleIcon className="w-4 h-4" /> : <XCircleIcon className="w-4 h-4" />}
+            <span>{result.passed ? `Passed (${result.score}%)` : `Score (${result.score}%)`}</span>
           </span>
         )}
       </div>
 
-      {/* Question Progress & Navigation Bar */}
-      <div className="bg-gray-50 dark:bg-gray-900/40 px-6 py-4 border-b border-gray-100 dark:border-gray-700/60 space-y-3">
+      {/* Question Progress Bar */}
+      <div className="bg-slate-50 dark:bg-slate-800/40 px-5 py-3 border-b border-slate-100 dark:border-slate-800 space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold text-gray-700 dark:text-gray-300">
-            {result ? "Assessment Breakdown" : "Question Progress"}
+          <span className="font-semibold text-slate-700 dark:text-slate-300">
+            {result ? "Assessment Breakdown" : "Progress"}
           </span>
-          <span className="text-gray-500 dark:text-gray-400 font-medium">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">
             {result
               ? `${correctCount} of ${totalQuestions} Correct (${result.score}%)`
               : `${answeredCount} of ${totalQuestions} Answered (${answeredPercentage}%)`}
           </span>
         </div>
-
-        {/* Progress bar */}
-        <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
           <div
             className={`h-full transition-all duration-300 ${
               result
                 ? result.passed
-                  ? "bg-emerald-500"
-                  : "bg-amber-500"
-                : "bg-indigo-600"
+                  ? 'bg-emerald-500'
+                  : 'bg-rose-500'
+                : 'bg-blue-600'
             }`}
-            style={{ width: `${result ? result.score : answeredPercentage}%` }}
+            style={{
+              width: `${result ? (correctCount / totalQuestions) * 100 : answeredPercentage}%`,
+            }}
           />
-        </div>
-
-        {/* Question quick-navigation pills */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-xs text-gray-400 dark:text-gray-500 mr-1">Questions:</span>
-          {quiz.questions.map((_, idx) => {
-            const isAnswered = selectedAnswers[idx] !== -1;
-            const qRes = questionResults?.find((r) => r.questionIndex === idx);
-
-            let pillClass = "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 hover:border-indigo-400";
-            if (qRes) {
-              pillClass = qRes.isCorrect
-                ? "bg-emerald-500 text-white border-emerald-500 font-bold"
-                : "bg-red-500 text-white border-red-500 font-bold";
-            } else if (isAnswered) {
-              pillClass = "bg-indigo-600 text-white border-indigo-600 font-semibold";
-            }
-
-            return (
-              <a
-                key={idx}
-                href={`#question-${idx + 1}`}
-                className={`w-7 h-7 rounded-lg text-xs flex items-center justify-center border transition-all hover:scale-105 ${pillClass}`}
-                title={`Question ${idx + 1}${isAnswered ? ' (Answered)' : ''}`}
-              >
-                {idx + 1}
-              </a>
-            );
-          })}
         </div>
       </div>
 
-      <div className="p-6 md:p-8 space-y-8 bg-white dark:bg-gray-800">
+      <div className="p-5 sm:p-6 space-y-6">
         {quiz.questions.map((q, qIdx) => {
           const qRes = questionResults?.find((r) => r.questionIndex === qIdx);
+          const isEvaluated = qRes !== undefined;
+
           return (
             <div
               key={qIdx}
-              id={`question-${qIdx + 1}`}
-              className="space-y-3.5 pb-6 border-b border-gray-100 dark:border-gray-700/60 last:border-0 last:pb-0 scroll-mt-24"
+              className={`p-4 rounded-lg border transition-all ${
+                isEvaluated
+                  ? qRes.isCorrect
+                    ? 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20'
+                    : 'border-rose-200 dark:border-rose-900/40 bg-rose-50/40 dark:bg-rose-950/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
+              }`}
             >
-              <div className="flex items-start justify-between gap-4">
-                <p className="font-semibold text-gray-900 dark:text-white text-sm md:text-base leading-relaxed">
-                  <span className="text-indigo-600 dark:text-indigo-400 font-bold mr-1.5">{qIdx + 1}.</span>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <p className="font-semibold text-sm text-slate-900 dark:text-white">
+                  <span className="text-slate-400 font-normal mr-1.5">{qIdx + 1}.</span>
                   {q.question}
                 </p>
-                {qRes && (
-                  <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded ${
-                    qRes.isCorrect ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
-                  }`}>
-                    {qRes.isCorrect ? '✓ Correct' : '✕ Incorrect'}
+                {isEvaluated && (
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1 ${
+                      qRes.isCorrect
+                        ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200'
+                        : 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200'
+                    }`}
+                  >
+                    {qRes.isCorrect ? <CheckIcon className="w-3.5 h-3.5" /> : <XCircleIcon className="w-3.5 h-3.5" />}
+                    <span>{qRes.isCorrect ? 'Correct' : 'Incorrect'}</span>
                   </span>
                 )}
               </div>
@@ -232,28 +219,24 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
               <div className="space-y-2">
                 {q.options.map((opt, oIdx) => {
                   const isSelected = selectedAnswers[qIdx] === oIdx;
-                  const isCorrectOption = qRes && qRes.correctAnswer === oIdx;
-                  const isWrongSelection = qRes && !qRes.isCorrect && isSelected;
+                  const isCorrectOption = isEvaluated && qRes.correctAnswer === oIdx;
+                  const isWrongSelection = isEvaluated && isSelected && !qRes.isCorrect;
 
-                  let borderClass = 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 text-gray-700 dark:text-gray-300';
-                  if (qRes) {
-                    if (isCorrectOption) {
-                      borderClass = 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-200 font-medium';
-                    } else if (isWrongSelection) {
-                      borderClass = 'border-red-500 bg-red-50/70 dark:bg-red-900/20 text-red-900 dark:text-red-200 line-through';
-                    }
-                  } else if (isSelected) {
-                    borderClass = 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-200 font-medium';
+                  let optStyles = 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200';
+                  if (isSelected && !isEvaluated) {
+                    optStyles = 'border-blue-500 bg-blue-50 dark:bg-blue-950/50 text-blue-900 dark:text-blue-200 font-semibold';
+                  } else if (isCorrectOption) {
+                    optStyles = 'border-emerald-500 bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-100 font-semibold';
+                  } else if (isWrongSelection) {
+                    optStyles = 'border-rose-500 bg-rose-100 dark:bg-rose-950 text-rose-900 dark:text-rose-100';
                   }
 
                   return (
                     <label
                       key={oIdx}
-                      className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors text-sm ${borderClass} ${
-                        result?.passed ? 'cursor-default' : ''
-                      }`}
+                      className={`flex items-center justify-between p-3 rounded-lg border text-xs cursor-pointer transition-colors ${optStyles}`}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2.5">
                         <input
                           type="radio"
                           name={`q-${qIdx}`}
@@ -261,12 +244,12 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
                           checked={isSelected}
                           onChange={() => handleSelect(qIdx, oIdx)}
                           disabled={!!result?.passed}
-                          className="accent-indigo-600"
+                          className="accent-blue-600"
                         />
                         <span>{opt}</span>
                       </div>
                       {isCorrectOption && (
-                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">Correct Answer</span>
+                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">Correct Answer</span>
                       )}
                     </label>
                   );
@@ -276,30 +259,31 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
           );
         })}
 
-        <div className="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="pt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800">
           {!result?.passed && (
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all disabled:opacity-50"
+              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold text-xs transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
             >
-              {submitting ? 'Evaluating...' : 'Submit Answers →'}
+              {submitting ? 'Evaluating...' : 'Submit Answers'}
             </button>
           )}
 
           {result && !result.passed && (
             <button
               onClick={handleRetry}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-colors"
+              className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              🔄 Retake Quiz
+              <ArrowPathIcon className="w-3.5 h-3.5" />
+              <span>Retake Assessment</span>
             </button>
           )}
 
           {result?.passed && (
-            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-sm">
-              <span>🎉</span>
-              <span>Quiz passed! You can now mark this lesson as completed.</span>
+            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-xs">
+              <CheckCircleIcon className="w-4 h-4" />
+              <span>Assessment completed successfully. You may continue to the next lesson.</span>
             </div>
           )}
         </div>

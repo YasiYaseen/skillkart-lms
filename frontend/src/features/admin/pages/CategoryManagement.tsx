@@ -1,6 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import {
+    TagIcon,
+    MagnifyingGlassIcon,
+    PencilSquareIcon,
+    TrashIcon,
+    PlusIcon,
+    XMarkIcon,
+} from '@heroicons/react/20/solid';
 
 export interface AdminCategory {
     _id: string;
@@ -19,14 +27,12 @@ export interface AdminCategory {
 }
 
 const GRADIENT_PRESETS = [
-    { label: 'Blue Sky', value: 'from-blue-600/15 via-sky-600/10 to-indigo-900/5 border-blue-500/20 text-blue-600 dark:text-blue-400' },
-    { label: 'Emerald Mint', value: 'from-emerald-600/15 via-teal-600/10 to-emerald-900/5 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
-    { label: 'Rose Pink', value: 'from-rose-600/15 via-pink-600/10 to-rose-900/5 border-rose-500/20 text-rose-600 dark:text-rose-400' },
-    { label: 'Purple Violet', value: 'from-purple-600/15 via-violet-600/10 to-purple-900/5 border-purple-500/20 text-purple-600 dark:text-purple-400' },
-    { label: 'Amber Gold', value: 'from-amber-600/15 via-orange-600/10 to-amber-900/5 border-amber-500/20 text-amber-600 dark:text-amber-400' },
-    { label: 'Cyan Ocean', value: 'from-cyan-600/15 via-blue-600/10 to-cyan-900/5 border-cyan-500/20 text-cyan-600 dark:text-cyan-400' },
-    { label: 'Warm Orange', value: 'from-orange-600/15 via-amber-600/10 to-red-900/5 border-orange-500/20 text-orange-600 dark:text-orange-400' },
-    { label: 'Indigo Royal', value: 'from-indigo-600/15 via-purple-600/10 to-indigo-900/5 border-indigo-500/20 text-indigo-600 dark:text-indigo-400' },
+    { label: 'Royal Blue', value: 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400' },
+    { label: 'Emerald Slate', value: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+    { label: 'Slate Neutral', value: 'bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300' },
+    { label: 'Navy Deep', value: 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400' },
+    { label: 'Amber Warm', value: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400' },
+    { label: 'Cyan Crisp', value: 'bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400' },
 ];
 
 export function CategoryManagement() {
@@ -40,7 +46,7 @@ export function CategoryManagement() {
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
-        icon: '📚',
+        icon: '',
         description: '',
         gradient: GRADIENT_PRESETS[0].value,
         tagQuery: '',
@@ -72,7 +78,7 @@ export function CategoryManagement() {
         setFormData({
             name: '',
             slug: '',
-            icon: '📚',
+            icon: '',
             description: '',
             gradient: GRADIENT_PRESETS[0].value,
             tagQuery: '',
@@ -88,7 +94,7 @@ export function CategoryManagement() {
         setFormData({
             name: cat.name,
             slug: cat.slug,
-            icon: cat.icon || '📚',
+            icon: cat.icon || '',
             description: cat.description || '',
             gradient: cat.gradient || GRADIENT_PRESETS[0].value,
             tagQuery: cat.tagQuery || cat.name,
@@ -197,11 +203,11 @@ export function CategoryManagement() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
-                        <span>🏷️</span>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <TagIcon className="w-6 h-6 text-blue-600" />
                         <span>Category & Skill Tracks Management</span>
                     </h1>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         Configure learning categories, icons, search affinities, and visual themes shown across Learner Home & Course Discovery.
                     </p>
                 </div>
@@ -209,27 +215,28 @@ export function CategoryManagement() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleOpenCreate}
-                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/20 flex items-center gap-2 cursor-pointer"
+                        className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
                     >
-                        <span>+ Add Category</span>
+                        <PlusIcon className="w-4 h-4" />
+                        <span>Add Category</span>
                     </button>
                 </div>
             </div>
 
             {/* Filter bar */}
-            <div className="flex items-center justify-between gap-4 bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-2xs">
+            <div className="flex items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
                 <div className="relative w-full sm:w-80">
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search categories or slugs..."
-                        className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                        className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-blue-500"
                     />
-                    <span className="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                    <MagnifyingGlassIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 </div>
 
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                     Total: {categories.length} Categories ({categories.filter((c) => c.isActive).length} Active)
                 </div>
             </div>
@@ -321,20 +328,21 @@ export function CategoryManagement() {
                                             </button>
                                         </td>
                                         <td className="py-3.5 px-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
+                                            <div className="flex items-center justify-end gap-1.5">
                                                 <button
                                                     onClick={() => handleOpenEdit(cat)}
-                                                    className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300 hover:text-blue-600 text-xs font-semibold transition-colors cursor-pointer"
+                                                    className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1"
                                                     title="Edit Category"
                                                 >
-                                                    ✏️ Edit
+                                                    <PencilSquareIcon className="w-3.5 h-3.5" />
+                                                    <span>Edit</span>
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(cat)}
-                                                    className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-rose-50 dark:hover:bg-rose-900/40 text-gray-700 dark:text-gray-300 hover:text-rose-600 text-xs font-semibold transition-colors cursor-pointer"
+                                                    className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/60 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 text-xs font-semibold transition-colors cursor-pointer"
                                                     title="Delete Category"
                                                 >
-                                                    🗑️
+                                                    <TrashIcon className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
                                         </td>
@@ -349,17 +357,17 @@ export function CategoryManagement() {
             {/* Modal for Create / Edit */}
             {modalOpen && (
                 <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-150 max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 shadow-xl space-y-5 animate-in fade-in zoom-in duration-150 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 <span>{formData.icon}</span>
                                 <span>{editingCategory ? 'Edit Category' : 'Create New Category'}</span>
                             </h3>
                             <button
                                 onClick={() => setModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm p-1"
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm p-1 cursor-pointer"
                             >
-                                ✕
+                                <XMarkIcon className="w-5 h-5" />
                             </button>
                         </div>
 
@@ -373,8 +381,8 @@ export function CategoryManagement() {
                                         type="text"
                                         value={formData.icon}
                                         onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                                        className="w-full text-center text-lg p-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white"
-                                        placeholder="💼"
+                                        className="w-full text-center text-sm p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                                        placeholder="Icon"
                                         required
                                     />
                                 </div>

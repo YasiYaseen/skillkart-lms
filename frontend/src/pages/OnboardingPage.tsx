@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/features/auth/AuthContext';
 import { completeOnboarding } from '@/features/auth/auth.service';
+import { CheckIcon } from '@heroicons/react/20/solid';
 
 const STEPS = ['Your Role', 'Your Profile', 'Your Interests'] as const;
 
@@ -105,10 +106,10 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center px-4 py-10 transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center px-4 py-10 transition-colors">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome{firstName ? `, ${firstName}` : ''}!</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">Let&apos;s set up your profile in three quick steps.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Welcome{firstName ? `, ${firstName}` : ''}!</h1>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Let&apos;s set up your profile in three quick steps.</p>
       </div>
 
       <div className="flex items-center gap-3 mb-8">
@@ -116,28 +117,28 @@ export default function OnboardingPage() {
           <div key={label} className="flex items-center gap-3">
             <div className="flex flex-col items-center">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
                   idx < step
-                    ? 'bg-green-500 text-white'
+                    ? 'bg-emerald-600 text-white'
                     : idx === step
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                 }`}
               >
-                {idx < step ? 'OK' : idx + 1}
+                {idx < step ? <CheckIcon className="w-4 h-4" /> : idx + 1}
               </div>
-              <span className={`text-xs mt-1 font-medium ${idx === step ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
+              <span className={`text-xs mt-1 font-medium ${idx === step ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 {label}
               </span>
             </div>
             {idx < STEPS.length - 1 && (
-              <div className={`w-10 h-0.5 mb-4 ${idx < step ? 'bg-green-400 dark:bg-green-500' : 'bg-gray-200 dark:bg-gray-800'}`} />
+              <div className={`w-8 sm:w-12 h-0.5 mb-4 ${idx < step ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'}`} />
             )}
           </div>
         ))}
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm w-full max-w-2xl p-8 transition-colors">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs w-full max-w-xl p-6 sm:p-8 transition-colors">
         {step === 0 && (
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">What best describes you?</h2>

@@ -2,6 +2,18 @@ import { useState, useEffect, FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { useCurrency } from '@/context/CurrencyContext';
+import {
+  ArrowDownTrayIcon,
+  BanknotesIcon,
+  BuildingLibraryIcon,
+  BuildingOfficeIcon,
+  CreditCardIcon,
+  CheckCircleIcon,
+  AcademicCapIcon,
+  ClockIcon,
+  BookOpenIcon,
+  XMarkIcon,
+} from '@heroicons/react/20/solid';
 
 interface EarningsSummary {
   totalGrossSales: number;
@@ -212,20 +224,22 @@ export function EarningsAndPayouts() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={handleExportCsv}
             disabled={downloadingCsv}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            className="px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
           >
-            <span>📥 {downloadingCsv ? 'Exporting...' : 'Export Statement'}</span>
+            <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+            <span>{downloadingCsv ? 'Exporting...' : 'Export Statement'}</span>
           </button>
 
           <button
             onClick={handleOpenPayoutModal}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
           >
-            <span>⚡ Request Payout</span>
+            <BanknotesIcon className="w-4 h-4" />
+            <span>Request Payout</span>
           </button>
         </div>
       </div>
@@ -233,14 +247,14 @@ export function EarningsAndPayouts() {
       {/* Primary Financial Metric Cards Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Available Balance (Hero Card) */}
-        <div className="bg-linear-to-br from-blue-600 to-indigo-700 text-white rounded-3xl p-6 shadow-lg shadow-blue-600/10 space-y-2 relative overflow-hidden">
+        <div className="bg-slate-900 text-white rounded-xl p-5 border border-slate-800 space-y-2 relative overflow-hidden shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-100">
-              Available to Withdraw
+            <span className="text-xs font-semibold text-blue-100 uppercase tracking-wider">
+              Available For Withdrawal
             </span>
-            <span className="p-1.5 bg-white/20 rounded-lg text-xs">💵</span>
+            <span className="p-1.5 bg-white/20 rounded-lg text-xs"><BanknotesIcon className="w-4 h-4 text-white" /></span>
           </div>
-          <div className="text-3xl font-extrabold font-mono tracking-tight">
+          <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight">
             {formatAmount(summary.availableBalance)}
           </div>
           <p className="text-[11px] text-blue-100">
@@ -249,72 +263,72 @@ export function EarningsAndPayouts() {
         </div>
 
         {/* Net Lifetime Take-Home (80%) */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Net Lifetime Earnings (80%)
             </span>
-            <span className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs">🎓</span>
+            <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs"><AcademicCapIcon className="w-4 h-4" /></span>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 font-mono">
+          <div className="text-2xl sm:text-3xl font-bold text-emerald-600 font-mono">
             {formatAmount(summary.totalLifetimeNetEarnings)}
           </div>
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-slate-400">
             From {formatAmount(summary.totalGrossSales)} gross sales
           </p>
         </div>
 
         {/* Total Platform Fee Deductions (20%) */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Platform Share (20%)
             </span>
-            <span className="p-1.5 bg-purple-50 text-purple-600 rounded-lg text-xs">🏛️</span>
+            <span className="p-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-lg text-xs"><BuildingOfficeIcon className="w-4 h-4" /></span>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-purple-600 font-mono">
+          <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400 font-mono">
             {formatAmount(summary.totalPlatformFees)}
           </div>
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-slate-400">
             Platform hosting & payment processing
           </p>
         </div>
 
         {/* Payouts Withdrawn & Pending */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Withdrawn / Pending
             </span>
-            <span className="p-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs">⏳</span>
+            <span className="p-1.5 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-lg text-xs"><ClockIcon className="w-4 h-4" /></span>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white font-mono">
             {formatAmount(summary.totalPayoutsWithdrawn)}
           </div>
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-slate-400">
             Pending approval: <strong className="text-amber-600 font-mono">{formatAmount(summary.pendingPayoutsAmount)}</strong>
           </p>
         </div>
       </div>
 
       {/* Course Revenue Breakdown Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               Course-by-Course Revenue Breakdown
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Earnings distribution across your published courses.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Earnings distribution across your published courses.</p>
           </div>
-          <span className="text-xs text-gray-400 font-mono">
+          <span className="text-xs text-slate-400 font-mono">
             {data?.courseBreakdown.length || 0} Courses Active
           </span>
         </div>
 
         {data?.courseBreakdown && data.courseBreakdown.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-gray-600 dark:text-gray-300">
-              <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200 font-semibold border-b border-gray-200 dark:border-gray-800 uppercase tracking-wider text-[10px]">
+            <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+              <thead className="bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-200 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-4 py-3">Course Title</th>
                   <th className="px-4 py-3">List Price</th>
@@ -324,38 +338,38 @@ export function EarningsAndPayouts() {
                   <th className="px-4 py-3">Your Net Earnings (80%)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {data.courseBreakdown.map((course) => (
-                  <tr key={course.courseId} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
-                    <td className="px-4 py-3.5 flex items-center gap-3">
+                  <tr key={course.courseId} className="hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors">
+                    <td className="px-4 py-3 flex items-center gap-3">
                       {course.thumbnailUrl ? (
                         <img
                           src={course.thumbnailUrl}
                           alt={course.title}
-                          className="w-10 h-8 rounded-lg object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                          className="w-10 h-7 rounded object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                         />
                       ) : (
-                        <div className="w-10 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 shrink-0">
-                          📚
+                        <div className="w-10 h-7 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400 shrink-0">
+                          <BookOpenIcon className="w-4 h-4" />
                         </div>
                       )}
-                      <span className="font-semibold text-gray-900 dark:text-white truncate max-w-xs">
+                      <span className="font-semibold text-slate-900 dark:text-white truncate max-w-xs">
                         {course.title}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5 font-mono">
+                    <td className="px-4 py-3 font-mono">
                       {formatPrice(course.price)}
                     </td>
-                    <td className="px-4 py-3.5 font-semibold text-gray-900 dark:text-white">
+                    <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
                       {course.unitsSold}
                     </td>
-                    <td className="px-4 py-3.5 font-mono text-gray-800 dark:text-gray-200">
+                    <td className="px-4 py-3 font-mono text-slate-800 dark:text-slate-200">
                       {formatAmount(course.grossRevenue)}
                     </td>
-                    <td className="px-4 py-3.5 font-mono text-rose-500">
+                    <td className="px-4 py-3 font-mono text-rose-500">
                       -{formatAmount(course.platformFee)}
                     </td>
-                    <td className="px-4 py-3.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                    <td className="px-4 py-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">
                       {formatAmount(course.netEarnings)}
                     </td>
                   </tr>
@@ -364,18 +378,18 @@ export function EarningsAndPayouts() {
             </table>
           </div>
         ) : (
-          <p className="py-8 text-center text-xs text-gray-400">No courses published yet.</p>
+          <p className="py-8 text-center text-xs text-slate-400">No courses published yet.</p>
         )}
       </div>
 
       {/* Payout & Withdrawal History Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               Payout & Withdrawal History
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Record of requested and disbursed funds.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Record of requested and disbursed funds.</p>
           </div>
         </div>
 
@@ -402,27 +416,27 @@ export function EarningsAndPayouts() {
                       {new Date(p.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3.5 uppercase font-mono text-[10px]">
-                      {p.method === 'bank_transfer' ? '🏦 Bank Wire' : p.method === 'paypal' ? '🅿️ PayPal' : '⚡ Stripe'}
+                      {p.method === 'bank_transfer' ? 'Bank Wire' : p.method === 'paypal' ? 'PayPal' : 'Stripe'}
                     </td>
-                    <td className="px-4 py-3.5 text-gray-700 dark:text-gray-300 truncate max-w-xs">
+                    <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300 truncate max-w-xs">
                       {p.method === 'bank_transfer'
                         ? `${p.accountDetails.bankName || 'Bank'} (${p.accountDetails.accountNumber ? `••••${p.accountDetails.accountNumber.slice(-4)}` : 'Account'})`
                         : p.method === 'paypal'
                         ? p.accountDetails.paypalEmail
                         : p.accountDetails.stripeAccountId || 'Stripe Account'}
                     </td>
-                    <td className="px-4 py-3.5 font-mono font-bold text-gray-900 dark:text-white">
+                    <td className="px-4 py-3.5 font-mono font-bold text-slate-900 dark:text-white">
                       {formatAmount(p.amount)}
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase ${
                         p.status === 'completed'
-                          ? 'bg-emerald-100 text-emerald-700'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
                           : p.status === 'pending'
-                          ? 'bg-amber-100 text-amber-700'
+                          ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
                           : p.status === 'processing'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-rose-100 text-rose-700'
+                          ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                          : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
                       }`}>
                         {p.status}
                       </span>
@@ -433,71 +447,74 @@ export function EarningsAndPayouts() {
             </table>
           </div>
         ) : (
-          <p className="py-8 text-center text-xs text-gray-400">No payout withdrawals requested yet.</p>
+          <p className="py-8 text-center text-xs text-slate-400">No payout withdrawals requested yet.</p>
         )}
       </div>
 
       {/* REQUEST PAYOUT MODAL */}
       {showPayoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6 animate-scaleUp">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 max-w-lg w-full shadow-xl space-y-5 animate-scaleUp">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                   Request Earnings Payout
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Available Balance: <strong className="text-blue-600 font-mono">{formatAmount(summary.availableBalance)}</strong>
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPayoutModal(false)}
-                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
-                ✕
+                <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmitPayout} className="space-y-4 text-xs">
               {/* Payout Method Selector */}
               <div>
-                <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Payout Method
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setPayoutMethod('bank_transfer')}
-                    className={`py-2 px-3 rounded-xl border font-bold text-center transition-all ${
+                    className={`py-2 px-3 rounded-lg border font-semibold text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
                       payoutMethod === 'bank_transfer'
-                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-600'
-                        : 'border-gray-200 dark:border-gray-800 text-gray-600'
+                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    🏦 Bank Wire
+                    <BuildingLibraryIcon className="w-4 h-4 text-slate-500" />
+                    <span>Bank Wire</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setPayoutMethod('paypal')}
-                    className={`py-2 px-3 rounded-xl border font-bold text-center transition-all ${
+                    className={`py-2 px-3 rounded-lg border font-semibold text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
                       payoutMethod === 'paypal'
-                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-600'
-                        : 'border-gray-200 dark:border-gray-800 text-gray-600'
+                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    🅿️ PayPal
+                    <span className="italic font-bold text-xs">PP</span>
+                    <span>PayPal</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setPayoutMethod('stripe')}
-                    className={`py-2 px-3 rounded-xl border font-bold text-center transition-all ${
+                    className={`py-2 px-3 rounded-lg border font-semibold text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
                       payoutMethod === 'stripe'
-                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-600'
-                        : 'border-gray-200 dark:border-gray-800 text-gray-600'
+                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    ⚡ Stripe
+                    <CreditCardIcon className="w-4 h-4 text-slate-500" />
+                    <span>Stripe</span>
                   </button>
                 </div>
               </div>

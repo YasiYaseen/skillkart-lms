@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { useCurrency } from '@/context/CurrencyContext';
+import {
+  ArrowDownTrayIcon,
+  PrinterIcon,
+  BanknotesIcon,
+  ChartBarIcon,
+  AcademicCapIcon,
+  TagIcon,
+  BookOpenIcon,
+  UserGroupIcon,
+} from '@heroicons/react/20/solid';
 
 interface FinancialMetrics {
   grossVolume: number;
@@ -170,34 +180,36 @@ export function FinancialReports() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleExportCsv}
             disabled={downloadingCsv}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
           >
-            <span>📥 {downloadingCsv ? 'Exporting...' : 'Export to CSV'}</span>
+            <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+            <span>{downloadingCsv ? 'Exporting...' : 'Export to CSV'}</span>
           </button>
 
           <button
             onClick={handlePrint}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
-            <span>🖨️ Print Statement</span>
+            <PrinterIcon className="w-3.5 h-3.5" />
+            <span>Print Statement</span>
           </button>
         </div>
       </div>
 
       {/* Date Range Selector Pills */}
-      <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-gray-900 p-1.5 rounded-2xl border border-gray-200 dark:border-gray-800 w-fit shadow-xs">
+      <div className="flex flex-wrap items-center gap-1.5 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 w-fit shadow-2xs">
         {RANGES.map((r) => (
           <button
             key={r.id}
             onClick={() => setRange(r.id)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
               range === r.id
-                ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xs'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 hover:bg-gray-50'
+                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             {r.label}
@@ -208,115 +220,110 @@ export function FinancialReports() {
       {/* Primary KPI Metrics Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Gross Sales */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Gross Sales (GMV)
             </span>
-            <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 text-sm">
-              💰
-            </span>
+            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+              <BanknotesIcon className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
             {formatAmount(metrics.grossVolume)}
           </div>
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-slate-400">
             Across {metrics.totalOrdersCount} paid transactions
           </p>
         </div>
 
         {/* Platform Commission (20%) */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Platform Cut (20%)
             </span>
-            <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 text-sm">
-              ⚡
-            </span>
+            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+              <ChartBarIcon className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 font-mono">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono">
             {formatAmount(metrics.platformCommission)}
           </div>
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-slate-400">
             Net revenue retained by SkillKart
           </p>
         </div>
 
         {/* Instructor Payout Share (80%) */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Instructor Share (80%)
             </span>
-            <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 text-sm">
-              🎓
-            </span>
+            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+              <AcademicCapIcon className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-purple-600 dark:text-purple-400 font-mono">
+          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 font-mono">
             {formatAmount(metrics.instructorPayouts)}
           </div>
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-slate-400">
             Total instructor earnings allocated
           </p>
         </div>
 
         {/* Discounts Absorbed & AOV */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xs space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Coupon Discounts / AOV
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Discounts / AOV
             </span>
-            <span className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 text-sm">
-              🏷️
-            </span>
+            <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">
+              <TagIcon className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 font-mono">
+          <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">
             -{formatAmount(metrics.totalDiscount)}
           </div>
-          <p className="text-[11px] text-gray-400">
-            Avg Order Value: <strong className="text-gray-700 dark:text-gray-300 font-mono">{formatAmount(metrics.averageOrderValue)}</strong>
+          <p className="text-[11px] text-slate-400">
+            Avg Order: <strong className="text-slate-700 dark:text-slate-300 font-mono">{formatAmount(metrics.averageOrderValue)}</strong>
           </p>
         </div>
       </div>
 
-      {/* Revenue Timeline Progression Visual Chart */}
-      <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 sm:p-8 shadow-xs space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* Revenue Over Time Chart */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Revenue Volume Trend
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Revenue Dynamics Over Time
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Daily revenue spikes and checkout frequency over the selected timeframe.
+            <p className="text-xs text-slate-400">
+              Daily revenue volume distribution over selected timeframe
             </p>
           </div>
-          <div className="text-xs font-mono text-gray-400">
-            Peak Day: <strong className="text-indigo-600">{formatAmount(maxDailyRevenue)}</strong>
-          </div>
+          <span className="text-xs text-slate-400 font-mono">
+            {chartPoints.length} Points
+          </span>
         </div>
 
-        {data?.timeSeries && data.timeSeries.length > 0 ? (
-          <div className="pt-6">
-            <div className="h-48 flex items-end gap-2 sm:gap-3 overflow-x-auto pb-2 border-b border-gray-100 dark:border-gray-800">
-              {data.timeSeries.map((point) => {
-                const heightPct = Math.max(8, Math.round((point.revenue / maxDailyRevenue) * 100));
+        {chartPoints.length > 0 ? (
+          <div className="pt-6 pb-2">
+            <div className="h-48 flex items-end gap-2 sm:gap-3 overflow-x-auto pb-4">
+              {chartPoints.map((pt, i) => {
+                const heightPct = Math.max(8, Math.round((pt.revenue / maxRev) * 100));
                 return (
-                  <div key={point.date} className="flex-1 min-w-[28px] flex flex-col items-center gap-2 group relative">
-                    {/* Tooltip on hover */}
-                    <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] py-1 px-2 rounded-lg pointer-events-none whitespace-nowrap shadow-xl z-20 font-mono">
-                      {point.date}: {formatAmount(point.revenue)} ({point.count} orders)
+                  <div key={i} className="flex-1 min-w-[28px] sm:min-w-[40px] flex flex-col items-center gap-2 group h-full justify-end">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-mono bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-1.5 py-0.5 rounded shadow-xs pointer-events-none whitespace-nowrap">
+                      {formatAmount(pt.revenue)} ({pt.count} sales)
                     </div>
-
-                    {/* Bar */}
                     <div
+                      className="w-full bg-blue-600 hover:bg-blue-500 rounded-t-md transition-all cursor-pointer relative"
                       style={{ height: `${heightPct}%` }}
-                      className="w-full bg-linear-to-t from-indigo-600 to-indigo-400 hover:from-indigo-500 hover:to-indigo-300 rounded-t-lg transition-all duration-300 shadow-2xs"
                     />
-
-                    {/* X-axis label */}
-                    <span className="text-[9px] text-gray-400 truncate w-full text-center">
-                      {point.date.slice(5)}
+                    <span className="text-[9px] text-slate-400 font-mono rotate-45 sm:rotate-0 mt-1 whitespace-nowrap">
+                      {pt.date.slice(5)}
                     </span>
                   </div>
                 );
@@ -324,69 +331,71 @@ export function FinancialReports() {
             </div>
           </div>
         ) : (
-          <div className="py-12 text-center text-xs text-gray-400">
+          <div className="py-12 text-center text-xs text-slate-400">
             No transaction volume recorded in this time interval.
           </div>
         )}
       </div>
 
       {/* Two Columns: Top Grossing Courses & Top Instructors */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Grossing Courses */}
-        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <span>🏆 Top Grossing Courses</span>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <BookOpenIcon className="w-4 h-4 text-blue-600" />
+              <span>Top Grossing Courses</span>
             </h3>
-            <span className="text-[11px] text-gray-400">Ranked by Revenue</span>
+            <span className="text-[11px] text-slate-400">Ranked by Revenue</span>
           </div>
 
           {data?.topCourses && data.topCourses.length > 0 ? (
-            <div className="divide-y divide-gray-100 dark:divide-gray-800 text-xs">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
               {data.topCourses.map((c, idx) => (
                 <div key={c.courseId} className="py-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${
-                      idx === 0 ? 'bg-amber-100 text-amber-800' : idx === 1 ? 'bg-gray-200 text-gray-800' : 'bg-orange-100 text-orange-800'
+                      idx === 0 ? 'bg-amber-100 text-amber-800' : idx === 1 ? 'bg-slate-200 text-slate-800' : 'bg-orange-100 text-orange-800'
                     }`}>
                       #{idx + 1}
                     </span>
                     <div className="truncate">
-                      <p className="font-semibold text-gray-900 dark:text-white truncate">{c.title}</p>
-                      <p className="text-[10px] text-gray-400 truncate">Instructor: {c.instructorName}</p>
+                      <p className="font-semibold text-slate-900 dark:text-white truncate">{c.title}</p>
+                      <p className="text-[10px] text-slate-400 truncate">Instructor: {c.instructorName}</p>
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="font-extrabold text-gray-900 dark:text-white font-mono block">
+                    <span className="font-bold text-slate-900 dark:text-white font-mono block">
                       {formatAmount(c.revenue)}
                     </span>
-                    <span className="text-[10px] text-gray-400">{c.unitsSold} enrollments</span>
+                    <span className="text-[10px] text-slate-400">{c.unitsSold} enrollments</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="py-8 text-center text-xs text-gray-400">No course sales recorded yet.</p>
+            <p className="py-8 text-center text-xs text-slate-400">No course sales recorded yet.</p>
           )}
         </div>
 
         {/* Top Earning Instructors */}
-        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <span>👨‍🏫 Top Earning Instructors</span>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <UserGroupIcon className="w-4 h-4 text-indigo-600" />
+              <span>Top Earning Instructors</span>
             </h3>
-            <span className="text-[11px] text-gray-400">80% Share Model</span>
+            <span className="text-[11px] text-slate-400">80% Share Model</span>
           </div>
 
           {data?.topInstructors && data.topInstructors.length > 0 ? (
-            <div className="divide-y divide-gray-100 dark:divide-gray-800 text-xs">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
               {data.topInstructors.map((inst, idx) => (
                 <div key={inst.instructorId} className="py-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${
-                      idx === 0 ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-600'
+                      idx === 0 ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                     }`}>
                       #{idx + 1}
                     </span>
@@ -412,13 +421,13 @@ export function FinancialReports() {
       </div>
 
       {/* Recent Orders & Transactions Ledger */}
-      <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-100 dark:border-gray-800">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               Transactions & Invoices Ledger
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Live feed of verified platform purchases.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Live feed of verified platform purchases.</p>
           </div>
 
           <div className="w-full sm:w-72">
@@ -427,7 +436,7 @@ export function FinancialReports() {
               value={searchLedger}
               onChange={(e) => setSearchLedger(e.target.value)}
               placeholder="Search by order #, learner name, course..."
-              className="w-full px-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
             />
           </div>
         </div>

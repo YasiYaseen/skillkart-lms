@@ -87,30 +87,30 @@ export function WishlistPage() {
 
       {/* Empty State */}
       {items.length === 0 ? (
-        <div className="text-center py-20 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-xs p-8 max-w-lg mx-auto">
-          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-950/40 rounded-full flex items-center justify-center mx-auto mb-5 text-rose-500">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10">
+        <div className="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs p-6 max-w-md mx-auto">
+          <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/40 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500 border border-rose-100 dark:border-rose-900/40">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Your wishlist is empty</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1.5">Your wishlist is empty</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 max-w-sm mx-auto">
             Explore our rich catalog of courses and click the heart icon to save courses you want to enroll in later.
           </p>
           <Link
             to="/courses"
-            className="inline-flex items-center justify-center px-6 py-3 rounded-xl font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-2xs"
           >
             Browse Courses
           </Link>
         </div>
       ) : (
         /* Course Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {items.map(({ _id, course }) => (
             <div
               key={_id}
-              className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col"
+              className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs hover:shadow-xs transition-colors flex flex-col"
             >
               {/* Thumbnail & Level Badge */}
               <div className="relative aspect-video overflow-hidden bg-gray-100 dark:bg-gray-800">

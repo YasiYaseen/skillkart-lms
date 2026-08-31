@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   fetchAllUserNotes,
   deleteNote,
   updateNote,
-  createNote,
   type NoteItem,
 } from '../api/notes';
 import {
@@ -13,6 +12,17 @@ import {
   toggleLessonBookmark,
   type BookmarkItem,
 } from '../api/bookmarks';
+import {
+  BookmarkIcon,
+  DocumentTextIcon,
+  MagnifyingGlassIcon,
+  ArrowDownTrayIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  AcademicCapIcon,
+  GlobeAltIcon,
+  ArrowRightIcon,
+} from '@heroicons/react/20/solid';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -31,8 +41,6 @@ function formatTime(seconds?: number): string {
 }
 
 export default function NotesAndBookmarksPage() {
-  const navigate = useNavigate();
-
   // Data states
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [notes, setNotes] = useState<NoteItem[]>([]);
@@ -49,11 +57,6 @@ export default function NotesAndBookmarksPage() {
   const [editingContent, setEditingContent] = useState('');
   const [savingNote, setSavingNote] = useState(false);
 
-  // New quick note modal/state
-  const [showNewNoteInput, setShowNewNoteInput] = useState(false);
-  const [newNoteContent, setNewNoteContent] = useState('');
-  const [creatingNote, setCreatingNote] = useState(false);
-
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -68,8 +71,9 @@ export default function NotesAndBookmarksPage() {
           setSelectedNoteId(notesData[0]._id);
           setEditingContent(notesData[0].content);
         }
-      } catch (error: any) {
-        toast.error(error?.response?.data?.message || 'Failed to load study records');
+      } catch (error: unknown) {
+        const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to load study records';
+        toast.error(msg);
       } finally {
         setLoading(false);
       }
@@ -146,8 +150,9 @@ export default function NotesAndBookmarksPage() {
       await toggleLessonBookmark(lessonId);
       setBookmarks((prev) => prev.filter((b) => b.lesson._id !== lessonId));
       toast.success('Bookmark removed');
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update bookmark');
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update bookmark';
+      toast.error(msg);
     }
   };
 
@@ -161,8 +166,9 @@ export default function NotesAndBookmarksPage() {
         setSelectedNoteId(remaining.length > 0 ? remaining[0]._id : null);
       }
       toast.success('Note deleted');
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to delete note');
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete note';
+      toast.error(msg);
     }
   };
 
@@ -176,8 +182,9 @@ export default function NotesAndBookmarksPage() {
       );
       setIsEditingNote(false);
       toast.success('Note saved successfully');
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update note');
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update note';
+      toast.error(msg);
     } finally {
       setSavingNote(false);
     }
@@ -191,7 +198,7 @@ export default function NotesAndBookmarksPage() {
     }
     const currentCourse = courseList.find((c) => c.id === selectedCourseId);
     const title = currentCourse ? currentCourse.title : 'All Courses';
-    let mdContent = `# 📚 SkillKart Study Notes - ${title}\n\nGenerated on ${new Date().toLocaleDateString()}\n\n---\n\n`;
+    let mdContent = `# SkillKart Study Notes - ${title}\n\nGenerated on ${new Date().toLocaleDateString()}\n\n---\n\n`;
 
     filteredNotes.forEach((n, idx) => {
       const c = typeof n.course === 'object' ? n.course : null;
@@ -215,41 +222,42 @@ export default function NotesAndBookmarksPage() {
   return (
     <div className="container py-8 max-w-[1440px] mx-auto space-y-6">
       {/* 1. Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span>🧠</span>
-            <span>Study Hub & Knowledge Studio</span>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <AcademicCapIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <span>Study Hub & Notes</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Your centralized learning second-brain. Organize notes, revisit bookmarked moments, and export study guides.
           </p>
         </div>
 
         {/* Global Action: Export Markdown Study Notes */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={handleExportNotes}
-            className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             title="Download notes as markdown"
           >
-            <span>📥</span>
+            <ArrowDownTrayIcon className="w-3.5 h-3.5" />
             <span>Export Notes (.md)</span>
           </button>
 
           <Link
             to="/my-courses"
-            className="px-4 py-2 text-xs font-bold rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1"
           >
-            Go to My Courses →
+            <span>My Courses</span>
+            <ArrowRightIcon className="w-3 h-3" />
           </Link>
         </div>
       </div>
 
-      {/* 2. Main 2-Pane Notion-Style Workspace */}
+      {/* 2. Main 2-Pane Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* LEFT PANE: Course & Record Navigator (4 cols on lg) */}
-        <aside className="lg:col-span-4 bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-4 shadow-2xs space-y-4">
+        <aside className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-4">
           {/* Quick Search */}
           <div className="relative">
             <input
@@ -257,59 +265,64 @@ export default function NotesAndBookmarksPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search notes, topics, or lessons..."
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <span className="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+            <MagnifyingGlassIcon className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
           </div>
 
           {/* Mode Selector (All / Notes / Bookmarks) */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-gray-100 dark:bg-gray-800/80 rounded-xl border border-gray-200/60 dark:border-gray-700/60 text-xs font-semibold">
+          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-750 text-xs font-semibold">
             <button
               onClick={() => setActiveMode('all')}
-              className={`py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+              className={`py-1 rounded-md transition-colors text-center cursor-pointer text-xs ${
                 activeMode === 'all'
-                  ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-2xs font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               All ({notes.length + bookmarks.length})
             </button>
             <button
               onClick={() => setActiveMode('notes')}
-              className={`py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+              className={`py-1 rounded-md transition-colors text-center cursor-pointer text-xs flex items-center justify-center gap-1 ${
                 activeMode === 'notes'
-                  ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-2xs font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              📝 Notes ({notes.length})
+              <DocumentTextIcon className="w-3 h-3" />
+              <span>Notes ({notes.length})</span>
             </button>
             <button
               onClick={() => setActiveMode('bookmarks')}
-              className={`py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+              className={`py-1 rounded-md transition-colors text-center cursor-pointer text-xs flex items-center justify-center gap-1 ${
                 activeMode === 'bookmarks'
-                  ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-2xs font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              🔖 Saved ({bookmarks.length})
+              <BookmarkIcon className="w-3 h-3" />
+              <span>Saved ({bookmarks.length})</span>
             </button>
           </div>
 
           {/* Course Scope Filter */}
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Courses</p>
-            <div className="space-y-1 max-h-48 overflow-y-auto pr-1 no-scrollbar">
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Courses</p>
+            <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
               <button
                 onClick={() => setSelectedCourseId('all')}
-                className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-medium text-left transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors cursor-pointer ${
                   selectedCourseId === 'all'
-                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                <span>🌐 All Enrolled Courses</span>
-                <span className="text-[10px] text-gray-400 font-mono">
+                <span className="flex items-center gap-1.5">
+                  <GlobeAltIcon className="w-3.5 h-3.5 text-slate-400" />
+                  <span>All Courses</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">
                   {notes.length + bookmarks.length}
                 </span>
               </button>
@@ -318,14 +331,14 @@ export default function NotesAndBookmarksPage() {
                 <button
                   key={c.id}
                   onClick={() => setSelectedCourseId(c.id)}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-medium text-left transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors cursor-pointer ${
                     selectedCourseId === c.id
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span className="truncate pr-2">{c.title}</span>
-                  <span className="text-[10px] text-gray-400 font-mono shrink-0">
+                  <span className="text-[10px] text-slate-400 font-mono shrink-0">
                     {c.notesCount + c.bookmarksCount}
                   </span>
                 </button>
@@ -334,21 +347,20 @@ export default function NotesAndBookmarksPage() {
           </div>
 
           {/* Notes & Bookmarks Item Feed (Master List) */}
-          <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               {activeMode === 'bookmarks' ? 'Saved Lessons' : 'Study Notes Feed'}
             </p>
 
             {loading ? (
               <div className="space-y-2">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+                  <div key={i} className="h-14 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
                 ))}
               </div>
             ) : activeMode === 'bookmarks' ? (
-              // Bookmarks in list
               filteredBookmarks.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-6">No saved bookmarks match criteria.</p>
+                <p className="text-xs text-slate-400 text-center py-6">No saved bookmarks match criteria.</p>
               ) : (
                 <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
                   {filteredBookmarks.map((b) => {
@@ -356,17 +368,17 @@ export default function NotesAndBookmarksPage() {
                     return (
                       <div
                         key={b._id}
-                        className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-700/60 hover:border-indigo-300 transition-all flex items-center justify-between gap-2"
+                        className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 hover:border-slate-300 transition-colors flex items-center justify-between gap-2"
                       >
-                        <div className="truncate">
-                          <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
+                        <div className="truncate min-w-0">
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
                             Lesson {b.lesson.order}: {b.lesson.title}
                           </p>
-                          <p className="text-[10px] text-gray-400 truncate">{c?.title || 'Course'}</p>
+                          <p className="text-[10px] text-slate-400 truncate">{c?.title || 'Course'}</p>
                         </div>
                         <Link
                           to={`/courses/${c?._id || b.course}`}
-                          className="px-2 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-bold shrink-0 hover:bg-indigo-700"
+                          className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-semibold shrink-0"
                         >
                           Study →
                         </Link>
@@ -376,14 +388,12 @@ export default function NotesAndBookmarksPage() {
                 </div>
               )
             ) : (
-              // Notes in list
               filteredNotes.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-6">No study notes match criteria.</p>
+                <p className="text-xs text-slate-400 text-center py-6">No study notes match criteria.</p>
               ) : (
                 <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
                   {filteredNotes.map((n) => {
                     const isSelected = activeSelectedNote?._id === n._id;
-                    const c = typeof n.course === 'object' ? n.course : null;
                     const l = typeof n.lesson === 'object' ? n.lesson : null;
 
                     return (
@@ -394,19 +404,19 @@ export default function NotesAndBookmarksPage() {
                           setEditingContent(n.content);
                           setIsEditingNote(false);
                         }}
-                        className={`w-full p-2.5 rounded-xl text-left transition-all cursor-pointer border ${
+                        className={`w-full p-2.5 rounded-lg text-left transition-colors cursor-pointer border ${
                           isSelected
-                            ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-300 dark:border-indigo-800 shadow-2xs'
-                            : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-800 shadow-2xs'
+                            : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-750 hover:bg-slate-100'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 truncate">
+                          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 truncate">
                             {l ? `Lesson ${l.order}: ${l.title}` : 'General Note'}
                           </span>
-                          <span className="text-[9px] text-gray-400">{formatDate(n.updatedAt)}</span>
+                          <span className="text-[9px] text-slate-400">{formatDate(n.updatedAt)}</span>
                         </div>
-                        <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">
                           {n.content}
                         </p>
                       </button>
@@ -418,59 +428,58 @@ export default function NotesAndBookmarksPage() {
           </div>
         </aside>
 
-        {/* RIGHT PANE: Interactive Notion-Style Study Pad / Detail Workspace (8 cols on lg) */}
+        {/* RIGHT PANE: Detail Workspace (8 cols on lg) */}
         <main className="lg:col-span-8 space-y-6">
           {activeMode === 'bookmarks' ? (
-            // Full Bookmark Shelf
-            <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <span>🔖</span>
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <BookmarkIcon className="w-4 h-4 text-blue-600" />
                   <span>Bookmarked Lessons & Key Timestamps ({filteredBookmarks.length})</span>
                 </h2>
               </div>
 
               {filteredBookmarks.length === 0 ? (
-                <div className="text-center py-16 space-y-3">
-                  <div className="text-4xl">🔖</div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white">No bookmarks yet</h3>
-                  <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                <div className="text-center py-16 space-y-2">
+                  <BookmarkIcon className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">No bookmarks yet</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
                     While watching course lessons, click the bookmark icon to save lessons here for rapid exam revision.
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {filteredBookmarks.map((b) => {
                     const c = typeof b.course === 'object' ? b.course : null;
                     return (
                       <div
                         key={b._id}
-                        className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-200/70 dark:border-gray-700/70 p-4 space-y-3 flex flex-col justify-between hover:shadow-xs transition-shadow"
+                        className="bg-slate-50 dark:bg-slate-850 rounded-lg border border-slate-200 dark:border-slate-750 p-3.5 space-y-3 flex flex-col justify-between hover:shadow-2xs transition-shadow"
                       >
-                        <div className="space-y-1.5">
+                        <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 truncate max-w-[180px]">
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 truncate max-w-[180px]">
                               {c?.title || 'Course'}
                             </span>
                             <button
                               onClick={() => handleRemoveBookmark(b.lesson._id)}
-                              className="text-amber-500 hover:text-red-500 text-xs p-1"
+                              className="text-slate-400 hover:text-rose-500 text-xs p-0.5 cursor-pointer"
                               title="Remove bookmark"
                             >
                               ✕
                             </button>
                           </div>
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                             Lesson {b.lesson.order}: {b.lesson.title}
                           </h4>
-                          <p className="text-[11px] text-gray-400">
+                          <p className="text-[10px] text-slate-400">
                             Bookmarked on {formatDate(b.createdAt)}
                           </p>
                         </div>
 
                         <Link
                           to={`/courses/${c?._id || b.course}`}
-                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl text-center shadow-2xs transition-colors"
+                          className="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-md text-center shadow-2xs transition-colors"
                         >
                           Open Lesson Video →
                         </Link>
@@ -481,27 +490,26 @@ export default function NotesAndBookmarksPage() {
               )}
             </div>
           ) : (
-            // Interactive Markdown Study Pad & Note Editor
-            <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-2xs space-y-4">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4">
               {activeSelectedNote ? (
                 <>
                   {/* Note Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
                           {typeof activeSelectedNote.course === 'object' && activeSelectedNote.course
                             ? activeSelectedNote.course.title
                             : 'Course Note'}
                         </span>
-                        <span>•</span>
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        <span className="text-slate-300 dark:text-slate-600">•</span>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                           {typeof activeSelectedNote.lesson === 'object' && activeSelectedNote.lesson
                             ? `Lesson ${activeSelectedNote.lesson.order}: ${activeSelectedNote.lesson.title}`
                             : 'Lesson'}
                         </span>
                       </div>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
+                      <p className="text-[10px] text-slate-400 mt-0.5">
                         Last updated {formatDate(activeSelectedNote.updatedAt)}
                         {activeSelectedNote.videoTimestamp ? ` • Timestamp: ${formatTime(activeSelectedNote.videoTimestamp)}` : ''}
                       </p>
@@ -514,16 +522,16 @@ export default function NotesAndBookmarksPage() {
                           <button
                             onClick={handleSaveNoteEdit}
                             disabled={savingNote}
-                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                           >
-                            {savingNote ? 'Saving...' : '💾 Save Changes'}
+                            {savingNote ? 'Saving...' : 'Save Changes'}
                           </button>
                           <button
                             onClick={() => {
                               setIsEditingNote(false);
                               setEditingContent(activeSelectedNote.content);
                             }}
-                            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-200 cursor-pointer"
+                            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-200 cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -532,16 +540,17 @@ export default function NotesAndBookmarksPage() {
                         <>
                           <button
                             onClick={() => setIsEditingNote(true)}
-                            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
                           >
-                            <span>✏️</span>
+                            <PencilSquareIcon className="w-3.5 h-3.5" />
                             <span>Edit Note</span>
                           </button>
                           <button
                             onClick={() => handleDeleteNote(activeSelectedNote._id)}
-                            className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer"
+                            className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 rounded-lg text-xs font-medium border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer flex items-center gap-1"
                           >
-                            Delete
+                            <TrashIcon className="w-3.5 h-3.5" />
+                            <span>Delete</span>
                           </button>
                         </>
                       )}
@@ -549,44 +558,44 @@ export default function NotesAndBookmarksPage() {
                   </div>
 
                   {/* Note Body: Editable or View mode */}
-                  <div className="min-h-[320px] py-2">
+                  <div className="min-h-[280px] py-2">
                     {isEditingNote ? (
                       <textarea
                         value={editingContent}
                         onChange={(e) => setEditingContent(e.target.value)}
                         rows={12}
-                        className="w-full p-4 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white font-mono leading-relaxed focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                        className="w-full p-3.5 bg-slate-50 dark:bg-slate-850 rounded-lg border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500"
                         placeholder="Write your study notes in markdown..."
                       />
                     ) : (
-                      <div className="prose dark:prose-invert max-w-none text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap font-sans">
+                      <div className="prose dark:prose-invert max-w-none text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
                         {activeSelectedNote.content}
                       </div>
                     )}
                   </div>
 
                   {/* Footer Jump to Lesson */}
-                  <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs">
-                    <span className="text-gray-400">
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                    <span className="text-slate-400 text-[11px]">
                       Word count: {activeSelectedNote.content.split(/\s+/).filter(Boolean).length} words
                     </span>
 
                     {typeof activeSelectedNote.course === 'object' && activeSelectedNote.course && (
                       <Link
                         to={`/courses/${activeSelectedNote.course._id}`}
-                        className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1"
+                        className="text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 text-xs"
                       >
                         <span>Jump to Lesson Video</span>
-                        <span>→</span>
+                        <ArrowRightIcon className="w-3 h-3" />
                       </Link>
                     )}
                   </div>
                 </>
               ) : (
-                <div className="text-center py-20 space-y-4">
-                  <div className="text-4xl">📝</div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">No note selected</h3>
-                  <p className="text-xs text-gray-500 max-w-md mx-auto">
+                <div className="text-center py-16 space-y-2">
+                  <DocumentTextIcon className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">No note selected</h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
                     Select a note from the left panel or take notes while watching lessons in the course player.
                   </p>
                 </div>

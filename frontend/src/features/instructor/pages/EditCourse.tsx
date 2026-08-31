@@ -7,6 +7,15 @@ import CourseFAQEditor from '../components/CourseFAQEditor';
 import { QuizEditorModal } from '../components/QuizEditorModal';
 import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { useCurrency } from '@/context/CurrencyContext';
+import {
+    ClipboardDocumentListIcon,
+    BookOpenIcon,
+    QuestionMarkCircleIcon,
+    PencilSquareIcon,
+    ArrowUpTrayIcon,
+    AcademicCapIcon,
+    TrashIcon,
+} from '@heroicons/react/20/solid';
 
 export interface CourseLessonItem {
     _id: string;
@@ -504,28 +513,28 @@ function EditCourse() {
                 <button
                     type="button"
                     onClick={() => setActiveTab('details')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                         activeTab === 'details'
-                            ? 'bg-blue-600 text-white shadow-xs'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 text-white shadow-2xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >
-                    <span>📋</span>
+                    <ClipboardDocumentListIcon className="w-4 h-4" />
                     <span>Course Details</span>
                 </button>
                 <button
                     type="button"
                     onClick={() => setActiveTab('curriculum')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                         activeTab === 'curriculum'
-                            ? 'bg-blue-600 text-white shadow-xs'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 text-white shadow-2xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >
-                    <span>📚</span>
+                    <BookOpenIcon className="w-4 h-4" />
                     <span>Curriculum & Content</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        activeTab === 'curriculum' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    <span className={`text-[10px] px-2 py-0.5 rounded-md ${
+                        activeTab === 'curriculum' ? 'bg-blue-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                     }`}>
                         {sections.length} sec • {totalLectures} lessons
                     </span>
@@ -533,13 +542,13 @@ function EditCourse() {
                 <button
                     type="button"
                     onClick={() => setActiveTab('faqs')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                         activeTab === 'faqs'
-                            ? 'bg-blue-600 text-white shadow-xs'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 text-white shadow-2xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >
-                    <span>❓</span>
+                    <QuestionMarkCircleIcon className="w-4 h-4" />
                     <span>FAQs & Support</span>
                 </button>
             </div>
@@ -928,10 +937,11 @@ function EditCourse() {
                                                     setEditingSectionId(section._id);
                                                     setEditingSectionTitle(section.title);
                                                 }}
-                                                className="text-xs font-medium px-2.5 py-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                                className="text-xs font-medium px-2 py-1.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
                                                 title="Rename section"
                                             >
-                                                ✏️ Rename
+                                                <PencilSquareIcon className="w-3.5 h-3.5" />
+                                                <span>Rename</span>
                                             </button>
                                             <button
                                                 type="button"
@@ -939,73 +949,74 @@ function EditCourse() {
                                                     setBulkUploadSectionId(section._id);
                                                     setBulkUploadSectionTitle(section.title);
                                                 }}
-                                                className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition-colors"
+                                                className="text-xs font-semibold px-2.5 py-1.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1 border border-blue-200 dark:border-blue-800 shadow-2xs cursor-pointer"
                                                 title="Bulk add lessons via CSV or table"
                                             >
-                                                ⚡ Bulk Upload
+                                                <ArrowUpTrayIcon className="w-3.5 h-3.5" />
+                                                <span>Bulk Upload</span>
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setActiveSectionId(activeSectionId === section._id ? null : section._id)}
-                                                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition-colors"
+                                                className="text-xs font-semibold px-2.5 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-500 transition-colors cursor-pointer shadow-2xs"
                                             >
                                                 + Add Lesson
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => handleDeleteSection(section._id)}
-                                                className="text-xs font-medium px-2 py-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                                                className="text-xs font-medium p-1.5 rounded-md text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                                                 title="Delete section"
                                             >
-                                                🗑️
+                                                <TrashIcon className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>
 
                                     {activeSectionId === section._id && (
-                                        <form onSubmit={(e) => handleAddLesson(e, section._id)} className="p-4 bg-indigo-50/40 dark:bg-indigo-950/20 border-b border-indigo-100 dark:border-indigo-900/40 flex flex-wrap items-center gap-3">
+                                        <form onSubmit={(e) => handleAddLesson(e, section._id)} className="p-4 bg-blue-50/40 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900/40 flex flex-wrap items-center gap-3">
                                             <input
                                                 type="text"
                                                 placeholder="Lesson title..."
                                                 value={newLessonTitle}
                                                 onChange={(e) => setNewLessonTitle(e.target.value)}
                                                 required
-                                                className="flex-1 min-w-[200px] px-3.5 py-2 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                className="flex-1 min-w-[200px] px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                                             />
                                             <div className="flex items-center gap-1.5">
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">Duration (mins):</span>
+                                                <span className="text-xs text-slate-500 dark:text-slate-400">Duration (mins):</span>
                                                 <input
                                                     type="number"
                                                     min="1"
                                                     max="300"
                                                     value={newLessonDuration}
                                                     onChange={(e) => setNewLessonDuration(Number(e.target.value))}
-                                                    className="w-20 px-2.5 py-2 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                    className="w-20 px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                                                 />
                                             </div>
                                             <button
                                                 type="submit"
                                                 disabled={addingLesson || !newLessonTitle.trim()}
-                                                className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 shadow-xs"
+                                                className="px-3.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 disabled:opacity-50 shadow-2xs cursor-pointer"
                                             >
                                                 {addingLesson ? 'Adding...' : 'Save Lesson'}
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setActiveSectionId(null)}
-                                                className="px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
                                             >
                                                 Cancel
                                             </button>
                                         </form>
                                     )}
 
-                                    <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
                                         {section.lessons.map((lesson, lIdx) => (
-                                            <div key={lesson._id} className="p-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors space-y-3">
+                                            <div key={lesson._id} className="p-3.5 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors space-y-2.5">
                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-xs text-gray-400 font-mono">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className="text-xs text-slate-400 font-mono">
                                                             {sIdx + 1}.{lIdx + 1}
                                                         </span>
                                                         {editingLessonId === lesson._id ? (
@@ -1014,44 +1025,44 @@ function EditCourse() {
                                                                     type="text"
                                                                     value={editingLessonTitle}
                                                                     onChange={(e) => setEditingLessonTitle(e.target.value)}
-                                                                    className="px-2.5 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                                    className="px-2.5 py-1 text-xs rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                                                                 />
                                                                 <input
                                                                     type="number"
                                                                     min="1"
                                                                     value={editingLessonDuration}
                                                                     onChange={(e) => setEditingLessonDuration(Number(e.target.value))}
-                                                                    className="w-16 px-2 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                                    className="w-16 px-2 py-1 text-xs rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                                                                 />
-                                                                <span className="text-xs text-gray-400">m</span>
+                                                                <span className="text-xs text-slate-400">m</span>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleUpdateLesson(section._id, lesson._id)}
-                                                                    className="text-xs font-semibold px-2 py-1 rounded bg-indigo-600 text-white"
+                                                                    className="text-xs font-semibold px-2 py-1 rounded bg-blue-600 text-white cursor-pointer"
                                                                 >
                                                                     Save
                                                                 </button>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setEditingLessonId(null)}
-                                                                    className="text-xs font-semibold px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                                                    className="text-xs font-semibold px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer"
                                                                 >
                                                                     Cancel
                                                                 </button>
                                                             </div>
                                                         ) : (
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                                                                     {lesson.title}
                                                                 </span>
-                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-mono">
+                                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-mono">
                                                                     {lesson.durationMinutes} mins
                                                                 </span>
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                                                    <div className="flex items-center gap-1.5 self-end sm:self-auto">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1059,33 +1070,35 @@ function EditCourse() {
                                                                 setEditingLessonTitle(lesson.title);
                                                                 setEditingLessonDuration(lesson.durationMinutes);
                                                             }}
-                                                            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                            className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1 cursor-pointer"
                                                             title="Edit lesson details"
                                                         >
-                                                            ✏️ Edit
+                                                            <PencilSquareIcon className="w-3.5 h-3.5" />
+                                                            <span>Edit</span>
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => setQuizLessonId(lesson._id)}
-                                                            className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 transition-colors"
+                                                            className="text-xs font-semibold px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1 border border-blue-200 dark:border-blue-800 cursor-pointer"
                                                             title="Add or edit assessment quiz"
                                                         >
-                                                            ⚡ Quiz
+                                                            <AcademicCapIcon className="w-3.5 h-3.5" />
+                                                            <span>Quiz</span>
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => setActiveLessonId(activeLessonId === lesson._id ? null : lesson._id)}
-                                                            className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition-colors"
+                                                            className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors cursor-pointer"
                                                         >
-                                                            + Content Item
+                                                            + Content
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => handleDeleteLesson(section._id, lesson._id)}
-                                                            className="text-xs text-red-500 hover:text-red-700 font-medium px-1.5 py-1 rounded hover:bg-red-50 dark:hover:bg-red-950/30"
+                                                            className="text-xs text-rose-500 hover:text-rose-700 font-medium p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
                                                             title="Delete lesson"
                                                         >
-                                                            🗑️
+                                                            <TrashIcon className="w-3.5 h-3.5" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -1201,8 +1214,8 @@ function EditCourse() {
                                         ))}
 
                                         {section.lessons.length === 0 && (
-                                            <div className="p-6 text-center text-xs text-gray-400 dark:text-gray-500 italic">
-                                                No lessons in this section yet. Click &ldquo;+ Add Lesson&rdquo; or &ldquo;⚡ Bulk Upload&rdquo; above.
+                                            <div className="p-6 text-center text-xs text-slate-400 dark:text-slate-500 italic">
+                                                No lessons in this section yet. Click &ldquo;+ Add Lesson&rdquo; or &ldquo;Bulk Upload&rdquo; above.
                                             </div>
                                         )}
                                     </div>
@@ -1211,9 +1224,11 @@ function EditCourse() {
                         })}
 
                         {sections.length === 0 && (
-                            <div className="p-12 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-                                <span className="text-3xl">📚</span>
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-2">No Curriculum Sections</h3>
+                            <div className="p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                                    <BookOpenIcon className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">No Curriculum Sections</h3>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
                                     Start building your course by adding your first section above.
                                 </p>

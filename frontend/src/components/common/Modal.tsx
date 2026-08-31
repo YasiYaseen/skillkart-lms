@@ -30,9 +30,9 @@ function Modal({ isOpen, onClose, children, title }: ModalProps) {
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
             <div 
-                className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up relative"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up relative"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}

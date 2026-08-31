@@ -2,6 +2,15 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
+import {
+  UserGroupIcon,
+  AcademicCapIcon,
+  UserIcon,
+  BookOpenIcon,
+  TagIcon,
+  ChartBarIcon,
+  ArrowRightIcon,
+} from "@heroicons/react/20/solid";
 
 export interface AdminStats {
   totalUsers: number;
@@ -46,12 +55,12 @@ export function AdminDashboard() {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="space-y-2">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-52" />
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64" />
+          <div className="h-7 bg-slate-200 dark:bg-slate-800 rounded w-48" />
+          <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-64" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, idx) => (
-            <div key={idx} className="h-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6" />
+            <div key={idx} className="h-28 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5" />
           ))}
         </div>
       </div>
@@ -61,32 +70,32 @@ export function AdminDashboard() {
   if (!stats) return null;
 
   const statCards = [
-    { title: "Total Users", value: stats.totalUsers, link: "/admin/users", icon: "👥", color: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" },
-    { title: "Students", value: stats.totalStudents, link: "/admin/users", icon: "🎓", color: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" },
-    { title: "Instructors", value: stats.totalInstructors, link: "/admin/users", icon: "👨‍🏫", color: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" },
-    { title: "Courses", value: stats.totalCourses, link: "/admin/courses", icon: "📚", color: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" },
-    { title: "Categories", value: categories.length, link: "/admin/categories", icon: "🏷️", color: "bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400" },
-    { title: "Enrollments", value: stats.totalEnrollments, link: "/admin/enrollments", icon: "📈", color: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" },
+    { title: "Total Users", value: stats.totalUsers, link: "/admin/users", icon: <UserGroupIcon className="w-5 h-5 text-blue-600" /> },
+    { title: "Students", value: stats.totalStudents, link: "/admin/users", icon: <AcademicCapIcon className="w-5 h-5 text-emerald-600" /> },
+    { title: "Instructors", value: stats.totalInstructors, link: "/admin/users", icon: <UserIcon className="w-5 h-5 text-indigo-600" /> },
+    { title: "Courses", value: stats.totalCourses, link: "/admin/courses", icon: <BookOpenIcon className="w-5 h-5 text-amber-600" /> },
+    { title: "Categories", value: categories.length, link: "/admin/categories", icon: <TagIcon className="w-5 h-5 text-rose-600" /> },
+    { title: "Enrollments", value: stats.totalEnrollments, link: "/admin/enrollments", icon: <ChartBarIcon className="w-5 h-5 text-purple-600" /> },
   ];
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Platform overview, metrics and discipline distribution</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Dashboard</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Platform overview, metrics and discipline distribution</p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             to="/admin/categories"
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors border border-gray-200 dark:border-gray-700 flex items-center gap-1.5"
+            className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"
           >
-            <span>🏷️</span>
+            <TagIcon className="w-3.5 h-3.5 text-slate-500" />
             <span>Manage Categories</span>
           </Link>
           <Link
             to="/admin/courses"
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-xs"
+            className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-2xs"
           >
             Moderate Courses
           </Link>
@@ -94,23 +103,23 @@ export function AdminDashboard() {
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {statCards.map((card, idx) => (
           <Link
             key={idx}
             to={card.link}
-            className="group block p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-600 transition-all"
+            className="group block p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all"
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.title}</span>
-              <span className={`p-2 rounded-xl text-sm ${card.color}`}>{card.icon}</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{card.title}</span>
+              <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800">{card.icon}</div>
             </div>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+            <p className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
               {card.value}
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-1 font-medium">
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 flex items-center gap-1 font-medium">
               <span>View details</span>
-              <span>→</span>
+              <ArrowRightIcon className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </p>
           </Link>
         ))}
@@ -118,27 +127,27 @@ export function AdminDashboard() {
 
       {/* Category Breakdown Shelf */}
       {categories.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl p-6 shadow-2xs space-y-5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <span>📊</span>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <ChartBarIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>Course Distribution by Category</span>
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Real-time course inventory and student learning tracks across platform disciplines.
               </p>
             </div>
             <Link
               to="/admin/categories"
-              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
             >
-              <span>Edit Categories & Themes</span>
-              <span>→</span>
+              <span>Manage Categories</span>
+              <ArrowRightIcon className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2">
             {categories.map((cat) => {
               const count = cat.courseCount || 0;
               const maxCourses = Math.max(...categories.map((c) => c.courseCount || 0), 1);
@@ -150,31 +159,28 @@ export function AdminDashboard() {
                   href={`/courses?category=${cat.slug}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all group flex flex-col justify-between"
+                  className="p-4 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all group flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl">{cat.icon}</span>
-                      <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-2xs">
+                      <span className="font-semibold text-sm text-slate-900 dark:text-white">{cat.name}</span>
+                      <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shadow-2xs">
                         {count} {count === 1 ? "course" : "courses"}
                       </span>
                     </div>
-                    <p className="font-bold text-gray-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                      {cat.name}
-                    </p>
                   </div>
 
                   <div className="mt-3 space-y-1.5">
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                       <div
-                        className="bg-indigo-600 dark:bg-indigo-400 h-full rounded-full transition-all duration-500"
+                        className="bg-blue-600 dark:bg-blue-400 h-full rounded-full transition-all duration-500"
                         style={{ width: `${Math.max(percentage, 5)}%` }}
                       />
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-gray-400">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
                       <span>/{cat.slug}</span>
-                      <span className="font-semibold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-0.5 transition-transform">
-                        Drill down ↗
+                      <span className="font-medium text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                        Explore &rarr;
                       </span>
                     </div>
                   </div>
@@ -187,4 +193,6 @@ export function AdminDashboard() {
     </div>
   );
 }
+
+export default AdminDashboard;
 

@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import { FileUpload } from '@/components/common';
+import { FireIcon, UserIcon, LockClosedIcon } from '@heroicons/react/20/solid';
 
 const POPULAR_INTERESTS = [
     'Web Development',
@@ -173,23 +174,25 @@ function Profile() {
                 <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-xl self-start">
                     <button
                         onClick={() => setActiveTab('profile')}
-                        className={`px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all ${
+                        className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
                             activeTab === 'profile'
-                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                     >
-                        👤 Profile & Interests
+                        <UserIcon className="w-3.5 h-3.5" />
+                        <span>Profile & Interests</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('security')}
-                        className={`px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all ${
+                        className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
                             activeTab === 'security'
-                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                     >
-                        🔒 Security & Password
+                        <LockClosedIcon className="w-3.5 h-3.5" />
+                        <span>Security & Password</span>
                     </button>
                 </div>
             </div>
@@ -220,8 +223,9 @@ function Profile() {
                                 {user?.role || 'Student'}
                             </span>
                             {currentStreak > 0 && (
-                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-                                    🔥 {currentStreak} day streak
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                    <FireIcon className="w-3.5 h-3.5 text-amber-500" />
+                                    <span>{currentStreak} day streak</span>
                                 </span>
                             )}
                         </div>

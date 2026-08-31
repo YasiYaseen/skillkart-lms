@@ -20,8 +20,8 @@ export function ProgressBar({
   }[size];
 
   const colorClass = color === "green"
-    ? "bg-gradient-to-r from-green-400 to-emerald-500"
-    : "bg-gradient-to-r from-blue-500 to-indigo-600";
+    ? "bg-emerald-600"
+    : "bg-blue-600";
 
   const clampedPercentage = Math.max(0, Math.min(100, Math.round(percentage)));
 

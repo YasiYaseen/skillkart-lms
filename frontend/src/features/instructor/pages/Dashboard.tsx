@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '@/context/CurrencyContext';
+import { UserGroupIcon, BanknotesIcon, BookOpenIcon } from '@heroicons/react/20/solid';
 
 export interface ActiveStudent {
     id?: string;
@@ -103,32 +104,38 @@ function Dashboard() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Enrollments</p>
-                        <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-sm">👥</span>
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Enrollments</p>
+                        <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-xs">
+                            <UserGroupIcon className="w-4 h-4" />
+                        </span>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.enrollments}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">All time student enrollments</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.enrollments}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">All time student enrollments</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Earnings</p>
-                        <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-sm">💰</span>
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Earnings</p>
+                        <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs">
+                            <BanknotesIcon className="w-4 h-4" />
+                        </span>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatAmount(stats.earnings)}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Net course sales revenue</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatAmount(stats.earnings)}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Net course sales revenue</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Courses</p>
-                        <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-sm">📚</span>
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Active Courses</p>
+                        <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-xs">
+                            <BookOpenIcon className="w-4 h-4" />
+                        </span>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.active}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{stats.draft} in draft status</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.active}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{stats.draft} in draft status</p>
                 </div>
             </div>
 

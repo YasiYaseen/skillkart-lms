@@ -143,12 +143,12 @@ export default function NotificationBell() {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
-                    <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/75 dark:bg-gray-900/50">
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
+                    <div className="flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-850">
                         <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Notifications</h3>
+                            <h3 className="font-semibold text-slate-900 dark:text-white text-xs">Notifications</h3>
                             {unreadCount > 0 && (
-                                <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full font-bold">
+                                <span className="bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-[10px] px-2 py-0.5 rounded-full font-semibold">
                                     {unreadCount} new
                                 </span>
                             )}
@@ -157,7 +157,7 @@ export default function NotificationBell() {
                             {unreadCount > 0 && (
                                 <button 
                                     onClick={markAllAsRead}
-                                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium cursor-pointer"
                                 >
                                     Mark all as read
                                 </button>
@@ -165,7 +165,7 @@ export default function NotificationBell() {
                             {notifications.length > 0 && (
                                 <button 
                                     onClick={clearAll}
-                                    className="text-xs text-gray-400 hover:text-red-500 font-medium transition-colors"
+                                    className="text-xs text-slate-400 hover:text-rose-500 font-medium transition-colors cursor-pointer"
                                 >
                                     Clear all
                                 </button>
@@ -173,14 +173,16 @@ export default function NotificationBell() {
                         </div>
                     </div>
                     
-                    <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-50 dark:divide-gray-700/60">
+                    <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                         {notifications.length === 0 ? (
                             <div className="p-8 text-center space-y-2">
-                                <div className="w-10 h-10 mx-auto rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500 text-lg">
-                                    🔔
+                                <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                                    </svg>
                                 </div>
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">All caught up!</p>
-                                <p className="text-xs text-gray-400 dark:text-gray-500">You don't have any notifications right now.</p>
+                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">All caught up</p>
+                                <p className="text-[11px] text-slate-400 dark:text-slate-500">You don't have any unread notifications.</p>
                             </div>
                         ) : (
                             notifications.map(notification => (

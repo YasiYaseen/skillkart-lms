@@ -6,6 +6,7 @@ import { GoogleIcon } from '@/assets/icons';
 import { toast } from 'react-toastify';
 import { getOnboardingStatus, loginWithGoogle, loginWithEmail, registerWithEmail, requestPasswordReset, AuthUser } from './auth.service';
 import { useAuth } from './AuthContext';
+import { EnvelopeIcon } from '@heroicons/react/20/solid';
 
 interface AuthModalsProps {
     isOpen: boolean;
@@ -147,7 +148,9 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
             {isForgot && forgotSuccess ? (
                 <div className="space-y-4">
                     <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-center">
-                        <div className="text-emerald-600 dark:text-emerald-400 text-2xl mb-1">✉️</div>
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center mx-auto mb-2">
+                            <EnvelopeIcon className="w-5 h-5" />
+                        </div>
                         <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200 mb-1">Check your inbox</p>
                         <p className="text-xs text-emerald-700 dark:text-emerald-300">
                             If <span className="font-semibold">{email}</span> is registered, we've sent password reset instructions.

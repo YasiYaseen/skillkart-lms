@@ -3,6 +3,17 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { toast } from 'react-toastify';
+import {
+  Cog6ToothIcon,
+  GlobeAltIcon,
+  BanknotesIcon,
+  ShieldCheckIcon,
+  WrenchScrewdriverIcon,
+  EnvelopeIcon,
+  CheckIcon,
+  PaperAirplaneIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/react/20/solid';
 
 export interface SystemSettingsData {
   _id?: string;
@@ -170,29 +181,27 @@ export function SystemSettings() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-gray-500 dark:text-gray-400 font-medium text-sm">Loading platform configurations...</p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-3">
+        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-500 dark:text-slate-400 text-xs">Loading platform configurations...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn max-w-6xl mx-auto pb-16">
+    <div className="space-y-6 max-w-6xl mx-auto pb-16">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-200/80 dark:border-gray-700/60 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
           <div className="flex items-center gap-3">
-            <span className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor" className="w-7 h-7">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-              </svg>
+            <span className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/60">
+              <Cog6ToothIcon className="w-5 h-5" />
             </span>
             <div>
-              <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                 Platform System Settings
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Configure platform branding, financial commission splits, access security, and maintenance status.
               </p>
             </div>
@@ -201,8 +210,8 @@ export function SystemSettings() {
 
         <div className="flex items-center gap-3">
           {formData.maintenanceMode && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
               Maintenance Mode Active
             </span>
           )}
@@ -210,19 +219,17 @@ export function SystemSettings() {
             type="button"
             onClick={() => handleSaveSettings()}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs transition-colors disabled:opacity-50 cursor-pointer"
           >
             {saving ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Saving Changes...
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Saving Changes...</span>
               </>
             ) : (
               <>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-                Save Settings
+                <CheckIcon className="w-4 h-4" />
+                <span>Save Settings</span>
               </>
             )}
           </button>
@@ -230,130 +237,132 @@ export function SystemSettings() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 p-1.5 bg-gray-100/80 dark:bg-gray-800/80 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 overflow-x-auto">
+      <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab('general')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all shrink-0 ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-semibold text-xs transition-colors shrink-0 cursor-pointer ${
             activeTab === 'general'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs border border-slate-200 dark:border-slate-800'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          🌐 General & Branding
+          <GlobeAltIcon className="w-4 h-4" />
+          <span>General & Branding</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('financials')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all shrink-0 ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-semibold text-xs transition-colors shrink-0 cursor-pointer ${
             activeTab === 'financials'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs border border-slate-200 dark:border-slate-800'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          💰 Revenue & Commission
+          <BanknotesIcon className="w-4 h-4" />
+          <span>Revenue & Commission</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('access')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all shrink-0 ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-semibold text-xs transition-colors shrink-0 cursor-pointer ${
             activeTab === 'access'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs border border-slate-200 dark:border-slate-800'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          🛡️ Access & Moderation
+          <ShieldCheckIcon className="w-4 h-4" />
+          <span>Access & Moderation</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('maintenance')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all shrink-0 ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-semibold text-xs transition-colors shrink-0 cursor-pointer ${
             activeTab === 'maintenance'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs border border-slate-200 dark:border-slate-800'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          🚧 Maintenance Mode
+          <WrenchScrewdriverIcon className="w-4 h-4" />
+          <span>Maintenance Mode</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('email')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all shrink-0 ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-semibold text-xs transition-colors shrink-0 cursor-pointer ${
             activeTab === 'email'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs border border-slate-200 dark:border-slate-800'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          ✉️ SMTP Diagnostics
+          <EnvelopeIcon className="w-4 h-4" />
+          <span>Email & Diagnostics</span>
         </button>
       </div>
 
-      {/* Tab Panels */}
-      <form onSubmit={handleSaveSettings}>
-        {/* TAB 1: General & Branding */}
+      <form onSubmit={handleSaveSettings} className="space-y-6">
+        {/* TAB 1: General Settings */}
         {activeTab === 'general' && (
-          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200/80 dark:border-gray-700/60 p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-5 shadow-2xs">
             <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Platform Branding & Identity</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                These details represent your LMS instance across navigation headers, email notifications, invoices, and certificates.
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Platform Identity & Localization</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Manage your public LMS branding and primary base storefront currency.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Platform Name
                 </label>
                 <input
                   type="text"
                   value={formData.platformName}
                   onChange={(e) => setFormData({ ...formData, platformName: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                  placeholder="e.g. SkillKart LMS"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-                  Support & Contact Email
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Public Support Email Address
                 </label>
                 <input
                   type="email"
                   value={formData.supportEmail}
                   onChange={(e) => setFormData({ ...formData, supportEmail: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                  placeholder="e.g. support@skillkart.com"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none"
                   required
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-                  Platform Tagline / Slogan
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Brand Tagline
                 </label>
                 <input
                   type="text"
                   value={formData.tagline}
                   onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                  placeholder="e.g. Empower your career with top-rated interactive tech courses"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none"
+                  required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Primary Storefront Currency
                 </label>
                 <select
                   value={formData.primaryCurrency}
                   onChange={(e) => setFormData({ ...formData, primaryCurrency: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none"
                 >
                   <option value="USD">USD ($) - United States Dollar</option>
                   <option value="EUR">EUR (€) - Euro</option>
@@ -370,43 +379,43 @@ export function SystemSettings() {
 
         {/* TAB 2: Revenue & Commission */}
         {activeTab === 'financials' && (
-          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200/80 dark:border-gray-700/60 p-6 sm:p-8 space-y-8 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-6 shadow-2xs">
             <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Revenue Sharing & Commission Split</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Revenue Sharing & Commission Split</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Adjust how course earnings are split between the SkillKart platform and content instructors on paid transactions.
               </p>
             </div>
 
             {/* Visual Split Bar */}
-            <div className="p-6 rounded-3xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/60 space-y-4">
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
-                <span className="text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-indigo-600"></span>
+            <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider">
+                <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                   Platform Fee: {formData.platformCommissionRate}%
                 </span>
                 <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
                   Instructor Share: {formData.instructorPayoutShare}%
                 </span>
               </div>
 
-              <div className="h-6 w-full rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 flex shadow-inner">
+              <div className="h-5 w-full rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700 flex">
                 <div
                   style={{ width: `${formData.platformCommissionRate}%` }}
-                  className="bg-gradient-to-r from-indigo-600 to-indigo-500 transition-all duration-300 flex items-center justify-center text-[10px] font-black text-white"
+                  className="bg-blue-600 transition-all duration-300 flex items-center justify-center text-[10px] font-bold text-white"
                 >
                   {formData.platformCommissionRate > 12 && `${formData.platformCommissionRate}%`}
                 </div>
                 <div
                   style={{ width: `${formData.instructorPayoutShare}%` }}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-300 flex items-center justify-center text-[10px] font-black text-white"
+                  className="bg-emerald-600 transition-all duration-300 flex items-center justify-center text-[10px] font-bold text-white"
                 >
                   {formData.instructorPayoutShare > 12 && `${formData.instructorPayoutShare}%`}
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-1">
                 <input
                   type="range"
                   min="0"
@@ -414,14 +423,14 @@ export function SystemSettings() {
                   step="1"
                   value={formData.platformCommissionRate}
                   onChange={(e) => handleCommissionChange(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600"
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-blue-600"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Platform Commission Rate (%)
                 </label>
                 <div className="relative">
@@ -431,15 +440,15 @@ export function SystemSettings() {
                     max="100"
                     value={formData.platformCommissionRate}
                     onChange={(e) => handleCommissionChange(Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none pr-10"
+                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none pr-8"
                     required
                   />
-                  <span className="absolute right-4 top-3 text-sm font-bold text-gray-400">%</span>
+                  <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">%</span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Instructor Payout Share (%)
                 </label>
                 <div className="relative">
@@ -449,15 +458,15 @@ export function SystemSettings() {
                     max="100"
                     value={formData.instructorPayoutShare}
                     onChange={(e) => handleCommissionChange(100 - Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none pr-10"
+                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none pr-8"
                     required
                   />
-                  <span className="absolute right-4 top-3 text-sm font-bold text-gray-400">%</span>
+                  <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">%</span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Minimum Instructor Withdrawal Threshold ({symbol})
                 </label>
                 <div className="relative">
@@ -466,24 +475,24 @@ export function SystemSettings() {
                     min="1"
                     value={formData.minPayoutThreshold}
                     onChange={(e) => setFormData({ ...formData, minPayoutThreshold: Number(e.target.value) })}
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none pl-8"
+                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none pl-7"
                     required
                   />
-                  <span className="absolute left-4 top-3 text-sm font-bold text-gray-400">{symbol}</span>
+                  <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">{symbol}</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1.5">
+                <p className="text-[11px] text-slate-400 mt-1">
                   Instructors must accumulate at least this balance before submitting payout withdrawal requests.
                 </p>
               </div>
 
               {/* Simulation Card */}
-              <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 flex flex-col justify-center">
-                <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 mb-1">
-                  💡 Example Sale Simulation ({formatAmount(100)} Course):
+              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 flex flex-col justify-center">
+                <span className="text-xs font-semibold text-blue-900 dark:text-blue-200 mb-1">
+                  Example Sale Simulation ({formatAmount(100)} Course):
                 </span>
-                <p className="text-xs text-indigo-700 dark:text-indigo-300">
-                  • Instructor Net Take-Home: <strong className="font-bold">{formatAmount(100 * (formData.instructorPayoutShare / 100))}</strong><br />
-                  • Platform Commission Retained: <strong className="font-bold">{formatAmount(100 * (formData.platformCommissionRate / 100))}</strong>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  • Instructor Net Take-Home: <strong className="font-semibold">{formatAmount(100 * (formData.instructorPayoutShare / 100))}</strong><br />
+                  • Platform Commission Retained: <strong className="font-semibold">{formatAmount(100 * (formData.platformCommissionRate / 100))}</strong>
                 </p>
               </div>
             </div>
@@ -492,20 +501,20 @@ export function SystemSettings() {
 
         {/* TAB 3: Access & Moderation */}
         {activeTab === 'access' && (
-          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200/80 dark:border-gray-700/60 p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-5 shadow-2xs">
             <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Registration & Moderation Policies</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Registration & Moderation Policies</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Manage user onboarding permissions, instructor publishing restrictions, and security policies.
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Allow User Registration */}
-              <div className="flex items-center justify-between p-5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40">
-                <div className="space-y-1 pr-4">
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white">Allow Public Student Signups</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850">
+                <div className="space-y-0.5 pr-4">
+                  <h4 className="font-semibold text-xs text-slate-900 dark:text-white">Allow Public Student Signups</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     When disabled, new student registrations and Google OAuth signup will be paused.
                   </p>
                 </div>
@@ -516,15 +525,15 @@ export function SystemSettings() {
                     onChange={(e) => setFormData({ ...formData, allowUserRegistration: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                  <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
                 </label>
               </div>
 
               {/* Require Instructor Approval */}
-              <div className="flex items-center justify-between p-5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40">
-                <div className="space-y-1 pr-4">
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white">Require Course Moderation / Instructor Approval</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850">
+                <div className="space-y-0.5 pr-4">
+                  <h4 className="font-semibold text-xs text-slate-900 dark:text-white">Require Course Moderation / Instructor Approval</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Newly created courses remain in &apos;draft&apos; or &apos;pending_review&apos; status until reviewed by an administrator.
                   </p>
                 </div>
@@ -535,15 +544,15 @@ export function SystemSettings() {
                     onChange={(e) => setFormData({ ...formData, requireInstructorApproval: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                  <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
                 </label>
               </div>
 
               {/* Require Email Verification */}
-              <div className="flex items-center justify-between p-5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40">
-                <div className="space-y-1 pr-4">
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white">Enforce Email Verification</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850">
+                <div className="space-y-0.5 pr-4">
+                  <h4 className="font-semibold text-xs text-slate-900 dark:text-white">Enforce Email Verification</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Require students to confirm their email before accessing enrolled courses.
                   </p>
                 </div>
@@ -554,7 +563,7 @@ export function SystemSettings() {
                     onChange={(e) => setFormData({ ...formData, requireEmailVerification: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                  <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
                 </label>
               </div>
             </div>
@@ -563,26 +572,27 @@ export function SystemSettings() {
 
         {/* TAB 4: Maintenance Mode */}
         {activeTab === 'maintenance' && (
-          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200/80 dark:border-gray-700/60 p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-5 shadow-2xs">
             <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Platform Maintenance & Downtime Mode</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Platform Maintenance & Downtime Mode</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 When maintenance mode is active, visitors and learners see a global maintenance banner notifying them of scheduled system upgrades.
               </p>
             </div>
 
             {/* Maintenance Toggle */}
-            <div className={`p-6 rounded-3xl border transition-all ${
+            <div className={`p-4 rounded-lg border transition-colors ${
               formData.maintenanceMode
-                ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/60'
-                : 'bg-gray-50/50 dark:bg-gray-900/40 border-gray-200 dark:border-gray-700'
+                ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800'
+                : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-700'
             }`}>
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                    <span>🚧</span> Enable Platform Maintenance Mode
+                  <h4 className="font-semibold text-xs text-slate-900 dark:text-white flex items-center gap-2">
+                    <WrenchScrewdriverIcon className="w-4 h-4 text-amber-600" />
+                    <span>Enable Platform Maintenance Mode</span>
                   </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                     Displays public maintenance notification. Admins retain full dashboard access.
                   </p>
                 </div>
@@ -593,47 +603,47 @@ export function SystemSettings() {
                     onChange={(e) => setFormData({ ...formData, maintenanceMode: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+                  <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-amber-500"></div>
                 </label>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Maintenance Announcement Message
                 </label>
                 <textarea
                   rows={3}
                   value={formData.maintenanceMessage}
                   onChange={(e) => setFormData({ ...formData, maintenanceMessage: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none resize-none"
                   placeholder="SkillKart is undergoing scheduled upgrades..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Estimated End Time (Optional)
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.maintenanceEstimatedEndTime}
                   onChange={(e) => setFormData({ ...formData, maintenanceEstimatedEndTime: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               {/* Live Banner Preview */}
               <div>
-                <span className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                   Live Maintenance Banner Preview:
                 </span>
-                <div className="p-4 rounded-2xl bg-amber-500 text-white flex items-center justify-between gap-4 shadow-md">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">⚠️</span>
+                <div className="p-3.5 rounded-lg bg-amber-500 text-white flex items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-2.5">
+                    <ExclamationTriangleIcon className="w-5 h-5 text-white shrink-0" />
                     <div>
-                      <strong className="font-black text-xs uppercase tracking-wider block">Platform Maintenance</strong>
+                      <strong className="font-bold text-xs uppercase tracking-wider block">Platform Maintenance</strong>
                       <p className="text-xs text-amber-50 font-medium">
                         {formData.maintenanceMessage || 'SkillKart is undergoing upgrades.'}
                         {formData.maintenanceEstimatedEndTime && ` Expected completion: ${new Date(formData.maintenanceEstimatedEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`}
@@ -648,121 +658,124 @@ export function SystemSettings() {
 
         {/* TAB 5: SMTP & Email Diagnostics */}
         {activeTab === 'email' && (
-          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200/80 dark:border-gray-700/60 p-6 sm:p-8 space-y-8 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-6 shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">SMTP Mail Server & Diagnostics</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">SMTP Mail Server & Diagnostics</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Configure transactional email transport credentials and execute real-time SMTP diagnostic rounds.
                   </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wider ${
                   formData.smtpStatus === 'operational'
-                    ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                    ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                     : formData.smtpStatus === 'degraded'
-                    ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
-                    : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
+                    ? 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                    : 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                 }`}>
                   ● {formData.smtpStatus}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   SMTP Host Address
                 </label>
                 <input
                   type="text"
                   value={formData.smtpHost}
                   onChange={(e) => setFormData({ ...formData, smtpHost: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none"
                   placeholder="e.g. smtp.mailtrap.io"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   SMTP Port
                 </label>
                 <input
                   type="number"
                   value={formData.smtpPort}
                   onChange={(e) => setFormData({ ...formData, smtpPort: Number(e.target.value) })}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none"
                   placeholder="587"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Default Sender Address (From)
                 </label>
                 <input
                   type="email"
                   value={formData.smtpSenderEmail}
                   onChange={(e) => setFormData({ ...formData, smtpSenderEmail: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-blue-500 outline-none"
                   placeholder="notifications@skillkart.com"
                 />
               </div>
             </div>
 
             {/* Diagnostic Dispatch Simulator */}
-            <div className="p-6 rounded-3xl bg-gray-900 text-white space-y-4 shadow-xl border border-gray-800">
+            <div className="p-5 rounded-xl bg-slate-900 text-white space-y-3 shadow-2xs border border-slate-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
-                  <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-gray-300">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <h4 className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-300">
                     SMTP Diagnostic Dispatcher
                   </h4>
                 </div>
-                <span className="text-[11px] font-mono text-gray-400">RFC 5321 Compliant</span>
+                <span className="text-[10px] font-mono text-slate-400">RFC 5321 Compliant</span>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-2.5">
                 <input
                   type="email"
                   value={testEmailAddress}
                   onChange={(e) => setTestEmailAddress(e.target.value)}
                   placeholder={`Recipient email (${user?.email || 'admin@skillkart.com'})`}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="flex-1 px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs font-mono focus:ring-1 focus:ring-emerald-500 outline-none"
                 />
                 <button
                   type="button"
                   onClick={handleTestEmail}
                   disabled={testingEmail}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold font-mono transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold font-mono transition-colors flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer"
                 >
                   {testingEmail ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Testing Roundtrip...
+                      <span>Testing Roundtrip...</span>
                     </>
                   ) : (
-                    '🚀 Send Test Email'
+                    <>
+                      <PaperAirplaneIcon className="w-3.5 h-3.5" />
+                      <span>Send Test Email</span>
+                    </>
                   )}
                 </button>
               </div>
 
               {diagnosticResult && (
-                <div className="p-4 rounded-xl bg-black/60 font-mono text-xs text-emerald-400 space-y-1.5 border border-emerald-500/30 animate-fadeIn">
-                  <div className="flex items-center justify-between text-gray-400 text-[11px]">
+                <div className="p-3.5 rounded-lg bg-black/60 font-mono text-xs text-emerald-400 space-y-1 border border-emerald-500/30">
+                  <div className="flex items-center justify-between text-slate-400 text-[10px]">
                     <span>STATUS: 250 OK (DELIVERED)</span>
                     <span>LATENCY: {diagnosticResult.latencyMs}ms</span>
                   </div>
-                  <div className="text-gray-300">
+                  <div className="text-slate-300 text-[11px]">
                     [SMTP-CLIENT] Handshake: CONNECT {diagnosticResult.smtpHost}:{diagnosticResult.smtpPort} OK
                   </div>
-                  <div className="text-gray-300">
+                  <div className="text-slate-300 text-[11px]">
                     [SMTP-CLIENT] MAIL FROM: &lt;{diagnosticResult.sender}&gt;
                   </div>
-                  <div className="text-gray-300">
+                  <div className="text-slate-300 text-[11px]">
                     [SMTP-CLIENT] RCPT TO: &lt;{diagnosticResult.recipient}&gt;
                   </div>
-                  <div className="text-emerald-300 font-bold">
+                  <div className="text-emerald-300 font-semibold text-[11px]">
                     ✓ {diagnosticResult.message}
                   </div>
                 </div>
@@ -774,3 +787,4 @@ export function SystemSettings() {
     </div>
   );
 }
+export default SystemSettings;

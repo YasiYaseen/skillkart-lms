@@ -9,6 +9,18 @@ import CategoryExplorer, { CategoryTrack } from '../components/CategoryExplorer'
 import CourseRowShelf from '../components/CourseRowShelf';
 import CourseRecommendations from '@/components/course/CourseRecommendations';
 import RecentlyViewedCourses from '@/components/course/RecentlyViewedCourses';
+import {
+    AcademicCapIcon,
+    DocumentTextIcon,
+    TrophyIcon,
+    HeartIcon,
+    UserGroupIcon,
+    ArrowRightIcon,
+    SparklesIcon,
+    FireIcon,
+    StarIcon,
+    TagIcon,
+} from '@heroicons/react/24/outline';
 
 interface RawApiCourse {
     _id: string;
@@ -101,26 +113,22 @@ export function LearnerHome() {
     const newCourses = (feed?.newReleases || []).map(mapRawCourse);
 
     return (
-        <div className="container py-8 space-y-12">
+        <div className="container py-8 space-y-10">
             {/* 1. Dynamic Hero Welcome & Search Hub */}
-            <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white p-7 md:p-10 border border-indigo-800/40 shadow-2xl">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
-
-                <div className="relative z-10 max-w-3xl space-y-5">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-indigo-200 text-xs font-semibold">
-                        <span>👋</span>
-                        <span>{greeting}, {user?.name?.split(' ')[0] || 'Learner'}!</span>
-                        <span className="w-1 h-1 rounded-full bg-indigo-300" />
-                        <span className="text-white">Learn high-demand skills for your future</span>
+            <section className="rounded-xl bg-slate-900 text-white p-6 sm:p-8 md:p-10 border border-slate-800 shadow-sm">
+                <div className="max-w-3xl space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/15 border border-blue-400/20 text-blue-300 text-xs font-semibold">
+                        <span>{greeting}, {user?.name?.split(' ')[0] || 'Learner'}</span>
+                        <span className="w-1 h-1 rounded-full bg-blue-400" />
+                        <span className="text-slate-300">SkillKart Learning Hub</span>
                     </div>
 
-                    <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
-                        What skill will you master today?
+                    <h1 className="text-2xl sm:text-4xl font-bold tracking-tight leading-tight text-white">
+                        Build verified skills with expert-led courses.
                     </h1>
 
-                    <p className="text-sm md:text-base text-indigo-100/90 leading-relaxed max-w-2xl">
-                        Explore expert-led courses across Business, Technology, Creative Design, Finance, Marketing, and Artificial Intelligence.
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                        Explore rigorous, project-based courses across software engineering, data science, product design, finance, and leadership.
                     </p>
 
                     {/* Integrated Search Bar */}
@@ -129,128 +137,128 @@ export function LearnerHome() {
                             value={searchQuery}
                             onChange={setSearchQuery}
                             onSubmit={handleSearch}
-                            placeholder="Search courses, skills, or topics (e.g. Leadership, Finance, Design, AI, Python)..."
+                            placeholder="Search courses, skills, or instructors..."
                         />
                     </div>
 
                     {/* Topic Badges */}
-                    <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                        <span className="text-indigo-300 font-bold uppercase tracking-wider text-[10px]">
-                            Popular Topics:
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] mr-1">
+                            Popular:
                         </span>
                         {[
-                            { label: 'Business & Management', tag: 'Business' },
-                            { label: 'Finance & Stocks', tag: 'Finance' },
+                            { label: 'Engineering', tag: 'Web Development' },
+                            { label: 'AI & Data', tag: 'AI' },
                             { label: 'UI/UX Design', tag: 'Design' },
-                            { label: 'AI & Data Science', tag: 'AI' },
-                            { label: 'Web & Software Dev', tag: 'Web Development' },
-                            { label: 'Digital Marketing', tag: 'Marketing' },
+                            { label: 'Business', tag: 'Business' },
+                            { label: 'Finance', tag: 'Finance' },
+                            { label: 'Marketing', tag: 'Marketing' },
                         ].map((t) => (
                             <button
                                 key={t.tag}
                                 onClick={() => navigate(`/courses?tag=${encodeURIComponent(t.tag)}`)}
-                                className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-indigo-100 hover:text-white transition-all cursor-pointer text-xs font-medium"
+                                className="px-2.5 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white transition-colors cursor-pointer text-xs font-medium"
                             >
-                                #{t.label}
+                                {t.label}
                             </button>
                         ))}
                     </div>
                 </div>
 
                 {/* Quick Learner Stats Quicklinks */}
-                <div className="relative z-10 mt-8 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="mt-8 pt-6 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <Link
                         to="/my-courses"
-                        className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xs transition-all flex items-center gap-3"
+                        className="p-3.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 transition-colors flex items-center gap-3 group"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center text-lg shrink-0">
-                            📚
+                        <div className="w-9 h-9 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                            <AcademicCapIcon className="w-5 h-5" />
                         </div>
                         <div className="truncate">
-                            <p className="text-[11px] text-indigo-200">Enrolled Courses</p>
-                            <p className="text-sm font-bold text-white">My Learning →</p>
+                            <p className="text-[11px] text-slate-400">Enrolled Courses</p>
+                            <p className="text-xs sm:text-sm font-semibold text-white group-hover:text-blue-300 transition-colors">My Learning →</p>
                         </div>
                     </Link>
 
                     <Link
                         to="/study-hub"
-                        className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xs transition-all flex items-center gap-3"
+                        className="p-3.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 transition-colors flex items-center gap-3 group"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-lg shrink-0">
-                            📝
+                        <div className="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                            <DocumentTextIcon className="w-5 h-5" />
                         </div>
                         <div className="truncate">
-                            <p className="text-[11px] text-indigo-200">Study Notes & Marks</p>
-                            <p className="text-sm font-bold text-white">Study Hub →</p>
+                            <p className="text-[11px] text-slate-400">Study Notes</p>
+                            <p className="text-xs sm:text-sm font-semibold text-white group-hover:text-indigo-300 transition-colors">Study Hub →</p>
                         </div>
                     </Link>
 
                     <Link
                         to="/my-certificates"
-                        className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xs transition-all flex items-center gap-3"
+                        className="p-3.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 transition-colors flex items-center gap-3 group"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-lg shrink-0">
-                            🏆
+                        <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                            <TrophyIcon className="w-5 h-5" />
                         </div>
                         <div className="truncate">
-                            <p className="text-[11px] text-indigo-200">Earned Credentials</p>
-                            <p className="text-sm font-bold text-white">Certificates →</p>
+                            <p className="text-[11px] text-slate-400">Credentials</p>
+                            <p className="text-xs sm:text-sm font-semibold text-white group-hover:text-amber-300 transition-colors">Certificates →</p>
                         </div>
                     </Link>
 
                     <Link
                         to="/wishlist"
-                        className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xs transition-all flex items-center gap-3"
+                        className="p-3.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 transition-colors flex items-center gap-3 group"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center text-lg shrink-0">
-                            ❤️
+                        <div className="w-9 h-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                            <HeartIcon className="w-5 h-5" />
                         </div>
                         <div className="truncate">
-                            <p className="text-[11px] text-indigo-200">Saved Courses</p>
-                            <p className="text-sm font-bold text-white">Wishlist →</p>
+                            <p className="text-[11px] text-slate-400">Saved Courses</p>
+                            <p className="text-xs sm:text-sm font-semibold text-white group-hover:text-rose-300 transition-colors">Wishlist →</p>
                         </div>
                     </Link>
                 </div>
             </section>
 
-            {/* 2. Jump Back In / Resume Learning Hero */}
+            {/* 2. Jump Back In / Resume Learning */}
             <ContinueLearningShelf />
 
-            {/* 3. Personalized Recommendations ("Picked For You") */}
+            {/* 3. Personalized Recommendations */}
             <div className="pt-2">
                 <CourseRecommendations
-                    title="Picked Just For You"
-                    subtitle="Personalized recommendations matching your learning goals and enrolled topics"
+                    title="Recommended for You"
+                    subtitle="Courses tailored to your active learning path and preferences"
                 />
             </div>
 
             {/* 4. Career Paths & Skill Tracks Explorer */}
-            <div className="pt-4">
+            <div className="pt-2">
                 <CategoryExplorer categories={feed?.categoryTracks} />
             </div>
 
-            {/* 5. Trending & Bestsellers Shelf */}
-            <div className="pt-4">
+            {/* 5. Trending & Popular Courses */}
+            <div className="pt-2">
                 <CourseRowShelf
-                    title="Trending & Bestselling Courses"
-                    subtitle="The most popular programs chosen by developers and engineers this month"
-                    icon="🔥"
-                    badge="Hot"
+                    title="Popular Programs"
+                    subtitle="Most enrolled courses chosen by developers and professionals this month"
+                    icon={<FireIcon className="w-5 h-5 text-amber-500" />}
+                    badge="Trending"
                     courses={trendingCourses}
                     viewAllLink="/courses?sort=popular"
                     loading={loading}
                 />
             </div>
 
-            {/* 6. Free Starter Pack (Friction-Free Enroll) */}
+            {/* 6. Free Starter Pack */}
             {freeCourses.length > 0 && (
-                <div className="pt-4">
-                    <div className="p-6 md:p-8 rounded-3xl bg-linear-to-r from-emerald-500/10 via-teal-500/5 to-emerald-500/10 border border-emerald-500/20">
+                <div className="pt-2">
+                    <div className="p-5 sm:p-6 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                         <CourseRowShelf
                             title="Free Starter Courses"
-                            subtitle="Zero-cost masterclasses. Start learning immediately with 1-click enroll"
-                            icon="🎁"
-                            badge="100% Free"
+                            subtitle="Zero-cost masterclasses. Begin learning immediately with 1-click enroll"
+                            icon={<TagIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+                            badge="Free"
                             courses={freeCourses}
                             viewAllLink="/courses?priceTier=free"
                             loading={loading}
@@ -259,12 +267,12 @@ export function LearnerHome() {
                 </div>
             )}
 
-            {/* 7. Top-Rated Masterclasses */}
-            <div className="pt-4">
+            {/* 7. Highest Rated Masterclasses */}
+            <div className="pt-2">
                 <CourseRowShelf
-                    title="Highest Rated Masterclasses"
-                    subtitle="Top student-reviewed curricula with 4.8+ star ratings and certificates"
-                    icon="⭐"
+                    title="Top-Rated Courses"
+                    subtitle="Highly rated courses verified by student reviews and certificate completions"
+                    icon={<StarIcon className="w-5 h-5 text-amber-500" />}
                     badge="Top Rated"
                     courses={topRatedCourses}
                     viewAllLink="/courses?sort=highest-rated"
@@ -274,11 +282,11 @@ export function LearnerHome() {
 
             {/* 8. New Releases */}
             {newCourses.length > 0 && (
-                <div className="pt-4">
+                <div className="pt-2">
                     <CourseRowShelf
-                        title="New Releases & Latest Curriculums"
-                        subtitle="Freshly published courses with cutting-edge frameworks and architectures"
-                        icon="🚀"
+                        title="New Releases"
+                        subtitle="Recently published curricula covering modern toolchains and frameworks"
+                        icon={<SparklesIcon className="w-5 h-5 text-blue-500" />}
                         badge="New"
                         courses={newCourses}
                         viewAllLink="/courses?sort=latest"
@@ -289,17 +297,15 @@ export function LearnerHome() {
 
             {/* 9. Featured Instructors Spotlight */}
             {feed?.featuredInstructors && feed.featuredInstructors.length > 0 && (
-                <section className="pt-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h2 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-                                <span>👨‍🏫</span>
-                                <span>Learn from Industry Experts</span>
-                            </h2>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                Senior engineers, tech leads, and educators guiding your learning journey.
-                            </p>
-                        </div>
+                <section className="pt-2 space-y-4">
+                    <div>
+                        <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                            <UserGroupIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <span>Learn from Industry Practitioners</span>
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Senior engineers, leaders, and educators guiding your curriculum.
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -307,23 +313,23 @@ export function LearnerHome() {
                             <Link
                                 key={inst._id}
                                 to={`/instructors/${inst._id}`}
-                                className="p-5 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs hover:shadow-lg transition-all flex flex-col items-center text-center group"
+                                className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col items-center text-center group"
                             >
                                 <img
                                     src={inst.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(inst.name)}`}
                                     alt={inst.name}
-                                    className="w-20 h-20 rounded-full object-cover border-3 border-indigo-100 dark:border-indigo-900 shadow-sm mb-3 group-hover:scale-105 transition-transform"
+                                    className="w-16 h-16 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700 shadow-2xs mb-3 group-hover:scale-105 transition-transform"
                                 />
-                                <h3 className="font-bold text-gray-900 dark:text-white text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                     {inst.name}
                                 </h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mb-3">
-                                    {inst.headline || 'Senior Course Creator'}
+                                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mb-3">
+                                    {inst.headline || 'Course Instructor'}
                                 </p>
-                                <div className="mt-auto w-full pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-around text-xs text-gray-600 dark:text-gray-300 font-semibold">
-                                    <span>{inst.courseCount} {inst.courseCount === 1 ? 'Course' : 'Courses'}</span>
+                                <div className="mt-auto w-full pt-2.5 border-t border-slate-100 dark:border-slate-800 flex justify-around text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                    <span>{inst.courseCount} {inst.courseCount === 1 ? 'course' : 'courses'}</span>
                                     <span>•</span>
-                                    <span>{inst.studentCount} Students</span>
+                                    <span>{inst.studentCount} students</span>
                                 </div>
                             </Link>
                         ))}
@@ -332,25 +338,25 @@ export function LearnerHome() {
             )}
 
             {/* 10. Recently Viewed Strip */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
                 <RecentlyViewedCourses />
             </div>
 
             {/* 11. Browse All Catalog CTA */}
-            <section className="rounded-3xl bg-linear-to-r from-indigo-600 to-purple-700 text-white p-8 md:p-10 text-center space-y-4 shadow-xl">
-                <h2 className="text-2xl md:text-3xl font-black">
-                    Looking for something specific?
+            <section className="rounded-xl bg-slate-900 text-white p-6 sm:p-8 md:p-10 text-center space-y-3 border border-slate-800 shadow-sm">
+                <h2 className="text-xl sm:text-2xl font-bold">
+                    Looking for a specific skill or certification?
                 </h2>
-                <p className="text-sm text-indigo-100 max-w-xl mx-auto">
-                    Explore our entire library of over {feed?.totalPublishedCourses || '150+'} courses with full faceted filters, tags, and level options.
+                <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
+                    Search our complete catalog of over {feed?.totalPublishedCourses || '150+'} courses with faceted filters, prerequisites, and level paths.
                 </p>
                 <div className="pt-2">
                     <Link
                         to="/courses"
-                        className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-white text-indigo-700 hover:bg-indigo-50 font-extrabold text-sm shadow-lg transition-transform hover:-translate-y-0.5"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm shadow-2xs transition-colors"
                     >
-                        <span>Open Full Course Catalog</span>
-                        <span>→</span>
+                        <span>Explore Full Catalog</span>
+                        <ArrowRightIcon className="w-4 h-4" />
                     </Link>
                 </div>
             </section>
