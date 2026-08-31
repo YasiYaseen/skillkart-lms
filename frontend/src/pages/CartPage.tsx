@@ -11,6 +11,7 @@ import {
   type OrderRecord,
 } from '@/features/student/api/cart';
 import { addToWishlist } from '@/features/wishlist';
+import { AuthModals } from '@/features/auth';
 import { PaymentCardSimulator, type PaymentFormState } from '@/components/cart/PaymentCardSimulator';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
@@ -24,13 +25,17 @@ import {
   ArrowRightIcon,
   BoltIcon,
 } from '@heroicons/react/24/outline';
-import { CheckIcon, LockClosedIcon } from '@heroicons/react/20/solid';
+import { CheckIcon, LockClosedIcon, UserIcon } from '@heroicons/react/20/solid';
 
 export default function CartPage() {
   const { cart, removeFromCart, clearCart, cartTotal, addToCart } = useCart();
   const { formatAmount, formatPrice } = useCurrency();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+
+  // Auth modal state for unauthenticated guest checkout
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
 
   // Step state: 'items' | 'payment' | 'success'
   const [currentStep, setCurrentStep] = useState<'items' | 'payment'>(
@@ -57,6 +62,14 @@ export default function CartPage() {
   const [billingName, setBillingName] = useState(user?.name || '');
   const [billingEmail, setBillingEmail] = useState(user?.email || '');
   const [billingCountry, setBillingCountry] = useState('United States');
+
+  // Sync billing details when user logs in
+  useEffect(() => {
+    if (user) {
+      if (user.name && !billingName) setBillingName(user.name);
+      if (user.email && !billingEmail) setBillingEmail(user.email);
+    }
+  }, [user]);
 
   // Interactive Payment State
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
@@ -142,7 +155,8 @@ export default function CartPage() {
 
   const handleMoveToWishlist = async (item: { courseId: string; title: string }) => {
     if (!user) {
-      toast.info('Please log in to save items to your wishlist');
+      setAuthModalMode('login');
+      setShowAuthModal(true);
       return;
     }
     try {
@@ -157,6 +171,12 @@ export default function CartPage() {
   const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.warn('Your cart is empty');
+      return;
+    }
+
+    if (!user) {
+      setAuthModalMode('signup');
+      setShowAuthModal(true);
       return;
     }
 
@@ -679,22 +699,34 @@ export default function CartPage() {
             {currentStep === 'items' ? (
               <button
                 onClick={() => setCurrentStep('payment')}
-                className="w-full py-3.5 bg-blue-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                className="w-full py-3.5 bg-blue-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>Proceed to Payment →</span>
               </button>
             ) : (
-              <button
-                onClick={handleCheckout}
-                disabled={checkingOut}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
-              >
-                {checkingOut ? (
-                  <span>Authorizing Order...</span>
-                ) : (
-                  <span>Authorize & Complete Purchase ({formatAmount(finalTotal)})</span>
+              <div className="space-y-2">
+                <button
+                  onClick={handleCheckout}
+                  disabled={checkingOut}
+                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {checkingOut ? (
+                    <span>Authorizing Order...</span>
+                  ) : !user ? (
+                    <span className="flex items-center gap-1.5">
+                      <UserIcon className="w-4 h-4" />
+                      <span>Sign in to Complete Purchase ({formatAmount(finalTotal)})</span>
+                    </span>
+                  ) : (
+                    <span>Authorize & Complete Purchase ({formatAmount(finalTotal)})</span>
+                  )}
+                </button>
+                {!user && (
+                  <p className="text-[11px] text-center text-slate-500 dark:text-slate-400">
+                    You'll be asked to sign in or create an account to activate your courses.
+                  </p>
                 )}
-              </button>
+              </div>
             )}
 
             {/* Trust Badges */}
@@ -715,6 +747,14 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      {showAuthModal && (
+        <AuthModals
+          isOpen={showAuthModal}
+          initialMode={authModalMode}
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
     </div>
   );
 }

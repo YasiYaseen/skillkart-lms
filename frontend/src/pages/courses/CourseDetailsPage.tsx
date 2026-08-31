@@ -9,6 +9,7 @@ import { EnrollButton } from '@/features/enrollment/components/EnrollButton';
 import { useEnrollment } from '@/features/enrollment/hooks/useEnrollment';
 import { WishlistButton } from '@/features/wishlist';
 import { useAuth } from '@/features/auth/AuthContext';
+import { AuthModals } from '@/features/auth';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { MarkdownRenderer } from '@/components/common';
@@ -169,6 +170,7 @@ function CourseDetailsPage() {
     const [reviewComment, setReviewComment] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     const loadReviews = useCallback(async (cId: string, sort: 'newest' | 'highest' | 'lowest', page: number) => {
         try {
@@ -670,8 +672,17 @@ function CourseDetailsSkeleton() {
                                     </button>
                                 </form>
                             ) : !enrollmentLoading && !isEnrolled ? (
-                                <div className="border border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-5 mb-6 text-sm text-gray-500 dark:text-gray-400 text-center">
-                                    {user ? 'Enroll in this course to leave a review.' : 'Log in and enroll to leave a review.'}
+                                <div className="border border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-5 mb-6 text-sm text-gray-500 dark:text-gray-400 text-center space-y-2">
+                                    <p>{user ? 'Enroll in this course to leave a review.' : 'Log in and enroll in this course to share your review.'}</p>
+                                    {!user && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAuthModal(true)}
+                                            className="px-3.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors cursor-pointer"
+                                        >
+                                            Sign in to Review
+                                        </button>
+                                    )}
                                 </div>
                             ) : null}
 
@@ -916,6 +927,14 @@ function CourseDetailsSkeleton() {
 
                 </div>
             </div>
+
+            {showAuthModal && (
+                <AuthModals
+                    isOpen={showAuthModal}
+                    initialMode="login"
+                    onClose={() => setShowAuthModal(false)}
+                />
+            )}
         </div>
     );
 }
