@@ -407,7 +407,7 @@ export default function NotesAndBookmarksPage() {
                         className={`w-full p-2.5 rounded-lg text-left transition-colors cursor-pointer border ${
                           isSelected
                             ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-800 shadow-2xs'
-                            : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-750 hover:bg-slate-100'
+                            : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-750 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-1 mb-1">

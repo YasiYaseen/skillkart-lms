@@ -594,7 +594,7 @@ function CourseList() {
                                 className={`text-xs font-medium px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer ${
                                     selectedTag.toLowerCase() === interest.toLowerCase()
                                         ? 'bg-amber-600 text-white'
-                                        : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-800/60'
+                                        : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-200 dark:border-amber-800/60'
                                 }`}
                             >
                                 #{interest}
@@ -608,7 +608,7 @@ function CourseList() {
                     className={`text-xs font-medium px-3 py-1 rounded-md transition-colors shrink-0 flex items-center gap-1 cursor-pointer ${
                         priceTier === 'free'
                             ? 'bg-emerald-600 text-white shadow-2xs'
-                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
                     }`}
                 >
                     <span>Free Only</span>
@@ -619,7 +619,7 @@ function CourseList() {
                     className={`text-xs font-medium px-3 py-1 rounded-md transition-colors shrink-0 flex items-center gap-1 cursor-pointer ${
                         minRating === '4.5'
                             ? 'bg-amber-600 text-white shadow-2xs'
-                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
                     }`}
                 >
                     <span>4.5+ Rating</span>
@@ -630,7 +630,7 @@ function CourseList() {
                     className={`text-xs font-medium px-3 py-1 rounded-md transition-colors shrink-0 flex items-center gap-1 cursor-pointer ${
                         level === 'beginner'
                             ? 'bg-blue-600 text-white shadow-2xs'
-                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
                     }`}
                 >
                     <span>Beginner Friendly</span>

@@ -25,6 +25,11 @@
     --color-primary-900: #1e3a8a;
     --color-primary-950: #172554;
 
+    /* Custom Extended Palette Colors */
+    --color-slate-750: #243144;
+    --color-slate-850: #151f32;
+    --color-gray-750: #2b3544;
+
     /* Shadows */
     --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
