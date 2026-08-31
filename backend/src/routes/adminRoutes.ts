@@ -28,7 +28,9 @@ const router = Router();
 router.use(protect, authorize("admin"));
 
 router.get("/course-presets", getCoursePresets);
+router.get("/course-generator/presets", getCoursePresets);
 router.post("/generate-courses", generateAdminCourses);
+router.post("/course-generator/generate", generateAdminCourses);
 
 router.get("/stats", getStats);
 
