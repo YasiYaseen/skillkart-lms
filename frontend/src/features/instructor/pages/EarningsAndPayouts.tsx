@@ -76,15 +76,54 @@ interface SaleLedgerItem {
   instructorTakeHome: number;
 }
 
+interface MomGrowth {
+  grossPercent: number;
+  netPercent: number;
+  salesCountPercent: number;
+}
+
+interface PromoVsOrganic {
+  couponSalesCount: number;
+  couponGross: number;
+  couponNet: number;
+  organicSalesCount: number;
+  organicGross: number;
+  organicNet: number;
+}
+
+interface CouponROI {
+  code: string;
+  unitsSold: number;
+  grossRevenue: number;
+  discountGiven: number;
+  instructorNet: number;
+}
+
 interface EarningsData {
-  summary: EarningsSummary;
+  range?: string;
+  summary: EarningsSummary & { periodNetEarnings?: number };
+  momGrowth?: MomGrowth;
+  promoPerformance?: {
+    promoVsOrganic: PromoVsOrganic;
+    coupons: CouponROI[];
+  };
   courseBreakdown: CourseEarnings[];
   monthlyTrend: MonthlyEarnings[];
   payouts: PayoutRecord[];
-  recentSales: SaleLedgerItem[];
+  recentSales: (SaleLedgerItem & { couponUsed?: string })[];
 }
 
+const RANGES = [
+  { id: 'today', label: 'Today' },
+  { id: '7d', label: 'Last 7 Days' },
+  { id: '30d', label: 'Last 30 Days' },
+  { id: 'month', label: 'This Month' },
+  { id: 'year', label: 'This Year' },
+  { id: 'all', label: 'All Time' },
+];
+
 export function EarningsAndPayouts() {
+  const [range, setRange] = useState('30d');
   const [data, setData] = useState<EarningsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
@@ -105,10 +144,10 @@ export function EarningsAndPayouts() {
   const [stripeAccountId, setStripeAccountId] = useState('');
   const [payoutNotes, setPayoutNotes] = useState('');
 
-  const loadEarnings = async () => {
+  const loadEarnings = async (selectedRange = range) => {
     try {
       setLoading(true);
-      const res = await api.get<EarningsData>('/instructor/earnings');
+      const res = await api.get<EarningsData>(`/instructor/earnings?range=${selectedRange}`);
       setData(res.data);
     } catch {
       toast.error('Failed to load instructor earnings data');
@@ -118,8 +157,8 @@ export function EarningsAndPayouts() {
   };
 
   useEffect(() => {
-    loadEarnings();
-  }, []);
+    loadEarnings(range);
+  }, [range]);
 
   const handleExportCsv = async () => {
     try {
@@ -244,6 +283,23 @@ export function EarningsAndPayouts() {
         </div>
       </div>
 
+      {/* Date Range Selector Pills */}
+      <div className="flex flex-wrap items-center gap-1.5 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 w-fit shadow-2xs">
+        {RANGES.map((r) => (
+          <button
+            key={r.id}
+            onClick={() => setRange(r.id)}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              range === r.id
+                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
+            }`}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+
       {/* Primary Financial Metric Cards Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Available Balance (Hero Card) */}
@@ -262,19 +318,30 @@ export function EarningsAndPayouts() {
           </p>
         </div>
 
-        {/* Net Lifetime Take-Home (80%) */}
+        {/* Period Net Take-Home (80%) */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Net Lifetime Earnings (80%)
+              Net Take-Home (80%)
             </span>
             <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs"><AcademicCapIcon className="w-4 h-4" /></span>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-emerald-600 font-mono">
-            {formatAmount(summary.totalLifetimeNetEarnings)}
+          <div className="flex items-baseline gap-2">
+            <div className="text-2xl sm:text-3xl font-bold text-emerald-600 font-mono">
+              {formatAmount((data?.summary as any)?.periodNetEarnings ?? summary.totalLifetimeNetEarnings)}
+            </div>
+            {data?.momGrowth && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                data.momGrowth.netPercent >= 0
+                  ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300'
+              }`}>
+                {data.momGrowth.netPercent >= 0 ? `+${data.momGrowth.netPercent}%` : `${data.momGrowth.netPercent}%`}
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-slate-400">
-            From {formatAmount(summary.totalGrossSales)} gross sales
+            From {formatAmount(summary.totalGrossSales)} gross sales ({summary.totalUnitsSold} units)
           </p>
         </div>
 
@@ -381,6 +448,87 @@ export function EarningsAndPayouts() {
           <p className="py-8 text-center text-xs text-slate-400">No courses published yet.</p>
         )}
       </div>
+
+      {/* Promotional vs Organic Sales ROI Section */}
+      {data?.promoPerformance && (
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>🎟️ Promotional vs. Organic Sales ROI</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Track how much revenue is driven by promo codes versus direct organic enrollments.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 space-y-1">
+              <span className="text-[11px] font-semibold text-blue-800 dark:text-blue-300 block">
+                Promo Code Sales
+              </span>
+              <div className="text-xl font-bold font-mono text-blue-700 dark:text-blue-400">
+                {formatAmount(data.promoPerformance.promoVsOrganic.couponNet)} take-home
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {data.promoPerformance.promoVsOrganic.couponSalesCount} sales from promotional campaigns ({formatAmount(data.promoPerformance.promoVsOrganic.couponGross)} gross)
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60 space-y-1">
+              <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 block">
+                Direct / Organic Sales
+              </span>
+              <div className="text-xl font-bold font-mono text-emerald-700 dark:text-emerald-400">
+                {formatAmount(data.promoPerformance.promoVsOrganic.organicNet)} take-home
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {data.promoPerformance.promoVsOrganic.organicSalesCount} sales at full price ({formatAmount(data.promoPerformance.promoVsOrganic.organicGross)} gross)
+              </p>
+            </div>
+          </div>
+
+          {data.promoPerformance.coupons.length > 0 ? (
+            <div className="overflow-x-auto pt-2">
+              <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-200 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[10px]">
+                  <tr>
+                    <th className="px-4 py-2.5">Promo Code</th>
+                    <th className="px-4 py-2.5">Redemptions</th>
+                    <th className="px-4 py-2.5">Gross Revenue</th>
+                    <th className="px-4 py-2.5">Discounts Given</th>
+                    <th className="px-4 py-2.5">Your Net Earnings (80%)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {data.promoPerformance.coupons.map((c) => (
+                    <tr key={c.code} className="hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors">
+                      <td className="px-4 py-3 font-mono font-bold text-blue-600 dark:text-blue-400">
+                        {c.code}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
+                        {c.unitsSold}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-slate-800 dark:text-slate-200">
+                        {formatAmount(c.grossRevenue)}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-rose-500">
+                        -{formatAmount(c.discountGiven)}
+                      </td>
+                      <td className="px-4 py-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatAmount(c.instructorNet)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="py-4 text-center text-xs text-slate-400">No promo code redemptions in this selected timeframe.</p>
+          )}
+        </div>
+      )}
 
       {/* Payout & Withdrawal History Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4">

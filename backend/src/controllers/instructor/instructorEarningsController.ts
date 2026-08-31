@@ -12,12 +12,91 @@ export async function getInstructorEarnings(req: Request, res: Response) {
     }
 
     const instructorId = new Types.ObjectId(req.user.id);
+    const { range = "30d" } = req.query as { range?: string };
 
     // 1. Fetch all courses belonging to this instructor
     const courses = await Course.find({ instructor: instructorId })
       .select("_id title price status thumbnailUrl createdAt")
       .lean();
 
+    const courseIds = courses.map((c) => c._id);
+    const courseIdSet = new Set(courseIds.map((id) => id.toString()));
+
+    // 2. Fetch all completed orders containing this instructor's courses
+    const allCompletedOrders = await Order.find({
+      paymentStatus: "completed",
+      "items.course": { $in: courseIds },
+    })
+      .populate("student", "name email")
+      .populate("coupon", "code discountType discountValue")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // 3. Compute Lifetime Metrics
+    let lifetimeGross = 0;
+    let lifetimeNet = 0;
+    let lifetimePlatformFees = 0;
+
+    for (const order of allCompletedOrders) {
+      for (const item of order.items) {
+        if (item.course && courseIdSet.has(item.course.toString())) {
+          const itemFinal = Number(item.finalPrice) || 0;
+          const takeHome = typeof item.instructorPayout === "number"
+            ? item.instructorPayout
+            : Math.round(itemFinal * 0.80 * 100) / 100;
+          const fee = typeof item.platformFee === "number"
+            ? item.platformFee
+            : Math.round((itemFinal - takeHome) * 100) / 100;
+
+          lifetimeGross += itemFinal;
+          lifetimeNet += takeHome;
+          lifetimePlatformFees += fee;
+        }
+      }
+    }
+
+    // 4. Calculate Date Range Bounds & Previous Period for MoM comparison
+    const now = new Date();
+    let currentStart: Date | null = null;
+    let prevStart: Date | null = null;
+    let prevEnd: Date | null = null;
+
+    if (range === "today") {
+      currentStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      prevStart = new Date(currentStart.getTime() - 24 * 60 * 60 * 1000);
+      prevEnd = currentStart;
+    } else if (range === "7d") {
+      currentStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      prevStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      prevEnd = currentStart;
+    } else if (range === "30d") {
+      currentStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      prevStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      prevEnd = currentStart;
+    } else if (range === "month") {
+      currentStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    } else if (range === "year") {
+      currentStart = new Date(now.getFullYear(), 0, 1);
+      prevStart = new Date(now.getFullYear() - 1, 0, 1);
+      prevEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
+    }
+
+    // Filter orders for selected period
+    const filteredOrders = currentStart
+      ? allCompletedOrders.filter((o) => new Date(o.createdAt) >= currentStart!)
+      : allCompletedOrders;
+
+    // Previous period orders for comparison
+    const previousOrders = prevStart && prevEnd
+      ? allCompletedOrders.filter((o) => {
+          const d = new Date(o.createdAt);
+          return d >= prevStart! && d <= prevEnd!;
+        })
+      : [];
+
+    // Aggregate Course & Sales data for the selected period
     const courseMap: Record<
       string,
       {
@@ -47,19 +126,11 @@ export async function getInstructorEarnings(req: Request, res: Response) {
       };
     });
 
-    const courseIds = courses.map((c) => c._id);
+    let periodGross = 0;
+    let periodNet = 0;
+    let periodPlatformFees = 0;
+    let periodDiscountAbsorbed = 0;
 
-    // 2. Fetch all completed orders containing any of this instructor's courses
-    const orders = await Order.find({
-      paymentStatus: "completed",
-      "items.course": { $in: courseIds },
-    })
-      .populate("student", "name email")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    let totalGrossSales = 0;
-    let totalDiscountAbsorbed = 0;
     const monthlyMap: Record<string, { month: string; gross: number; net: number; sales: number }> = {};
     const salesLedger: Array<{
       orderNumber: string;
@@ -70,15 +141,28 @@ export async function getInstructorEarnings(req: Request, res: Response) {
       salePrice: number;
       platformFee: number;
       instructorTakeHome: number;
+      couponUsed?: string;
     }> = [];
 
-    for (const order of orders) {
+    // Promo vs Organic tracking
+    let couponSalesCount = 0;
+    let couponGross = 0;
+    let couponNet = 0;
+    let organicSalesCount = 0;
+    let organicGross = 0;
+    let organicNet = 0;
+
+    const couponMap: Record<string, { code: string; unitsSold: number; grossRevenue: number; discountGiven: number; instructorNet: number }> = {};
+
+    for (const order of filteredOrders) {
       const orderDate = new Date(order.createdAt);
       const monthKey = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, "0")}`;
 
       if (!monthlyMap[monthKey]) {
         monthlyMap[monthKey] = { month: monthKey, gross: 0, net: 0, sales: 0 };
       }
+
+      const orderCouponCode = order.couponCode || (order.coupon && typeof order.coupon === "object" ? (order.coupon as any).code : null);
 
       for (const item of order.items) {
         const itemCourseId = item.course ? item.course.toString() : "";
@@ -98,12 +182,32 @@ export async function getInstructorEarnings(req: Request, res: Response) {
           courseMap[itemCourseId].platformFee += fee;
           courseMap[itemCourseId].netEarnings += takeHome;
 
-          totalGrossSales += itemFinalPrice;
-          totalDiscountAbsorbed += itemDiscount;
+          periodGross += itemFinalPrice;
+          periodNet += takeHome;
+          periodPlatformFees += fee;
+          periodDiscountAbsorbed += itemDiscount;
 
           monthlyMap[monthKey].gross += itemFinalPrice;
           monthlyMap[monthKey].net += takeHome;
           monthlyMap[monthKey].sales += 1;
+
+          if (orderCouponCode) {
+            couponSalesCount += 1;
+            couponGross += itemFinalPrice;
+            couponNet += takeHome;
+
+            if (!couponMap[orderCouponCode]) {
+              couponMap[orderCouponCode] = { code: orderCouponCode, unitsSold: 0, grossRevenue: 0, discountGiven: 0, instructorNet: 0 };
+            }
+            couponMap[orderCouponCode].unitsSold += 1;
+            couponMap[orderCouponCode].grossRevenue += itemFinalPrice;
+            couponMap[orderCouponCode].discountGiven += itemDiscount;
+            couponMap[orderCouponCode].instructorNet += takeHome;
+          } else {
+            organicSalesCount += 1;
+            organicGross += itemFinalPrice;
+            organicNet += takeHome;
+          }
 
           const student = (order.student && typeof order.student === "object" ? order.student : null) as { name?: string; email?: string } | null;
           const billing = order.paymentMetadata && typeof order.paymentMetadata === "object" && "billingDetails" in order.paymentMetadata
@@ -119,15 +223,43 @@ export async function getInstructorEarnings(req: Request, res: Response) {
             salePrice: itemFinalPrice,
             platformFee: fee,
             instructorTakeHome: takeHome,
+            couponUsed: orderCouponCode || undefined,
           });
         }
       }
     }
 
-    const totalPlatformFees = Object.values(courseMap).reduce((acc, c) => acc + c.platformFee, 0);
-    const totalLifetimeNetEarnings = Object.values(courseMap).reduce((acc, c) => acc + c.netEarnings, 0);
+    // Previous period aggregates for MoM delta calculation
+    let prevPeriodGross = 0;
+    let prevPeriodNet = 0;
+    let prevSalesCount = 0;
 
-    // 3. Fetch instructor payout history
+    for (const order of previousOrders) {
+      for (const item of order.items) {
+        if (item.course && courseIdSet.has(item.course.toString())) {
+          const itemFinal = Number(item.finalPrice) || 0;
+          const takeHome = typeof item.instructorPayout === "number"
+            ? item.instructorPayout
+            : Math.round(itemFinal * 0.80 * 100) / 100;
+          prevPeriodGross += itemFinal;
+          prevPeriodNet += takeHome;
+          prevSalesCount += 1;
+        }
+      }
+    }
+
+    const calcPercentDelta = (curr: number, prev: number) => {
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return Math.round(((curr - prev) / prev) * 1000) / 10;
+    };
+
+    const momGrowth = {
+      grossPercent: calcPercentDelta(periodGross, prevPeriodGross),
+      netPercent: calcPercentDelta(periodNet, prevPeriodNet),
+      salesCountPercent: calcPercentDelta(salesLedger.length, prevSalesCount),
+    };
+
+    // 5. Fetch instructor payout history & compute balance
     const payouts = await Payout.find({ instructor: instructorId }).sort({ createdAt: -1 }).lean();
 
     let totalPayoutsWithdrawn = 0;
@@ -142,12 +274,9 @@ export async function getInstructorEarnings(req: Request, res: Response) {
     });
 
     const totalReservedOrWithdrawn = totalPayoutsWithdrawn + pendingPayoutsAmount;
-    const availableBalance = Math.max(0, Math.round((totalLifetimeNetEarnings - totalReservedOrWithdrawn) * 100) / 100);
+    const availableBalance = Math.max(0, Math.round((lifetimeNet - totalReservedOrWithdrawn) * 100) / 100);
 
-    // Monthly earnings sorted chronologically
     const monthlyTrend = Object.values(monthlyMap).sort((a, b) => a.month.localeCompare(b.month));
-
-    // Course breakdown sorted by revenue
     const courseBreakdown = Object.values(courseMap)
       .map((c) => ({
         ...c,
@@ -158,21 +287,37 @@ export async function getInstructorEarnings(req: Request, res: Response) {
       }))
       .sort((a, b) => b.netEarnings - a.netEarnings);
 
+    const promoPerformance = {
+      promoVsOrganic: {
+        couponSalesCount,
+        couponGross: Math.round(couponGross * 100) / 100,
+        couponNet: Math.round(couponNet * 100) / 100,
+        organicSalesCount,
+        organicGross: Math.round(organicGross * 100) / 100,
+        organicNet: Math.round(organicNet * 100) / 100,
+      },
+      coupons: Object.values(couponMap).sort((a, b) => b.unitsSold - a.unitsSold),
+    };
+
     return res.json({
+      range,
       summary: {
-        totalGrossSales: Math.round(totalGrossSales * 100) / 100,
-        totalPlatformFees,
-        totalLifetimeNetEarnings,
+        totalGrossSales: Math.round(periodGross * 100) / 100,
+        totalPlatformFees: Math.round(periodPlatformFees * 100) / 100,
+        totalLifetimeNetEarnings: Math.round(lifetimeNet * 100) / 100,
+        periodNetEarnings: Math.round(periodNet * 100) / 100,
         totalPayoutsWithdrawn: Math.round(totalPayoutsWithdrawn * 100) / 100,
         pendingPayoutsAmount: Math.round(pendingPayoutsAmount * 100) / 100,
         availableBalance,
         totalCoursesCount: courses.length,
         totalUnitsSold: salesLedger.length,
       },
+      momGrowth,
+      promoPerformance,
       courseBreakdown,
       monthlyTrend,
       payouts,
-      recentSales: salesLedger.slice(0, 15),
+      recentSales: salesLedger.slice(0, 20),
     });
   } catch (error) {
     console.error("Error in getInstructorEarnings:", error);

@@ -11,6 +11,9 @@ import {
   getAuditLogs,
   getFinancialReports,
   exportFinancialsCsv,
+  getPayoutRequests,
+  updatePayoutStatus,
+  exportPayoutsCsv,
 } from "../controllers/admin/adminController";
 import {
   getAdminSettings,
@@ -36,6 +39,10 @@ router.get("/stats", getStats);
 
 router.get("/financial-reports", getFinancialReports);
 router.get("/financial-reports/export-csv", exportFinancialsCsv);
+
+router.get("/payouts", getPayoutRequests);
+router.patch("/payouts/:payoutId/status", updatePayoutStatus);
+router.get("/payouts/export-csv", exportPayoutsCsv);
 
 router.get("/settings", getAdminSettings);
 router.put("/settings", updateAdminSettings);

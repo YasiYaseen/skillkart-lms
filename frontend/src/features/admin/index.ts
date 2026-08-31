@@ -8,6 +8,7 @@ export { SystemSettings } from "./pages/SystemSettings";
 export { CourseGenerator } from "./pages/CourseGenerator";
 export { CategoryManagement } from "./pages/CategoryManagement";
 export { AdminCoupons } from "./pages/AdminCoupons";
+export { AdminPayouts } from "./pages/AdminPayouts";
 export { AdminLayout } from "./layout/AdminLayout";
 
 

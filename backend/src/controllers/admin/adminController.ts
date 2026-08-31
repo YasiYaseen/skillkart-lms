@@ -6,6 +6,7 @@ import Enrollment from "../../models/Enrollment";
 import Notification from "../../models/Notification";
 import Order from "../../models/Order";
 import Coupon from "../../models/Coupon";
+import Payout from "../../models/Payout";
 
 import { recordAuditLog } from "../../services/auditService";
 import AuditLog from "../../models/AuditLog";
@@ -496,6 +497,240 @@ export async function getAuditLogs(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function getPayoutRequests(req: Request, res: Response) {
+  try {
+    const { status, search } = req.query as { status?: string; search?: string };
+    const filter: Record<string, unknown> = {};
+
+    if (status && status !== "all") {
+      filter.status = status;
+    }
+
+    const allPayouts = await Payout.find()
+      .populate("instructor", "name email avatar")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    let pendingCount = 0;
+    let pendingAmount = 0;
+    let processingCount = 0;
+    let processingAmount = 0;
+    let completedCount = 0;
+    let completedAmount = 0;
+    let rejectedCount = 0;
+    let rejectedAmount = 0;
+
+    for (const p of allPayouts) {
+      const amt = Number(p.amount) || 0;
+      if (p.status === "pending") {
+        pendingCount += 1;
+        pendingAmount += amt;
+      } else if (p.status === "processing") {
+        processingCount += 1;
+        processingAmount += amt;
+      } else if (p.status === "completed") {
+        completedCount += 1;
+        completedAmount += amt;
+      } else if (p.status === "rejected") {
+        rejectedCount += 1;
+        rejectedAmount += amt;
+      }
+    }
+
+    let payouts = await Payout.find(filter)
+      .populate("instructor", "name email avatar")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      payouts = payouts.filter((p) => {
+        const inst = p.instructor as { name?: string; email?: string } | null;
+        const refMatch = p.referenceNumber?.toLowerCase().includes(q);
+        const nameMatch = inst?.name?.toLowerCase().includes(q);
+        const emailMatch = inst?.email?.toLowerCase().includes(q);
+        return refMatch || nameMatch || emailMatch;
+      });
+    }
+
+    return res.json({
+      payouts,
+      summary: {
+        pending: { count: pendingCount, amount: Math.round(pendingAmount * 100) / 100 },
+        processing: { count: processingCount, amount: Math.round(processingAmount * 100) / 100 },
+        completed: { count: completedCount, amount: Math.round(completedAmount * 100) / 100 },
+        rejected: { count: rejectedCount, amount: Math.round(rejectedAmount * 100) / 100 },
+        totalCount: allPayouts.length,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getPayoutRequests:", error);
+    return res.status(500).json({ message: "Failed to fetch payout requests" });
+  }
+}
+
+export async function updatePayoutStatus(req: Request, res: Response) {
+  try {
+    const { payoutId } = req.params;
+    const { status, notes } = req.body as { status: "pending" | "processing" | "completed" | "rejected"; notes?: string };
+
+    if (!isValidObjectId(payoutId)) {
+      return res.status(400).json({ message: "Invalid payout ID" });
+    }
+
+    if (!["pending", "processing", "completed", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const payout = await Payout.findById(payoutId).populate("instructor", "name email");
+    if (!payout) {
+      return res.status(404).json({ message: "Payout request not found" });
+    }
+
+    const previousStatus = payout.status;
+    payout.status = status;
+    if (typeof notes === "string") {
+      payout.notes = notes.trim();
+    }
+    if (status === "completed" || status === "rejected") {
+      payout.processedAt = new Date();
+    }
+    await payout.save();
+
+    if (req.user) {
+      await recordAuditLog({
+        adminId: req.user.id,
+        action: "PAYOUT_STATUS_UPDATED",
+        targetType: "payout",
+        targetId: payout._id.toString(),
+        targetName: `Payout #${payout.referenceNumber}`,
+        details: {
+          previousStatus,
+          newStatus: status,
+          amount: payout.amount,
+          instructorId: payout.instructor ? (payout.instructor as any)._id?.toString() || payout.instructor.toString() : "",
+          notes,
+        },
+        req,
+      });
+    }
+
+    try {
+      const instructorId = (payout.instructor as any)?._id || payout.instructor;
+      if (instructorId) {
+        let title = "Payout Processing";
+        let notifType: "info" | "success" | "warning" = "info";
+        if (status === "completed") {
+          title = "Payout Disbursed";
+          notifType = "success";
+        }
+        if (status === "rejected") {
+          title = "Payout Request Rejected";
+          notifType = "warning";
+        }
+
+        await Notification.create({
+          recipient: instructorId,
+          title,
+          message: `Your withdrawal request #${payout.referenceNumber} for $${payout.amount} is now ${status}.${notes ? ` Note: ${notes}` : ""}`,
+          type: notifType,
+          link: "/instructor/earnings",
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to notify instructor regarding payout status:", notifErr);
+    }
+
+    return res.json({
+      message: `Payout request #${payout.referenceNumber} marked as ${status}`,
+      payout,
+    });
+  } catch (error) {
+    console.error("Error in updatePayoutStatus:", error);
+    return res.status(500).json({ message: "Failed to update payout status" });
+  }
+}
+
+export async function exportPayoutsCsv(req: Request, res: Response) {
+  try {
+    const { status } = req.query as { status?: string };
+    const filter: Record<string, unknown> = {};
+
+    if (status && status !== "all") {
+      filter.status = status;
+    }
+
+    const payouts = await Payout.find(filter)
+      .populate("instructor", "name email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const csvRows: string[] = [];
+    csvRows.push(
+      [
+        "Reference Number",
+        "Requested Date",
+        "Instructor Name",
+        "Instructor Email",
+        "Amount",
+        "Currency",
+        "Method",
+        "Bank Name",
+        "Account Holder Name",
+        "Account Number / IBAN",
+        "Routing / SWIFT",
+        "PayPal Email",
+        "Stripe Account ID",
+        "Status",
+        "Processed Date",
+        "Notes",
+      ].join(",")
+    );
+
+    const escapeCsv = (str: string | number | undefined | null) => {
+      if (str === undefined || str === null) return '""';
+      const s = String(str).replace(/"/g, '""');
+      return `"${s}"`;
+    };
+
+    for (const p of payouts) {
+      const inst = (p.instructor && typeof p.instructor === "object" ? p.instructor : null) as { name?: string; email?: string } | null;
+      const acc = p.accountDetails || {};
+
+      const row = [
+        escapeCsv(p.referenceNumber),
+        escapeCsv(new Date(p.createdAt).toISOString()),
+        escapeCsv(inst?.name || "Instructor"),
+        escapeCsv(inst?.email || ""),
+        escapeCsv((p.amount || 0).toFixed(2)),
+        escapeCsv(p.currency || "USD"),
+        escapeCsv(p.method),
+        escapeCsv(acc.bankName || ""),
+        escapeCsv(acc.accountHolderName || ""),
+        escapeCsv(acc.accountNumber || ""),
+        escapeCsv(acc.routingNumber || ""),
+        escapeCsv(acc.paypalEmail || ""),
+        escapeCsv(acc.stripeAccountId || ""),
+        escapeCsv(p.status),
+        escapeCsv(p.processedAt ? new Date(p.processedAt).toISOString() : ""),
+        escapeCsv(p.notes || ""),
+      ];
+      csvRows.push(row.join(","));
+    }
+
+    const csvContent = csvRows.join("\n");
+    const filename = `skillkart-payouts-${new Date().toISOString().split("T")[0]}.csv`;
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    return res.status(200).send(csvContent);
+  } catch (error) {
+    console.error("Error exporting payouts CSV:", error);
+    return res.status(500).json({ message: "Failed to export payouts CSV" });
+  }
+}
+
 
 
 
