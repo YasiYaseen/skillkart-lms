@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/features/auth/AuthContext";
+import { AuthModals } from "@/features/auth";
 import { addToWishlist, removeFromWishlist, checkWishlistStatus } from "../api/wishlist";
-import { toast } from "react-toastify";
+import { toast } from 'sonner';
 
 interface WishlistButtonProps {
   courseId: string;
@@ -19,6 +20,7 @@ export function WishlistButton({
   const { user } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     if (!user || user.role !== "student" || !courseId) return;
@@ -40,7 +42,7 @@ export function WishlistButton({
     e.stopPropagation();
 
     if (!user) {
-      toast.info("Please log in to add courses to your wishlist");
+      setShowAuthModal(true);
       return;
     }
 
@@ -87,33 +89,41 @@ export function WishlistButton({
     </svg>
   );
 
-  if (variant === "icon") {
-    return (
-      <button
-        type="button"
-        onClick={handleToggle}
-        disabled={loading}
-        title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        className={`p-2 rounded-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-xs shadow-xs hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all duration-200 active:scale-95 disabled:opacity-50 ${className}`}
-      >
-        {heartIcon}
-      </button>
-    );
-  }
-
   return (
-    <button
-      type="button"
-      onClick={handleToggle}
-      disabled={loading}
-      className={`w-full py-3 px-4 rounded-xl font-medium border flex items-center justify-center gap-2 transition-all duration-200 active:scale-98 disabled:opacity-50 ${
-        isWishlisted
-          ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-          : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400"
-      } ${className}`}
-    >
-      {heartIcon}
-      <span>{isWishlisted ? "Wishlisted" : "Add to Wishlist"}</span>
-    </button>
+    <>
+      {variant === "icon" ? (
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={loading}
+          title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          className={`p-2 rounded-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-xs shadow-xs hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer ${className}`}
+        >
+          {heartIcon}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={loading}
+          className={`w-full py-3 px-4 rounded-xl font-medium border flex items-center justify-center gap-2 transition-all duration-200 active:scale-98 disabled:opacity-50 cursor-pointer ${
+            isWishlisted
+              ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+          } ${className}`}
+        >
+          {heartIcon}
+          <span>{isWishlisted ? "Wishlisted" : "Add to Wishlist"}</span>
+        </button>
+      )}
+
+      {showAuthModal && (
+        <AuthModals
+          isOpen={showAuthModal}
+          initialMode="login"
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
+    </>
   );
 }

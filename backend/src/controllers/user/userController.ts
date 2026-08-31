@@ -5,6 +5,7 @@ import Course from "../../models/Course";
 import Review from "../../models/Review";
 import Enrollment from "../../models/Enrollment";
 import { getTodayDateString } from "../../services/streakService";
+import { updateProfileSchema } from "../../validators/content.validator";
 
 export async function getProfile(req: Request, res: Response) {
   try {
@@ -23,28 +24,29 @@ export async function updateProfile(req: Request, res: Response) {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-    const { name, bio, headline, avatar, interests, socialLinks } = req.body;
+    const parsed = updateProfileSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
+
+    const { name, bio, headline, avatar, interests, socialLinks } = parsed.data;
 
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (name !== undefined) {
-      const trimmedName = String(name).trim();
-      if (trimmedName.length < 2) {
-        return res.status(400).json({ message: "Name must be at least 2 characters" });
-      }
-      user.name = trimmedName;
-    }
-
-    if (headline !== undefined) user.headline = String(headline).trim().slice(0, 120);
-    if (bio !== undefined) user.bio = String(bio).trim().slice(0, 500);
-    if (avatar !== undefined) user.avatar = String(avatar).trim();
-    if (Array.isArray(interests)) user.interests = interests.map(i => String(i).trim());
-    if (socialLinks && typeof socialLinks === "object") {
+    if (name !== undefined) user.name = name;
+    if (headline !== undefined) user.headline = headline;
+    if (bio !== undefined) user.bio = bio;
+    if (avatar !== undefined) user.avatar = avatar || undefined;
+    if (interests !== undefined) user.interests = interests;
+    if (socialLinks !== undefined) {
       user.socialLinks = {
-        website: socialLinks.website ? String(socialLinks.website).trim() : undefined,
-        linkedin: socialLinks.linkedin ? String(socialLinks.linkedin).trim() : undefined,
-        twitter: socialLinks.twitter ? String(socialLinks.twitter).trim() : undefined,
+        website: socialLinks.website || undefined,
+        linkedin: socialLinks.linkedin || undefined,
+        twitter: socialLinks.twitter || undefined,
       };
     }
 

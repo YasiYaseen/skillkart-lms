@@ -39,6 +39,8 @@ import {
     SystemSettings,
     CourseGenerator,
     CategoryManagement,
+    AdminCoupons,
+    AdminPayouts,
 } from '@features/admin';
 
 /**
@@ -104,6 +106,8 @@ function App() {
                             <Route path="/admin/courses" element={<CourseModeration />} />
                             <Route path="/admin/enrollments" element={<EnrollmentList />} />
                             <Route path="/admin/reports" element={<FinancialReports />} />
+                            <Route path="/admin/payouts" element={<AdminPayouts />} />
+                            <Route path="/admin/coupons" element={<AdminCoupons />} />
                             <Route path="/admin/audit-logs" element={<AuditLogs />} />
                             <Route path="/admin/settings" element={<SystemSettings />} />
                             <Route path="/admin/generator" element={<CourseGenerator />} />

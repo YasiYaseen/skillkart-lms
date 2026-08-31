@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { PlusIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { toast } from "react-toastify";
+import { toast } from 'sonner';
 import { api } from "@/lib/api";
+import { getErrorMessage } from "@/utils/errorUtils";
 
 export interface FAQItem {
   _id: string;
@@ -66,8 +67,7 @@ export default function CourseFAQEditor({ courseId }: CourseFAQEditorProps) {
       setNewAnswer("");
       setIsAdding(false);
     } catch (err: unknown) {
-      const errorMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(errorMsg || "Failed to add FAQ");
+      toast.error(getErrorMessage(err, "Failed to add FAQ"));
     } finally {
       setSubmitting(false);
     }
@@ -100,8 +100,7 @@ export default function CourseFAQEditor({ courseId }: CourseFAQEditorProps) {
       setFaqs((prev) => prev.map((f) => (f._id === faqId ? res.data.faq : f)));
       cancelEdit();
     } catch (err: unknown) {
-      const errorMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(errorMsg || "Failed to update FAQ");
+      toast.error(getErrorMessage(err, "Failed to update FAQ"));
     }
   };
 
@@ -113,8 +112,7 @@ export default function CourseFAQEditor({ courseId }: CourseFAQEditorProps) {
       toast.success("FAQ deleted");
       setFaqs((prev) => prev.filter((f) => f._id !== faqId));
     } catch (err: unknown) {
-      const errorMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(errorMsg || "Failed to delete FAQ");
+      toast.error(getErrorMessage(err, "Failed to delete FAQ"));
     }
   };
 
@@ -145,7 +143,7 @@ export default function CourseFAQEditor({ courseId }: CourseFAQEditorProps) {
         >
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              Question
+              Question <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -158,7 +156,7 @@ export default function CourseFAQEditor({ courseId }: CourseFAQEditorProps) {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              Answer
+              Answer <span className="text-red-500">*</span>
             </label>
             <textarea
               value={newAnswer}

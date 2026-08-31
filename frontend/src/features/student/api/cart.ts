@@ -1,17 +1,40 @@
 import { api } from '@/lib/api';
 
+export interface FeaturedCoupon {
+  _id: string;
+  code: string;
+  title: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  minPurchaseAmount: number;
+}
+
 export interface CouponValidationResult {
   valid: boolean;
   coupon: {
     _id: string;
     code: string;
+    title?: string;
     discountType: 'percentage' | 'fixed';
     discountValue: number;
     description: string;
+    scope?: string;
+    creatorRole?: string;
+    fundedBy?: string;
   };
   subtotal: number;
   discountTotal: number;
   totalAmount: number;
+  applicableItemsCount?: number;
+}
+
+export async function fetchFeaturedCoupons(): Promise<FeaturedCoupon[]> {
+  try {
+    const res = await api.get('/coupons/featured');
+    return res.data.coupons || [];
+  } catch {
+    return [];
+  }
 }
 
 export interface OrderItem {
@@ -50,7 +73,7 @@ export async function validateCouponCode(
 export async function processCheckout(payload: {
   courseIds: string[];
   couponCode?: string;
-  paymentMethod: 'simulated' | 'free' | 'stripe' | 'razorpay' | 'paypal';
+  paymentMethod: 'simulated' | 'free' | 'stripe' | 'razorpay' | 'paypal' | 'card' | 'express' | 'upi';
   billingDetails?: {
     name?: string;
     email?: string;

@@ -2,7 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useCurrency } from '@/context/CurrencyContext';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import {
   Cog6ToothIcon,
   GlobeAltIcon,

@@ -4,6 +4,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
     error?: string;
     fullWidth?: boolean;
+    isRequired?: boolean;
 }
 
 /**
@@ -11,7 +12,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
  * Reusable input field with label and error message
  */
 const Input = forwardRef<HTMLInputElement, InputProps>(
-    ({ label, error, className = '', fullWidth = true, ...props }, ref) => {
+    ({ label, error, className = '', fullWidth = true, isRequired, ...props }, ref) => {
+        const isMandatory = isRequired ?? props.required;
         const inputClasses = `
             w-full px-4 py-3 bg-white dark:bg-gray-800/90 border rounded-xl outline-none transition-all
             placeholder:text-gray-400 dark:placeholder:text-gray-500 text-gray-900 dark:text-white
@@ -30,8 +32,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         return (
             <div className={containerClasses}>
                 {label && (
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">
-                        {label}
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1 flex items-center">
+                        <span>{label}</span>
+                        {isMandatory && <span className="text-red-500 ml-1">*</span>}
                     </label>
                 )}
                 <input ref={ref} className={inputClasses} {...props} />

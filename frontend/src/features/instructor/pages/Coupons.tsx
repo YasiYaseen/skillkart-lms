@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/utils/errorUtils';
 import {
   fetchInstructorCoupons,
   createInstructorCoupon,
@@ -102,11 +103,10 @@ export function Coupons() {
         code: code.trim().toUpperCase(),
         discountType,
         discountValue: Number(discountValue),
-        applicableCourse: courseId || undefined,
+        courseId: courseId || null,
         minPurchaseAmount: Number(minPurchaseAmount),
-        maxRedemptions: Number(maxRedemptions),
-        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
-        description: description.trim(),
+        maxRedemptions: maxRedemptions ? Number(maxRedemptions) : null,
+        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
       };
 
       if (editingCouponId) {
@@ -120,10 +120,24 @@ export function Coupons() {
       setShowModal(false);
       loadData();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save coupon';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Failed to save coupon'));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCopyCode = (couponCode: string) => {
+    navigator.clipboard.writeText(couponCode);
+    toast.info(`Coupon code "${couponCode}" copied to clipboard!`);
+  };
+
+  const handleToggleActive = async (coupon: InstructorCoupon) => {
+    try {
+      await updateInstructorCoupon(coupon._id, { isActive: !coupon.isActive });
+      toast.success(`Coupon "${coupon.code}" ${coupon.isActive ? 'paused' : 'activated'}`);
+      loadData();
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to update coupon status'));
     }
   };
 
@@ -136,12 +150,14 @@ export function Coupons() {
       toast.success(`Coupon "${couponCode}" removed`);
       loadData();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete coupon';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Failed to delete coupon'));
     }
   };
 
-  const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesUsed || 0), 0);
+  const sampleDiscount = discountType === 'percentage' ? (100 * discountValue) / 100 : Math.min(100, discountValue);
+  const sampleFinal = Math.max(0, 100 - sampleDiscount);
+
+  const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesRedeemed || c.timesUsed || 0), 0);
   const activeCouponsCount = coupons.filter((c) => c.isActive).length;
 
   if (loading) {
@@ -166,7 +182,7 @@ export function Coupons() {
             Coupons & Promotions
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Create and track promotional discounts to incentivize student enrollment.
+            Create custom promo codes to share with your students for your courses.
           </p>
         </div>
 
@@ -177,6 +193,19 @@ export function Coupons() {
           <PlusIcon className="w-4 h-4" />
           <span>Create Coupon</span>
         </button>
+      </div>
+
+      {/* Scope Protection Banner */}
+      <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 flex items-start gap-3">
+        <SparklesIcon className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+        <div className="space-y-1 text-xs">
+          <span className="font-bold text-blue-900 dark:text-blue-200 block">
+            Direct Promotion Codes
+          </span>
+          <p className="text-blue-800/80 dark:text-blue-300">
+            Instructor coupons apply <strong>exclusively to your courses</strong>. Share these codes on your social media, YouTube, or mailing list. They will never discount courses by other instructors.
+          </p>
+        </div>
       </div>
 
       {/* Metrics Row */}
@@ -268,17 +297,17 @@ export function Coupons() {
                     </td>
                     <td className="px-5 py-4">
                       <span className="text-gray-700 dark:text-gray-300">
-                        {coupon.course?.title || 'All My Courses (Global)'}
+                        {coupon.course?.title || 'All My Courses'}
                       </span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <div className="space-y-1">
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {coupon.timesRedeemed} used
+                          {coupon.timesRedeemed || coupon.timesUsed || 0} used
                         </span>
                         {coupon.maxRedemptions && (
                           <div className="text-gray-400 text-[10px]">
-                            {coupon.maxRedemptions - coupon.timesRedeemed} spots left ({coupon.maxRedemptions} max)
+                            {coupon.maxRedemptions - (coupon.timesRedeemed || coupon.timesUsed || 0)} spots left ({coupon.maxRedemptions} max)
                           </div>
                         )}
                       </div>
@@ -308,13 +337,13 @@ export function Coupons() {
                     <td className="px-5 py-4 text-right whitespace-nowrap space-x-2">
                       <button
                         onClick={() => handleToggleActive(coupon)}
-                        className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                       >
                         {coupon.isActive ? 'Pause' : 'Activate'}
                       </button>
                       <button
-                        onClick={() => handleDelete(coupon._id)}
-                        className="px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900 text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                        onClick={() => handleDeleteCoupon(coupon._id, coupon.code)}
+                        className="px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900 text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
                       >
                         Delete
                       </button>
@@ -333,7 +362,7 @@ export function Coupons() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                Create Promo Coupon
+                {editingCouponId ? 'Edit Promo Coupon' : 'Create Promo Coupon'}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
@@ -343,15 +372,15 @@ export function Coupons() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateCoupon} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveCoupon} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Coupon Code *
+                  Coupon Code <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. SKILL50"
+                  placeholder="e.g. FLASH50"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono uppercase tracking-wider focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
@@ -375,7 +404,7 @@ export function Coupons() {
 
                 <div>
                   <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Discount Value *
+                    Discount Value <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -407,7 +436,7 @@ export function Coupons() {
                   onChange={(e) => setCourseId(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 >
-                  <option value="">All My Courses (Global)</option>
+                  <option value="">All My Courses</option>
                   {courses.map((c) => (
                     <option key={c._id} value={c._id}>
                       {c.title}
@@ -438,8 +467,8 @@ export function Coupons() {
                   <input
                     type="number"
                     min={1}
-                    value={maxRedemptions}
-                    onChange={(e) => setMaxRedemptions(e.target.value ? Number(e.target.value) : '')}
+                    value={maxRedemptions || ''}
+                    onChange={(e) => setMaxRedemptions(Number(e.target.value))}
                     placeholder="Unlimited"
                     className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   />
@@ -468,10 +497,10 @@ export function Coupons() {
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl disabled:opacity-50 shadow-xs"
+                  disabled={submitting}
+                  className="px-5 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl disabled:opacity-50 shadow-xs"
                 >
-                  {saving ? 'Creating...' : 'Create Coupon'}
+                  {submitting ? 'Saving...' : editingCouponId ? 'Update Coupon' : 'Create Coupon'}
                 </button>
               </div>
             </form>
@@ -483,3 +512,4 @@ export function Coupons() {
 }
 
 export default Coupons;
+

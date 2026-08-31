@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { api } from "@/lib/api";
-import { toast } from "react-toastify";
+import { toast } from 'sonner';
 import { Pagination } from "@/components/common";
 
 export interface AdminUser {

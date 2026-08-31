@@ -1,10 +1,10 @@
-﻿import AuditLog from "../models/AuditLog";
+import AuditLog from "../models/AuditLog";
 import type { Request } from "express";
 
 export interface LogAuditOptions {
   adminId: string;
   action: string;
-  targetType: "user" | "course" | "enrollment" | "system";
+  targetType: "user" | "course" | "enrollment" | "system" | "payout";
   targetId: string;
   targetName?: string;
   details?: Record<string, unknown>;

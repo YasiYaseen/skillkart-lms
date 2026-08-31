@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { LessonQuiz } from '@/components/LessonQuiz';
 import { CourseAnnouncements } from '@/features/student/components/CourseAnnouncements';
 import { LessonDiscussion } from '@/features/student/components/LessonDiscussion';

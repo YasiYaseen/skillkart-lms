@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/AuthContext';
 import { completeOnboarding } from '@/features/auth/auth.service';
+import { getErrorMessage } from '@/utils/errorUtils';
 import { CheckIcon } from '@heroicons/react/20/solid';
 
 const STEPS = ['Your Role', 'Your Profile', 'Your Interests'] as const;
@@ -90,8 +91,7 @@ export default function OnboardingPage() {
       toast.success('Welcome to SkillKart!');
       navigate('/', { replace: true });
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save onboarding';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Failed to save onboarding'));
     } finally {
       setSubmitting(false);
     }
@@ -141,20 +141,24 @@ export default function OnboardingPage() {
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs w-full max-w-xl p-6 sm:p-8 transition-colors">
         {step === 0 && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">What best describes you?</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">You can change this later in your profile settings.</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1 flex items-center">
+              <span>Choose your primary role</span>
+              <span className="text-red-500 ml-1">*</span>
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">How do you plan to use SkillKart?</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(['student', 'instructor'] as const).map((role) => (
                 <button
                   key={role}
                   type="button"
                   onClick={() => updateForm({ role })}
-                  className={`p-5 rounded-xl border-2 text-left transition-all ${
+                  className={`p-5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
                     form.role === role
-                      ? 'border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-950/40'
+                      ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-950/40 shadow-xs'
                       : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
                 >
+                  <div className="text-2xl mb-2">{role === 'student' ? '🎓' : '👨‍🏫'}</div>
                   <div className="font-semibold text-gray-900 dark:text-white capitalize">{role}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {role === 'student' ? 'I want to learn and grow my skills' : 'I want to teach and mentor learners'}
@@ -172,7 +176,7 @@ export default function OnboardingPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Headline <span className="text-red-500">*</span>
+                  Headline <span className="text-red-500">*</span> <span className="text-xs text-gray-400 font-normal">(min 3 characters)</span>
                 </label>
                 <input
                   type="text"
@@ -198,7 +202,7 @@ export default function OnboardingPage() {
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{form.bio.length}/500</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <input
                   type="url"
                   value={form.socialLinks.website}
@@ -217,6 +221,15 @@ export default function OnboardingPage() {
                   placeholder="LinkedIn (optional)"
                   className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                <input
+                  type="url"
+                  value={form.socialLinks.twitter}
+                  onChange={(e) =>
+                    updateForm({ socialLinks: { ...form.socialLinks, twitter: e.target.value } })
+                  }
+                  placeholder="Twitter / X (optional)"
+                  className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
             </div>
           </div>
@@ -224,7 +237,10 @@ export default function OnboardingPage() {
 
         {step === 2 && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">What topics interest you?</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1 flex items-center">
+              <span>What topics interest you?</span>
+              <span className="text-red-500 ml-1">*</span>
+            </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Choose at least one to personalize recommendations.</p>
             <div className="flex flex-wrap gap-2">
               {INTEREST_OPTIONS.map((interest) => {

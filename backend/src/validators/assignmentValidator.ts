@@ -17,19 +17,32 @@ export const createAssignmentSchema = z.object({
   sectionId: z.string().optional(),
   rubric: z.array(rubricCriterionSchema).optional().default([]),
   maxScore: z.number().min(1).default(100),
-  dueDate: z.string().datetime().optional().nullable(),
+  dueDate: z.string().datetime().optional().nullable().or(z.literal("")),
   attachments: z.array(attachmentSchema).optional().default([]),
 });
 
 export const updateAssignmentSchema = createAssignmentSchema.partial();
 
-export const submitAssignmentSchema = z.object({
-  submissionType: z.enum(["file", "link", "text"]).default("file"),
-  fileUrl: z.string().trim().optional(),
-  fileName: z.string().trim().optional(),
-  externalLink: z.string().trim().url().optional().or(z.literal("")),
-  studentNote: z.string().trim().optional().default(""),
-});
+export const submitAssignmentSchema = z
+  .object({
+    submissionType: z.enum(["file", "link", "text"]).default("file"),
+    fileUrl: z.string().trim().optional(),
+    fileName: z.string().trim().optional(),
+    externalLink: z.string().trim().url("Valid URL is required").optional().or(z.literal("")),
+    studentNote: z.string().trim().optional().default(""),
+  })
+  .refine(
+    (data) => {
+      if (data.submissionType === "file") return Boolean(data.fileUrl && data.fileUrl.length > 0);
+      if (data.submissionType === "link") return Boolean(data.externalLink && data.externalLink.length > 0);
+      if (data.submissionType === "text") return Boolean(data.studentNote && data.studentNote.length > 0);
+      return true;
+    },
+    {
+      message: "Submission content is required for the selected format",
+      path: ["submissionType"],
+    }
+  );
 
 export const rubricScoreInputSchema = z.object({
   criterion: z.string().trim().min(1),

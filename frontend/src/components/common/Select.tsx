@@ -11,6 +11,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
     options: Option[];
     fullWidth?: boolean;
     placeholder?: string;
+    isRequired?: boolean;
 }
 
 /**
@@ -18,7 +19,8 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
  * Reusable select dropdown with label and error message
  */
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
-    ({ label, error, options, placeholder, className = '', fullWidth = true, ...props }, ref) => {
+    ({ label, error, options, placeholder, className = '', fullWidth = true, isRequired, ...props }, ref) => {
+        const isMandatory = isRequired ?? props.required;
         const selectClasses = `
             w-full px-4 py-3 bg-white dark:bg-gray-800/90 border rounded-xl outline-none transition-all appearance-none cursor-pointer
             text-gray-900 dark:text-white
@@ -37,8 +39,9 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         return (
             <div className={containerClasses}>
                 {label && (
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">
-                        {label}
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1 flex items-center">
+                        <span>{label}</span>
+                        {isMandatory && <span className="text-red-500 ml-1">*</span>}
                     </label>
                 )}
                 <div className="relative">

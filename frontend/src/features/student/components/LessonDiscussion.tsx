@@ -6,7 +6,7 @@ import {
   deleteLessonComment,
   type LessonComment,
 } from '../api/comments';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/20/solid';
 
 interface Props {

@@ -3,11 +3,19 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { useAuth } from '@/features/auth/AuthContext';
-import { validateCouponCode, processCheckout, type OrderRecord } from '@/features/student/api/cart';
+import {
+  validateCouponCode,
+  processCheckout,
+  fetchFeaturedCoupons,
+  type FeaturedCoupon,
+  type OrderRecord,
+} from '@/features/student/api/cart';
 import { addToWishlist } from '@/features/wishlist';
+import { AuthModals } from '@/features/auth';
 import { PaymentCardSimulator, type PaymentFormState } from '@/components/cart/PaymentCardSimulator';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/utils/errorUtils';
 import {
   ShoppingBagIcon,
   CheckCircleIcon,
@@ -17,18 +25,17 @@ import {
   ArrowRightIcon,
   BoltIcon,
 } from '@heroicons/react/24/outline';
-import { CheckIcon, LockClosedIcon } from '@heroicons/react/20/solid';
-
-const POPULAR_PROMOS = [
-  { code: 'WELCOME20', label: '20% OFF Welcome Bonus' },
-  { code: 'SKILL50', label: '$50 OFF Super Saver' },
-];
+import { CheckIcon, LockClosedIcon, UserIcon } from '@heroicons/react/20/solid';
 
 export default function CartPage() {
   const { cart, removeFromCart, clearCart, cartTotal, addToCart } = useCart();
   const { formatAmount, formatPrice } = useCurrency();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+
+  // Auth modal state for unauthenticated guest checkout
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
 
   // Step state: 'items' | 'payment' | 'success'
   const [currentStep, setCurrentStep] = useState<'items' | 'payment'>(
@@ -43,14 +50,26 @@ export default function CartPage() {
     discountType: 'percentage' | 'fixed';
     description: string;
     discountTotal: number;
+    scope?: string;
+    creatorRole?: string;
+    applicableItemsCount?: number;
   } | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [featuredPromos, setFeaturedPromos] = useState<FeaturedCoupon[]>([]);
 
   // Billing Details
   const [billingName, setBillingName] = useState(user?.name || '');
   const [billingEmail, setBillingEmail] = useState(user?.email || '');
   const [billingCountry, setBillingCountry] = useState('United States');
+
+  // Sync billing details when user logs in
+  useEffect(() => {
+    if (user) {
+      if (user.name && !billingName) setBillingName(user.name);
+      if (user.email && !billingEmail) setBillingEmail(user.email);
+    }
+  }, [user]);
 
   // Interactive Payment State
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
@@ -73,6 +92,13 @@ export default function CartPage() {
 
   const discountTotal = appliedCoupon ? appliedCoupon.discountTotal : 0;
   const finalTotal = Math.max(0, Math.round((cartTotal - discountTotal) * 100) / 100);
+
+  // Load featured coupons from database
+  useEffect(() => {
+    fetchFeaturedCoupons()
+      .then((promos) => setFeaturedPromos(promos))
+      .catch(() => setFeaturedPromos([]));
+  }, []);
 
   // Load recommended courses
   useEffect(() => {
@@ -104,12 +130,15 @@ export default function CartPage() {
           discountType: res.coupon.discountType,
           description: res.coupon.description,
           discountTotal: res.discountTotal,
+          scope: res.coupon.scope,
+          creatorRole: res.coupon.creatorRole,
+          applicableItemsCount: res.applicableItemsCount,
         });
         setCouponInput(res.coupon.code);
         toast.success(`Coupon "${res.coupon.code}" applied! You saved ${formatAmount(res.discountTotal)}`);
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Invalid or expired coupon code';
+      const msg = getErrorMessage(err, 'Invalid or expired coupon code');
       setCouponError(msg);
       toast.error(msg);
     } finally {
@@ -126,7 +155,8 @@ export default function CartPage() {
 
   const handleMoveToWishlist = async (item: { courseId: string; title: string }) => {
     if (!user) {
-      toast.info('Please log in to save items to your wishlist');
+      setAuthModalMode('login');
+      setShowAuthModal(true);
       return;
     }
     try {
@@ -144,17 +174,23 @@ export default function CartPage() {
       return;
     }
 
+    if (!user) {
+      setAuthModalMode('signup');
+      setShowAuthModal(true);
+      return;
+    }
+
     setCheckingOut(true);
     try {
       const courseIds = cart.map((i) => i.courseId);
       const order = await processCheckout({
-        items: courseIds,
+        courseIds,
         couponCode: appliedCoupon?.code,
         paymentMethod: paymentForm.method,
         billingDetails: {
-          name: billingName,
-          email: billingEmail,
-          country: billingCountry,
+          name: billingName.trim() || undefined,
+          email: billingEmail.trim() || undefined,
+          country: billingCountry.trim() || undefined,
         },
       });
 
@@ -162,8 +198,7 @@ export default function CartPage() {
       clearCart();
       toast.success('Order completed successfully! Welcome to your courses.');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Checkout failed. Please try again.';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Checkout failed. Please try again.'));
     } finally {
       setCheckingOut(false);
     }
@@ -549,18 +584,27 @@ export default function CartPage() {
             </h3>
 
             {appliedCoupon ? (
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-                    ✓ {appliedCoupon.code}
-                  </span>
-                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs animate-fadeIn">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-300">
+                      ✓ {appliedCoupon.code}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      {appliedCoupon.scope === 'single_course'
+                        ? '1 Course'
+                        : appliedCoupon.scope === 'instructor_all'
+                        ? `${appliedCoupon.applicableItemsCount || 1} Instructor Course(s)`
+                        : 'Site-Wide'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block">
                     {appliedCoupon.description} applied (-{formatAmount(discountTotal)})
                   </span>
                 </div>
                 <button
                   onClick={handleRemoveCoupon}
-                  className="text-xs text-rose-600 hover:underline font-semibold cursor-pointer"
+                  className="text-xs text-rose-600 hover:text-rose-700 hover:underline font-semibold cursor-pointer shrink-0"
                 >
                   Remove
                 </button>
@@ -596,23 +640,26 @@ export default function CartPage() {
                   )}
                 </form>
 
-                {/* Popular Promo Pills */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block mb-1.5 font-medium">Quick Offer Codes:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {POPULAR_PROMOS.map((promo) => (
-                      <button
-                        key={promo.code}
-                        type="button"
-                        onClick={() => handleApplyCoupon(promo.code)}
-                        className="text-[10px] px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer"
-                      >
-                        <TagIcon className="w-3 h-3 text-blue-500" />
-                        <span>{promo.code}</span>
-                      </button>
-                    ))}
+                {/* Dynamic Featured Platform Promo Pills */}
+                {featuredPromos.length > 0 && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 block mb-1.5 font-medium">Featured Offers:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {featuredPromos.map((promo) => (
+                        <button
+                          key={promo.code}
+                          type="button"
+                          onClick={() => handleApplyCoupon(promo.code)}
+                          className="text-[10px] px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <TagIcon className="w-3 h-3 text-blue-500" />
+                          <span>{promo.code}</span>
+                          <span className="text-slate-400 font-normal">({promo.discountType === 'percentage' ? `${promo.discountValue}% off` : `$${promo.discountValue} off`})</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -652,22 +699,34 @@ export default function CartPage() {
             {currentStep === 'items' ? (
               <button
                 onClick={() => setCurrentStep('payment')}
-                className="w-full py-3.5 bg-blue-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                className="w-full py-3.5 bg-blue-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>Proceed to Payment →</span>
               </button>
             ) : (
-              <button
-                onClick={handleCheckout}
-                disabled={checkingOut}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
-              >
-                {checkingOut ? (
-                  <span>Authorizing Order...</span>
-                ) : (
-                  <span>Authorize & Complete Purchase ({formatAmount(finalTotal)})</span>
+              <div className="space-y-2">
+                <button
+                  onClick={handleCheckout}
+                  disabled={checkingOut}
+                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {checkingOut ? (
+                    <span>Authorizing Order...</span>
+                  ) : !user ? (
+                    <span className="flex items-center gap-1.5">
+                      <UserIcon className="w-4 h-4" />
+                      <span>Sign in to Complete Purchase ({formatAmount(finalTotal)})</span>
+                    </span>
+                  ) : (
+                    <span>Authorize & Complete Purchase ({formatAmount(finalTotal)})</span>
+                  )}
+                </button>
+                {!user && (
+                  <p className="text-[11px] text-center text-slate-500 dark:text-slate-400">
+                    You'll be asked to sign in or create an account to activate your courses.
+                  </p>
                 )}
-              </button>
+              </div>
             )}
 
             {/* Trust Badges */}
@@ -688,6 +747,14 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      {showAuthModal && (
+        <AuthModals
+          isOpen={showAuthModal}
+          initialMode={authModalMode}
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
     </div>
   );
 }

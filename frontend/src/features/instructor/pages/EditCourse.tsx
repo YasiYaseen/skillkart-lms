@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { FileUpload } from '@components/common';
 import CourseFAQEditor from '../components/CourseFAQEditor';
 import { QuizEditorModal } from '../components/QuizEditorModal';
 import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { useCurrency } from '@/context/CurrencyContext';
+import { getErrorMessage } from '@/utils/errorUtils';
 import {
     ClipboardDocumentListIcon,
     BookOpenIcon,
@@ -271,8 +272,7 @@ function EditCourse() {
             });
             toast.success('Course details updated successfully!');
         } catch (err: unknown) {
-            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update course';
-            toast.error(msg);
+            toast.error(getErrorMessage(err, 'Failed to update course'));
         } finally {
             setSavingDetails(false);
         }
@@ -289,9 +289,9 @@ function EditCourse() {
             });
             setSections([...sections, { ...res.data.section, lessons: [] }]);
             setNewSectionTitle('');
-            toast.success('Section added');
-        } catch {
-            toast.error('Failed to add section');
+            toast.success('Section added successfully');
+        } catch (err: unknown) {
+            toast.error(getErrorMessage(err, 'Failed to add section'));
         } finally {
             setAddingSection(false);
         }

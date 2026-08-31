@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 export interface EnrolledStudent {
     id: string;
