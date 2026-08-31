@@ -15,7 +15,7 @@ import Comment from "../../models/Comment";
 import Certificate from "../../models/Certificate";
 import Category from "../../models/Category";
 import { getCourseDurationMinutes, isCourseManager } from "./shared";
-import { createCourseSchema } from "../../validators/course.validator";
+import { createCourseSchema, updateCourseSchema } from "../../validators/course.validator";
 
 
 async function getCourseRatingSummary(courseId: string) {
@@ -45,7 +45,7 @@ export async function createCourse(req: Request, res: Response) {
     if (!parsed.success) {
       return res.status(400).json({
         message: "Validation failed",
-        errors: parsed.error.flatten(),
+        errors: parsed.error.flatten().fieldErrors,
       });
     }
 
@@ -383,6 +383,14 @@ export async function updateCourse(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid course id" });
     }
 
+    const parsed = updateCourseSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
+
     const course = await Course.findById(courseId);
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
@@ -392,10 +400,10 @@ export async function updateCourse(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const allowed = ["title", "description", "thumbnailUrl", "tags", "whatYouWillLearn", "prerequisites", "level", "isPaid", "price", "status"];
+    const allowed = ["title", "description", "thumbnailUrl", "tags", "whatYouWillLearn", "prerequisites", "level", "isPaid", "price", "status"] as const;
     for (const field of allowed) {
-      if (field in req.body) {
-        (course as unknown as Record<string, unknown>)[field] = req.body[field];
+      if (field in parsed.data) {
+        (course as unknown as Record<string, unknown>)[field] = parsed.data[field];
       }
     }
 
@@ -410,12 +418,11 @@ export async function updateCourse(req: Request, res: Response) {
       }
     }
 
-
     if (!course.isPaid) {
       course.price = null;
     }
-    if (course.isPaid && (course.price === null || course.price === undefined)) {
-      return res.status(400).json({ message: "price is required for paid courses" });
+    if (course.isPaid && (course.price === null || course.price === undefined || course.price <= 0)) {
+      return res.status(400).json({ message: "Valid price is required for paid courses" });
     }
 
     await course.save();

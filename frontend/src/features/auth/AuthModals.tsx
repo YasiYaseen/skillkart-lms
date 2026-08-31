@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { getOnboardingStatus, loginWithGoogle, loginWithEmail, registerWithEmail, requestPasswordReset, AuthUser } from './auth.service';
 import { useAuth } from './AuthContext';
 import { EnvelopeIcon } from '@heroicons/react/20/solid';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 interface AuthModalsProps {
     isOpen: boolean;
@@ -88,8 +89,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                 await handleAuthSuccess(token, user);
             }
         } catch (err: unknown) {
-            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Authentication error';
-            toast.error(msg);
+            toast.error(getErrorMessage(err, 'Authentication error'));
         } finally {
             setLoading(false);
         }
@@ -193,7 +193,10 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
                     {!isForgot && (
                         <div>
                             <div className="flex items-center justify-between mb-1">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1 flex items-center">
+                                    <span>Password</span>
+                                    <span className="text-red-500 ml-1">*</span>
+                                </label>
                                 {isLogin && (
                                     <button
                                         type="button"

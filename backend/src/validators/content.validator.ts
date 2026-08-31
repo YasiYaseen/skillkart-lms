@@ -13,6 +13,35 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(6, "New password must be at least 6 characters"),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("Valid email address is required"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(1, "Reset token is required"),
+  newPassword: z.string().min(6, "New password must be at least 6 characters"),
+});
+
+export const updateProfileSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(80).optional(),
+  headline: z.string().trim().max(120, "Headline cannot exceed 120 characters").optional(),
+  bio: z.string().trim().max(500, "Bio cannot exceed 500 characters").optional(),
+  avatar: z.string().trim().url("Avatar must be a valid URL").optional().or(z.literal("")),
+  interests: z.array(z.string().trim().max(60)).optional(),
+  socialLinks: z
+    .object({
+      website: z.string().trim().url("Website must be a valid URL").optional().or(z.literal("")),
+      linkedin: z.string().trim().url("LinkedIn must be a valid URL").optional().or(z.literal("")),
+      twitter: z.string().trim().url("Twitter/X must be a valid URL").optional().or(z.literal("")),
+    })
+    .optional(),
+});
+
 // ── Section ──────────────────────────────────────────────────────────────────
 export const createSectionSchema = z.object({
   title: z.string().trim().min(2, "Title must be at least 2 characters").max(200),

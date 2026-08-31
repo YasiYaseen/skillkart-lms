@@ -8,6 +8,7 @@ import { addToWishlist } from '@/features/wishlist';
 import { PaymentCardSimulator, type PaymentFormState } from '@/components/cart/PaymentCardSimulator';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { getErrorMessage } from '@/utils/errorUtils';
 import {
   ShoppingBagIcon,
   CheckCircleIcon,
@@ -109,7 +110,7 @@ export default function CartPage() {
         toast.success(`Coupon "${res.coupon.code}" applied! You saved ${formatAmount(res.discountTotal)}`);
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Invalid or expired coupon code';
+      const msg = getErrorMessage(err, 'Invalid or expired coupon code');
       setCouponError(msg);
       toast.error(msg);
     } finally {
@@ -148,7 +149,7 @@ export default function CartPage() {
     try {
       const courseIds = cart.map((i) => i.courseId);
       const order = await processCheckout({
-        items: courseIds,
+        courseIds,
         couponCode: appliedCoupon?.code,
         paymentMethod: paymentForm.method,
         billingDetails: {
@@ -162,8 +163,7 @@ export default function CartPage() {
       clearCart();
       toast.success('Order completed successfully! Welcome to your courses.');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Checkout failed. Please try again.';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Checkout failed. Please try again.'));
     } finally {
       setCheckingOut(false);
     }

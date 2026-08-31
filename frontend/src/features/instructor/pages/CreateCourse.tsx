@@ -6,6 +6,7 @@ import { QuizEditorModal } from '../components/QuizEditorModal';
 import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { Button, FileUpload } from '@/components/common';
 import { useCurrency } from '@/context/CurrencyContext';
+import { getErrorMessage } from '@/utils/errorUtils';
 import { ArrowUpTrayIcon, TrashIcon, AcademicCapIcon, PlusIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 export interface CourseLessonItem {
@@ -39,19 +40,17 @@ const LEVEL_OPTIONS = [
     { label: 'Advanced', value: 'advanced' },
 ];
 
-function CreateCourse() {
+export const CreateCourse = () => {
     const navigate = useNavigate();
-    const { currency, symbol } = useCurrency();
-
-    // Workflow state
-    const [step, setStep] = useState<number>(1);
+    const { symbol, currency } = useCurrency();
+    const [step, setStep] = useState(1);
     const [courseId, setCourseId] = useState<string | null>(null);
 
-    // Course details state
+    // Form states
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [category, setCategory] = useState<string>('');
-    const [availableCategories, setAvailableCategories] = useState<Array<{ id: string; name: string; icon: string; slug: string }>>([]);
+    const [category, setCategory] = useState('');
+    const [price, setPrice] = useState<number | string>(0);
     const [level, setLevel] = useState('beginner');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
@@ -59,40 +58,50 @@ function CreateCourse() {
     const [learnInput, setLearnInput] = useState('');
     const [prerequisites, setPrerequisites] = useState<string[]>([]);
     const [prereqInput, setPrereqInput] = useState('');
-    const [price, setPrice] = useState<number | ''>(0);
-    const [thumbnail, setThumbnail] = useState<string | null>(null);
+    const [thumbnail, setThumbnail] = useState('');
     const [creatingCourse, setCreatingCourse] = useState(false);
 
-    useEffect(() => {
-        api.get<{ categories: Array<{ id: string; name: string; icon: string; slug: string }> }>('/categories')
-            .then((res) => {
-                setAvailableCategories(res.data.categories || []);
-            })
-            .catch(() => {});
-    }, []);
-
-    // Curriculum state
+    // Curriculum states
     const [sections, setSections] = useState<CourseSection[]>([]);
     const [newSectionTitle, setNewSectionTitle] = useState('');
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
-
-    // Lesson state
     const [newLessonTitle, setNewLessonTitle] = useState('');
-    const [newLessonDuration, setNewLessonDuration] = useState<number>(10);
-
-    // Lesson Item State
-    const [newItemType, setNewItemType] = useState('video');
-    const [newItemContent, setNewItemContent] = useState('');
+    const [newLessonDuration, setNewLessonDuration] = useState('10');
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+    const [itemType, setItemType] = useState('text');
+    const [itemContent, setItemContent] = useState('');
+
+    // Quiz state
     const [quizLessonId, setQuizLessonId] = useState<string | null>(null);
-    const [bulkUploadSectionId, setBulkUploadSectionId] = useState<string | null>(null);
+    const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+
+    // Bulk lesson upload modal state
+    const [bulkModalOpen, setBulkModalOpen] = useState(false);
+    const [bulkSectionId, setBulkSectionId] = useState<string | null>(null);
+    const [bulkSectionTitle, setBulkSectionTitle] = useState<string>('');
+
+    // Categories
+    const [availableCategories, setAvailableCategories] = useState<Array<{ id: string; name: string; slug: string; icon: string }>>([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/categories/public');
+                setAvailableCategories(res.data.categories || []);
+            } catch {
+                // Ignore fallback
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const handleAddTag = () => {
-        const trimmed = tagInput.trim().replace(/^#/, '');
-        if (trimmed && !tags.includes(trimmed)) {
-            setTags([...tags, trimmed]);
-            setTagInput('');
+        if (!tagInput.trim()) return;
+        const formatted = tagInput.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+        if (formatted && !tags.includes(formatted)) {
+            setTags([...tags, formatted]);
         }
+        setTagInput('');
     };
 
     const handleRemoveTag = (tagToRemove: string) => {
@@ -100,33 +109,33 @@ function CreateCourse() {
     };
 
     const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' || e.key === ',') {
+        if (e.key === 'Enter') {
             e.preventDefault();
             handleAddTag();
         }
     };
 
     const handleAddLearnItem = () => {
-        const trimmed = learnInput.trim();
-        if (trimmed && !whatYouWillLearn.includes(trimmed)) {
-            setWhatYouWillLearn([...whatYouWillLearn, trimmed]);
-            setLearnInput('');
+        if (!learnInput.trim()) return;
+        if (!whatYouWillLearn.includes(learnInput.trim())) {
+            setWhatYouWillLearn([...whatYouWillLearn, learnInput.trim()]);
         }
+        setLearnInput('');
     };
 
     const handleRemoveLearnItem = (itemToRemove: string) => {
         setWhatYouWillLearn(whatYouWillLearn.filter((item) => item !== itemToRemove));
     };
 
-    const handleAddPrereqItem = () => {
-        const trimmed = prereqInput.trim();
-        if (trimmed && !prerequisites.includes(trimmed)) {
-            setPrerequisites([...prerequisites, trimmed]);
-            setPrereqInput('');
+    const handleAddPrereq = () => {
+        if (!prereqInput.trim()) return;
+        if (!prerequisites.includes(prereqInput.trim())) {
+            setPrerequisites([...prerequisites, prereqInput.trim()]);
         }
+        setPrereqInput('');
     };
 
-    const handleRemovePrereqItem = (itemToRemove: string) => {
+    const handleRemovePrereq = (itemToRemove: string) => {
         setPrerequisites(prerequisites.filter((item) => item !== itemToRemove));
     };
 
@@ -134,11 +143,13 @@ function CreateCourse() {
         e.preventDefault();
         setCreatingCourse(true);
         try {
+            const numPrice = Number(price) || 0;
             const payload = {
                 title,
                 description,
                 category: category || undefined,
-                price: Number(price),
+                price: numPrice,
+                isPaid: numPrice > 0,
                 level,
                 tags,
                 whatYouWillLearn,
@@ -150,8 +161,7 @@ function CreateCourse() {
             setStep(2);
             toast.success('Course created! Now add curriculum.');
         } catch (err: unknown) {
-            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create course';
-            toast.error(msg);
+            toast.error(getErrorMessage(err, 'Failed to create course'));
         } finally {
             setCreatingCourse(false);
         }
@@ -168,8 +178,8 @@ function CreateCourse() {
             setSections([...sections, { ...res.data.section, lessons: [] }]);
             setNewSectionTitle('');
             toast.success('Section added');
-        } catch {
-            toast.error('Failed to add section');
+        } catch (err: unknown) {
+            toast.error(getErrorMessage(err, 'Failed to add section'));
         }
     };
 
@@ -178,8 +188,8 @@ function CreateCourse() {
             await api.delete(`/sections/${sectionId}`);
             setSections(sections.filter((s) => s._id !== sectionId));
             toast.success('Section deleted');
-        } catch {
-            toast.error('Failed to delete section');
+        } catch (err: unknown) {
+            toast.error(getErrorMessage(err, 'Failed to delete section'));
         }
     };
 
@@ -330,10 +340,14 @@ function CreateCourse() {
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Course Essentials</h2>
                     <form onSubmit={handleCreateCourse} className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Title <span className="text-red-500">*</span>
+                            </label>
                             <input
                                 type="text"
                                 required
+                                minLength={3}
+                                maxLength={140}
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -342,14 +356,17 @@ function CreateCourse() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Description <span className="text-red-500">*</span> <span className="text-xs text-gray-400 font-normal">(min 20 chars)</span>
+                            </label>
                             <textarea
                                 required
+                                minLength={20}
                                 rows={4}
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Course details..."
+                                placeholder="Comprehensive course overview, outcomes, and objectives..."
                             ></textarea>
                         </div>
 
@@ -529,7 +546,9 @@ function CreateCourse() {
                         {/* Price & Thumbnail Row */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Price ({symbol} {currency})</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Price ({symbol} {currency}) <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     type="number"
                                     required

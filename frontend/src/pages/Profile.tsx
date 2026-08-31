@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import { FileUpload } from '@/components/common';
+import { getErrorMessage } from '@/utils/errorUtils';
 import { FireIcon, UserIcon, LockClosedIcon } from '@heroicons/react/20/solid';
 
 const POPULAR_INTERESTS = [
@@ -32,49 +33,53 @@ function Profile() {
     const [avatar, setAvatar] = useState('');
     const [interests, setInterests] = useState<string[]>([]);
     const [interestInput, setInterestInput] = useState('');
-    const [socialLinks, setSocialLinks] = useState({
-        website: '',
-        linkedin: '',
-        twitter: '',
-    });
-    const [memberSince, setMemberSince] = useState<string>('');
-    const [currentStreak, setCurrentStreak] = useState(0);
+    const [socialLinks, setSocialLinks] = useState({ website: '', linkedin: '', twitter: '' });
+    const [streakData, setStreakData] = useState<{ currentStreak: number; longestStreak: number; totalActiveDays: number } | null>(null);
 
     // Password change state
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [changingPassword, setChangingPassword] = useState(false);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const res = await api.get('/users/me');
-                const u = res.data.user;
-                setName(u.name || '');
-                setEmail(u.email || '');
-                setHeadline(u.headline || '');
-                setBio(u.bio || '');
-                setAvatar(u.avatar || '');
-                setInterests(u.interests || []);
+                const [profileRes, streakRes] = await Promise.all([
+                    api.get('/users/profile'),
+                    api.get('/users/streak').catch(() => ({ data: null })),
+                ]);
+
+                const userData = profileRes.data.user;
+                setName(userData.name || '');
+                setEmail(userData.email || '');
+                setHeadline(userData.headline || '');
+                setBio(userData.bio || '');
+                setAvatar(userData.avatar || '');
+                setInterests(userData.interests || []);
                 setSocialLinks({
-                    website: u.socialLinks?.website || '',
-                    linkedin: u.socialLinks?.linkedin || '',
-                    twitter: u.socialLinks?.twitter || '',
+                    website: userData.socialLinks?.website || '',
+                    linkedin: userData.socialLinks?.linkedin || '',
+                    twitter: userData.socialLinks?.twitter || '',
                 });
-                if (u.createdAt) {
-                    setMemberSince(new Date(u.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+
+                if (streakRes.data) {
+                    setStreakData({
+                        currentStreak: streakRes.data.currentStreak || 0,
+                        longestStreak: streakRes.data.longestStreak || 0,
+                        totalActiveDays: streakRes.data.totalActiveDays || 0,
+                    });
                 }
-                setCurrentStreak(u.currentStreak || 0);
-            } catch {
-                toast.error('Failed to load profile');
+            } catch (err: unknown) {
+                toast.error(getErrorMessage(err, 'Failed to load profile data'));
             } finally {
                 setLoading(false);
             }
         };
+
         fetchProfile();
     }, []);
 
@@ -101,7 +106,7 @@ function Profile() {
         e.preventDefault();
         setSaving(true);
         try {
-            await api.put('/users/me', {
+            const res = await api.put('/users/profile', {
                 name,
                 headline,
                 bio,
@@ -109,18 +114,13 @@ function Profile() {
                 interests,
                 socialLinks,
             });
+
             toast.success('Profile updated successfully!');
             updateUser({
-                name,
-                headline,
-                bio,
-                avatar,
-                interests,
-                socialLinks,
+                ...res.data.user,
             });
         } catch (err: unknown) {
-            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update profile';
-            toast.error(msg);
+            toast.error(getErrorMessage(err, 'Failed to update profile'));
         } finally {
             setSaving(false);
         }
@@ -147,8 +147,7 @@ function Profile() {
             setNewPassword('');
             setConfirmPassword('');
         } catch (err: unknown) {
-            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to change password';
-            toast.error(msg);
+            toast.error(getErrorMessage(err, 'Failed to change password'));
         } finally {
             setChangingPassword(false);
         }
@@ -420,7 +419,7 @@ function Profile() {
                             <form onSubmit={handlePasswordSubmit} className="space-y-5 max-w-lg">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                        Current Password
+                                        Current Password <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="password"
@@ -434,7 +433,7 @@ function Profile() {
 
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                        New Password
+                                        New Password <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="password"
@@ -449,7 +448,7 @@ function Profile() {
 
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                        Confirm New Password
+                                        Confirm New Password <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="password"

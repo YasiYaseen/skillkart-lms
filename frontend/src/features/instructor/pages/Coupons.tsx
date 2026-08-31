@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { getErrorMessage } from '@/utils/errorUtils';
 import {
   fetchInstructorCoupons,
   createInstructorCoupon,
@@ -102,11 +103,10 @@ export function Coupons() {
         code: code.trim().toUpperCase(),
         discountType,
         discountValue: Number(discountValue),
-        applicableCourse: courseId || undefined,
+        courseId: courseId || null,
         minPurchaseAmount: Number(minPurchaseAmount),
-        maxRedemptions: Number(maxRedemptions),
-        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
-        description: description.trim(),
+        maxRedemptions: maxRedemptions ? Number(maxRedemptions) : null,
+        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
       };
 
       if (editingCouponId) {
@@ -120,8 +120,7 @@ export function Coupons() {
       setShowModal(false);
       loadData();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save coupon';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Failed to save coupon'));
     } finally {
       setSubmitting(false);
     }
@@ -136,8 +135,7 @@ export function Coupons() {
       toast.success(`Coupon "${couponCode}" removed`);
       loadData();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete coupon';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Failed to delete coupon'));
     }
   };
 
@@ -346,7 +344,7 @@ export function Coupons() {
             <form onSubmit={handleCreateCoupon} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Coupon Code *
+                  Coupon Code <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -375,7 +373,7 @@ export function Coupons() {
 
                 <div>
                   <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Discount Value *
+                    Discount Value <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"

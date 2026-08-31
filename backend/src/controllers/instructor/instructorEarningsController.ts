@@ -185,9 +185,13 @@ export async function requestInstructorPayout(req: Request, res: Response) {
     const instructorId = new Types.ObjectId(req.user.id);
     const { amount, method, accountDetails, notes } = req.body;
 
+    const settings = await SystemSettings.findOne({ isSingleton: true }).lean();
+    const primaryCurrency = settings?.primaryCurrency || "USD";
+    const minThreshold = settings?.minPayoutThreshold ?? 50;
+
     const withdrawAmount = Number(amount);
-    if (!withdrawAmount || isNaN(withdrawAmount) || withdrawAmount < 50) {
-      return res.status(400).json({ message: "Minimum payout withdrawal amount is $50.00" });
+    if (!withdrawAmount || isNaN(withdrawAmount) || withdrawAmount < minThreshold) {
+      return res.status(400).json({ message: `Minimum payout withdrawal amount is ${minThreshold.toFixed(2)} ${primaryCurrency}` });
     }
 
     if (!["bank_transfer", "paypal", "stripe"].includes(method)) {
@@ -220,9 +224,6 @@ export async function requestInstructorPayout(req: Request, res: Response) {
       instructor: instructorId,
       status: { $in: ["pending", "processing", "completed"] },
     }).lean();
-
-    const settings = await SystemSettings.findOne({ isSingleton: true }).lean();
-    const primaryCurrency = settings?.primaryCurrency || "USD";
 
     const alreadyClaimed = existingPayouts.reduce((acc, p) => acc + p.amount, 0);
     const availableBalance = Math.max(0, Math.round((totalLifetimeNetEarnings - alreadyClaimed) * 100) / 100);

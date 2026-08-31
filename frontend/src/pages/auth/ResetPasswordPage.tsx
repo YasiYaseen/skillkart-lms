@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Button, Input } from '@/components/common';
 import { resetPasswordWithToken } from '@/features/auth/auth.service';
 import { toast } from 'react-toastify';
+import { getErrorMessage } from '@/utils/errorUtils';
 import { LockClosedIcon, CheckCircleIcon, ArrowLeftIcon } from '@heroicons/react/20/solid';
 
 export default function ResetPasswordPage() {
@@ -46,9 +47,7 @@ export default function ResetPasswordPage() {
       setSuccess(true);
       toast.success(res.message || 'Password reset successfully!');
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Failed to reset password. The link may have expired.';
+      const msg = getErrorMessage(err, 'Failed to reset password. The link may have expired.');
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
