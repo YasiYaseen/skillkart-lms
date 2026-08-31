@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
-import { toast } from "react-toastify";
+import { toast } from 'sonner';
 import { Pagination, Modal, Button } from "@/components/common";
 import { ExclamationTriangleIcon, ShieldCheckIcon } from "@heroicons/react/20/solid";
 

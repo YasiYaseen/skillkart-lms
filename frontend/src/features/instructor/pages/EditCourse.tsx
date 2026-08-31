@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { FileUpload } from '@components/common';
 import CourseFAQEditor from '../components/CourseFAQEditor';
 import { QuizEditorModal } from '../components/QuizEditorModal';

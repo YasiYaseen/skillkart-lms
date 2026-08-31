@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { Link } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import {
     AcademicCapIcon,
     ArrowDownTrayIcon,

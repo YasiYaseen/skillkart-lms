@@ -3,7 +3,7 @@ import Rating from './Rating';
 import { WishlistButton } from '@/features/wishlist';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import {
     ClockIcon,
     AcademicCapIcon,

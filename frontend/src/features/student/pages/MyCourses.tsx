@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { EnrollmentCard, EnrollmentCardProps } from '@/features/enrollment/components/EnrollmentCard';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import LearningStreakCard from '../components/LearningStreakCard';
 import CourseRecommendations from '@/components/course/CourseRecommendations';

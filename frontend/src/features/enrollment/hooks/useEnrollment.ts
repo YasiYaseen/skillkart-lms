@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { enrollmentService } from "../services/enrollmentService";
-import { toast } from "react-toastify";
+import { toast } from 'sonner';
 
 export type EnrollmentStatus = "active" | "completed" | "cancelled" | "expired" | "pending_payment";
 

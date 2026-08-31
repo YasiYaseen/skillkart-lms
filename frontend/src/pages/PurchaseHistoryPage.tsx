@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchOrderHistory, fetchOrderReceipt, type OrderRecord } from '@/features/student/api/cart';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useCurrency } from '@/context/CurrencyContext';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import {
   MagnifyingGlassIcon,
   ReceiptPercentIcon,

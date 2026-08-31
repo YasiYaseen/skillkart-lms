@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { fetchWishlist, removeFromWishlist, type WishlistItem } from "../api/wishlist";
-import { toast } from "react-toastify";
+import { toast } from 'sonner';
 import Rating from "@/components/common/Rating";
 
 export function WishlistPage() {

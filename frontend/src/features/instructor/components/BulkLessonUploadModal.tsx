@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { XMarkIcon, PlusIcon, TrashIcon, ArrowUpTrayIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
-import { toast } from "react-toastify";
+import { toast } from 'sonner';
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/utils/errorUtils";
 

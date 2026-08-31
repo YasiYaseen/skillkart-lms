@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import { FileUpload } from '@/components/common';

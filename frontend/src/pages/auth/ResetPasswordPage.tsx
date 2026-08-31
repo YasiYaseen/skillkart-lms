@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Button, Input } from '@/components/common';
 import { resetPasswordWithToken } from '@/features/auth/auth.service';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { getErrorMessage } from '@/utils/errorUtils';
 import { LockClosedIcon, CheckCircleIcon, ArrowLeftIcon } from '@heroicons/react/20/solid';
 

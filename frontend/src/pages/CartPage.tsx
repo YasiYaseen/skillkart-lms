@@ -14,7 +14,7 @@ import { addToWishlist } from '@/features/wishlist';
 import { AuthModals } from '@/features/auth';
 import { PaymentCardSimulator, type PaymentFormState } from '@/components/cart/PaymentCardSimulator';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { getErrorMessage } from '@/utils/errorUtils';
 import {
   ShoppingBagIcon,

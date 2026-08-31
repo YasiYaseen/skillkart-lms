@@ -3,7 +3,7 @@ import {
   fetchInstructorAnalytics,
   type InstructorAnalyticsResponse,
 } from '../api/analytics';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { useCurrency } from '@/context/CurrencyContext';
 import {
   ChartBarIcon,

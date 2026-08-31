@@ -3,7 +3,7 @@ import { Button, Input, Modal } from '@/components/common';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { GoogleIcon } from '@/assets/icons';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { getOnboardingStatus, loginWithGoogle, loginWithEmail, registerWithEmail, requestPasswordReset, AuthUser } from './auth.service';
 import { useAuth } from './AuthContext';
 import { EnvelopeIcon } from '@heroicons/react/20/solid';

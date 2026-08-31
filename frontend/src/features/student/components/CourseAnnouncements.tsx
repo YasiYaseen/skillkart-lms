@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchAnnouncements, type Announcement } from '@/features/instructor/api/announcements';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 interface Props {
     courseId: string;

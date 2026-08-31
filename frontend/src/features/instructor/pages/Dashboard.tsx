@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '@/context/CurrencyContext';
 import { UserGroupIcon, BanknotesIcon, BookOpenIcon } from '@heroicons/react/20/solid';

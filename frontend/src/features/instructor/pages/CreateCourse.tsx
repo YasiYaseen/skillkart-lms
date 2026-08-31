@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { QuizEditorModal } from '../components/QuizEditorModal';
 import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';

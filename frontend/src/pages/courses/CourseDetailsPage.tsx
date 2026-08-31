@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { EnrollButton } from '@/features/enrollment/components/EnrollButton';
 import { useEnrollment } from '@/features/enrollment/hooks/useEnrollment';
 import { WishlistButton } from '@/features/wishlist';

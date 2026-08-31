@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/AuthContext';
 import { completeOnboarding } from '@/features/auth/auth.service';
 import { getErrorMessage } from '@/utils/errorUtils';

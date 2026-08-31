@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { AuthModals } from "@/features/auth";
 import { addToWishlist, removeFromWishlist, checkWishlistStatus } from "../api/wishlist";
-import { toast } from "react-toastify";
+import { toast } from 'sonner';
 
 interface WishlistButtonProps {
   courseId: string;

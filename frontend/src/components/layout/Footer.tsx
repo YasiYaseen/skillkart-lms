@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState, FormEvent } from 'react';
 import { GraduationCapIcon } from '../../assets/icons';
 import Button from '../common/Button';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
 /**
