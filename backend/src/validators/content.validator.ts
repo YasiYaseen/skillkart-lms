@@ -31,13 +31,13 @@ export const updateProfileSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(80).optional(),
   headline: z.string().trim().max(120, "Headline cannot exceed 120 characters").optional(),
   bio: z.string().trim().max(500, "Bio cannot exceed 500 characters").optional(),
-  avatar: z.string().trim().url("Avatar must be a valid URL").optional().or(z.literal("")),
+  avatar: z.string().trim().min(1).optional().or(z.literal("")).nullable(),
   interests: z.array(z.string().trim().max(60)).optional(),
   socialLinks: z
     .object({
-      website: z.string().trim().url("Website must be a valid URL").optional().or(z.literal("")),
-      linkedin: z.string().trim().url("LinkedIn must be a valid URL").optional().or(z.literal("")),
-      twitter: z.string().trim().url("Twitter/X must be a valid URL").optional().or(z.literal("")),
+      website: z.string().trim().max(200).optional().or(z.literal("")).nullable(),
+      linkedin: z.string().trim().max(200).optional().or(z.literal("")).nullable(),
+      twitter: z.string().trim().max(200).optional().or(z.literal("")).nullable(),
     })
     .optional(),
 });

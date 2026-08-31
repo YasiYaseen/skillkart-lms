@@ -153,9 +153,9 @@ export default function CartPage() {
         couponCode: appliedCoupon?.code,
         paymentMethod: paymentForm.method,
         billingDetails: {
-          name: billingName,
-          email: billingEmail,
-          country: billingCountry,
+          name: billingName.trim() || undefined,
+          email: billingEmail.trim() || undefined,
+          country: billingCountry.trim() || undefined,
         },
       });
 

@@ -8,7 +8,7 @@ export interface IOrderItem {
   finalPrice: number;
 }
 
-export type PaymentMethod = "simulated" | "free" | "stripe" | "razorpay" | "paypal";
+export type PaymentMethod = "simulated" | "free" | "stripe" | "razorpay" | "paypal" | "card" | "express" | "upi";
 export type PaymentStatus = "completed" | "pending" | "failed" | "refunded";
 
 export interface IOrder extends Document {
@@ -116,7 +116,7 @@ const OrderSchema = new Schema<IOrder>(
     },
     paymentMethod: {
       type: String,
-      enum: ["simulated", "free", "stripe", "razorpay", "paypal"],
+      enum: ["simulated", "free", "stripe", "razorpay", "paypal", "card", "express", "upi"],
       default: "simulated",
     },
     paymentStatus: {

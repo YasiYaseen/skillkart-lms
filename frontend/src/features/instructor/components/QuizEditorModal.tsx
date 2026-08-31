@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { Modal } from '@/components/common';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 interface Question {
     question: string;
@@ -119,8 +121,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
             setPassingPercentage(60);
             onClose();
         } catch (err: unknown) {
-            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save quiz';
-            toast.error(msg);
+            toast.error(getErrorMessage(err, 'Failed to save quiz'));
         } finally {
             setSaving(false);
         }
@@ -139,7 +140,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                 {/* Passing Percentage */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Passing Percentage (%)
+                        Passing Percentage (%) <span className="text-red-500">*</span>
                     </label>
                     <input
                         type="number"
@@ -156,7 +157,9 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                     {questions.map((q, qIdx) => (
                         <div key={qIdx} className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                             <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-semibold text-gray-800 dark:text-gray-200">Question {qIdx + 1}</h4>
+                                <h4 className="font-semibold text-gray-800 dark:text-gray-200">
+                                    Question {qIdx + 1} <span className="text-red-500">*</span>
+                                </h4>
                                 {questions.length > 1 && (
                                     <button
                                         type="button"
@@ -180,7 +183,7 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
 
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Options (Select correct answer using radio button)
+                                        Options <span className="text-red-500">*</span> (Select correct answer using radio button)
                                     </label>
                                     {q.options.map((opt, oIdx) => (
                                         <div key={oIdx} className="flex items-center gap-2">
@@ -228,7 +231,6 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
                         </div>
                     ))}
                 </div>
-
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button
                         type="button"

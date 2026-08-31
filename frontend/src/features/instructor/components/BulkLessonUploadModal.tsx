@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { XMarkIcon, PlusIcon, TrashIcon, ArrowUpTrayIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
 import { api } from "@/lib/api";
+import { getErrorMessage } from "@/utils/errorUtils";
 
 export interface BulkLessonDraft {
   title: string;
@@ -59,36 +60,35 @@ export function BulkLessonUploadModal({
     const lines = csvText
       .split("\n")
       .map((l) => l.trim())
-      .filter(Boolean);
+      .filter((l) => l.length > 0);
+
     if (lines.length === 0) {
-      toast.error("Please paste CSV data first");
+      toast.warn("CSV input is empty");
       return;
     }
 
     const parsed: BulkLessonDraft[] = [];
     for (const line of lines) {
       const parts = line.split(",").map((p) => p.trim());
-      const title = parts[0] || "";
-      if (!title) continue;
+      if (parts.length >= 1 && parts[0]) {
+        const title = parts[0];
+        const typeRaw = parts[1]?.toLowerCase() as "video" | "text" | "quiz" | "pdf" | "link";
+        const type = ["video", "text", "quiz", "pdf", "link"].includes(typeRaw) ? typeRaw : "video";
+        const durationMinutes = Number(parts[2]) > 0 ? Number(parts[2]) : 10;
+        const isPreview = parts[3]?.toLowerCase() === "true";
 
-      const rawType = (parts[1] || "video").toLowerCase();
-      const type: BulkLessonDraft["type"] = ["video", "text", "quiz", "pdf", "link"].includes(rawType)
-        ? (rawType as BulkLessonDraft["type"])
-        : "video";
-      const durationMinutes = parseInt(parts[2], 10) || 10;
-      const isPreview = parts[3] === "true" || parts[3] === "1" || parts[3] === "yes";
-
-      parsed.push({
-        title,
-        type,
-        durationMinutes,
-        isPreview,
-        isMandatory: true,
-      });
+        parsed.push({
+          title,
+          type,
+          durationMinutes,
+          isPreview,
+          isMandatory: true,
+        });
+      }
     }
 
     if (parsed.length === 0) {
-      toast.error("Could not parse any valid lessons from CSV input");
+      toast.warn("Could not parse any lessons from CSV format");
       return;
     }
 
@@ -116,8 +116,7 @@ export function BulkLessonUploadModal({
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
-      const errorMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(errorMsg || "Failed to bulk upload lessons");
+      toast.error(getErrorMessage(err, "Failed to bulk upload lessons"));
     } finally {
       setSubmitting(false);
     }
@@ -150,25 +149,26 @@ export function BulkLessonUploadModal({
           <button
             type="button"
             onClick={() => setMode("table")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors ${
               mode === "table"
-                ? "bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300"
+                ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             }`}
           >
-            Table Editor
+            <DocumentTextIcon className="w-4 h-4" />
+            Table Entry
           </button>
           <button
             type="button"
             onClick={() => setMode("csv")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors ${
               mode === "csv"
-                ? "bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300"
+                ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             }`}
           >
-            <DocumentTextIcon className="w-4 h-4 inline-block mr-1" />
-            CSV / Plain Text Paste
+            <ArrowUpTrayIcon className="w-4 h-4" />
+            CSV Quick Paste
           </button>
         </div>
 
@@ -206,7 +206,9 @@ export function BulkLessonUploadModal({
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 font-semibold">
                       <th className="py-2 px-2">#</th>
-                      <th className="py-2 px-2 min-w-[200px]">Lesson Title</th>
+                      <th className="py-2 px-2 min-w-[200px]">
+                        Lesson Title <span className="text-red-500">*</span>
+                      </th>
                       <th className="py-2 px-2 min-w-[110px]">Type</th>
                       <th className="py-2 px-2 min-w-[90px]">Duration (m)</th>
                       <th className="py-2 px-2 text-center">Preview?</th>

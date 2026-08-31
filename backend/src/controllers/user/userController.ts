@@ -40,7 +40,7 @@ export async function updateProfile(req: Request, res: Response) {
     if (name !== undefined) user.name = name;
     if (headline !== undefined) user.headline = headline;
     if (bio !== undefined) user.bio = bio;
-    if (avatar !== undefined) user.avatar = avatar;
+    if (avatar !== undefined) user.avatar = avatar || undefined;
     if (interests !== undefined) user.interests = interests;
     if (socialLinks !== undefined) {
       user.socialLinks = {

@@ -50,7 +50,7 @@ export async function validateCouponCode(
 export async function processCheckout(payload: {
   courseIds: string[];
   couponCode?: string;
-  paymentMethod: 'simulated' | 'free' | 'stripe' | 'razorpay' | 'paypal';
+  paymentMethod: 'simulated' | 'free' | 'stripe' | 'razorpay' | 'paypal' | 'card' | 'express' | 'upi';
   billingDetails?: {
     name?: string;
     email?: string;

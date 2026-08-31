@@ -17,7 +17,7 @@ export const createAssignmentSchema = z.object({
   sectionId: z.string().optional(),
   rubric: z.array(rubricCriterionSchema).optional().default([]),
   maxScore: z.number().min(1).default(100),
-  dueDate: z.string().datetime().optional().nullable(),
+  dueDate: z.string().datetime().optional().nullable().or(z.literal("")),
   attachments: z.array(attachmentSchema).optional().default([]),
 });
 

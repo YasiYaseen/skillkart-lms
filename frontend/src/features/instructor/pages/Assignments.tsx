@@ -13,6 +13,7 @@ import {
   type RubricCriterion,
 } from '../api/assignments';
 import FileUpload from '@/components/common/FileUpload';
+import { getErrorMessage } from '@/utils/errorUtils';
 import {
   ClipboardDocumentListIcon,
   DocumentCheckIcon,
@@ -210,8 +211,7 @@ export function Assignments() {
       }
       setShowAssignmentModal(false);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save assignment';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Failed to save assignment'));
     } finally {
       setSavingAssignment(false);
     }
@@ -224,8 +224,7 @@ export function Assignments() {
       setAssignments((prev) => prev.filter((a) => a._id !== assignmentId));
       toast.success('Assignment deleted.');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete assignment';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Failed to delete assignment'));
     }
   };
 
@@ -276,8 +275,7 @@ export function Assignments() {
       setSelectedSubmission(null);
       toast.success('Submission graded successfully!');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to submit grade';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Failed to submit grade'));
     } finally {
       setSavingGrade(false);
     }
@@ -606,7 +604,7 @@ export function Assignments() {
             <form onSubmit={handleSaveAssignment} className="space-y-3.5 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Assignment Title *
+                  Assignment Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -620,7 +618,7 @@ export function Assignments() {
 
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Short Description *
+                  Short Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   rows={2}
