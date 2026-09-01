@@ -4,6 +4,7 @@ import { GraduationCapIcon } from '@assets/icons';
 import Button from '@components/common/Button';
 import NotificationBell from '@components/common/NotificationBell';
 import ThemeToggle from '@components/common/ThemeToggle';
+import UserDropdown from '@components/common/UserDropdown';
 import { AuthModals } from '@features/auth';
 import { useAuth } from '@features/auth/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -225,22 +226,10 @@ function Header() {
                 Create Account
               </Button>
             ) : (
-              <>
-                <div className="flex items-center gap-4 mr-4">
-                  <NotificationBell />
-                  <Link to="/profile" className="text-sm font-medium hover:text-blue-600 transition-colors">
-                    {user.name}
-                  </Link>
-                </div>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </Button>
-              </>
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                <UserDropdown />
+              </div>
             )}
           </div>
 
