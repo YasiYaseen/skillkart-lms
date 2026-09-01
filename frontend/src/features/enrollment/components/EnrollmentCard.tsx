@@ -47,7 +47,7 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
     : undefined;
 
   const completionDate = enrollment.completedAt || enrollment.updatedAt || enrollment.createdAt;
-  const targetUrl = lessonId ? `/courses/${c._id}/lessons/${lessonId}` : `/courses/${c._id}`;
+  const targetUrl = lessonId ? `/learn/${c._id}/${lessonId}` : `/learn/${c._id}`;
 
   return (
     <>

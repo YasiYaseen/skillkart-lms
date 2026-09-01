@@ -377,7 +377,7 @@ export default function NotesAndBookmarksPage() {
                           <p className="text-[10px] text-slate-400 truncate">{c?.title || 'Course'}</p>
                         </div>
                         <Link
-                          to={`/courses/${c?._id || b.course}`}
+                          to={b.lesson?._id ? `/learn/${c?._id || b.course}/${b.lesson._id}` : `/learn/${c?._id || b.course}`}
                           className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-semibold shrink-0"
                         >
                           Study →
@@ -478,7 +478,7 @@ export default function NotesAndBookmarksPage() {
                         </div>
 
                         <Link
-                          to={`/courses/${c?._id || b.course}`}
+                          to={b.lesson?._id ? `/learn/${c?._id || b.course}/${b.lesson._id}` : `/learn/${c?._id || b.course}`}
                           className="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-md text-center shadow-2xs transition-colors"
                         >
                           Open Lesson Video →
@@ -582,7 +582,7 @@ export default function NotesAndBookmarksPage() {
 
                     {typeof activeSelectedNote.course === 'object' && activeSelectedNote.course && (
                       <Link
-                        to={`/courses/${activeSelectedNote.course._id}`}
+                        to={typeof activeSelectedNote.lesson === 'object' && activeSelectedNote.lesson?._id ? `/learn/${activeSelectedNote.course._id}/${activeSelectedNote.lesson._id}` : `/learn/${activeSelectedNote.course._id}`}
                         className="text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 text-xs"
                       >
                         <span>Jump to Lesson Video</span>
