@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { GraduationCapIcon } from '@assets/icons';
 import { useAuth } from '@/features/auth/AuthContext';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import UserDropdown from '@/components/common/UserDropdown';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 // Sidebar nav items
 const NAV_ITEMS = [
@@ -92,9 +94,44 @@ const NAV_ITEMS = [
 export function InstructorLayout() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { logout } = useAuth();
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+    // Auto close drawer on route change
+    useEffect(() => {
+        setMobileDrawerOpen(false);
+    }, [location.pathname]);
+
+    // Handle ESC key and resize
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setMobileDrawerOpen(false);
+        };
+        const handleResize = () => {
+            if (window.innerWidth >= 768) setMobileDrawerOpen(false);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    // Prevent body scroll when drawer is open
+    useEffect(() => {
+        if (mobileDrawerOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [mobileDrawerOpen]);
 
     const handleLogout = () => {
+        setMobileDrawerOpen(false);
         logout();
         navigate('/');
     };
@@ -102,15 +139,32 @@ export function InstructorLayout() {
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
             {/* Top Header */}
-            <header className="h-16 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 bg-white dark:bg-gray-900 sticky top-0 z-50 transition-colors">
-                <Link to="/" className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
-                    <span className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-xs">
-                        <GraduationCapIcon className="w-[18px] h-[18px] text-white" />
-                    </span>
-                    SkillKart
-                </Link>
-
+            <header className="h-16 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 sm:px-6 bg-white dark:bg-gray-900 sticky top-0 z-40 transition-colors">
                 <div className="flex items-center gap-3">
+                    {/* Mobile Hamburger Button */}
+                    <button
+                        type="button"
+                        onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
+                        className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-hidden cursor-pointer"
+                        aria-label="Toggle instructor menu"
+                        aria-expanded={mobileDrawerOpen}
+                    >
+                        {mobileDrawerOpen ? (
+                            <XMarkIcon className="w-6 h-6" />
+                        ) : (
+                            <Bars3Icon className="w-6 h-6" />
+                        )}
+                    </button>
+
+                    <Link to="/" className="flex items-center gap-2 text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                        <span className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-xs">
+                            <GraduationCapIcon className="w-[18px] h-[18px] text-white" />
+                        </span>
+                        <span>SkillKart <span className="text-blue-600 dark:text-blue-400">Instructor</span></span>
+                    </Link>
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-3">
                     <ThemeToggle />
                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hidden sm:inline-block">
                         Instructor Studio
@@ -122,9 +176,9 @@ export function InstructorLayout() {
                 </div>
             </header>
 
-            <div className="flex flex-1">
-                {/* Sidebar */}
-                <aside className="w-56 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 hidden md:flex flex-col justify-between transition-colors">
+            <div className="flex flex-1 relative">
+                {/* Desktop Sidebar (Visible on md and above) */}
+                <aside className="w-56 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 hidden md:flex flex-col justify-between transition-colors sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
                     <nav className="py-6 space-y-1">
                         {NAV_ITEMS.map((item) => {
                             const isActive = location.pathname === item.path;
@@ -169,8 +223,86 @@ export function InstructorLayout() {
                     </div>
                 </aside>
 
+                {/* Mobile Slide-Over Drawer Navigation */}
+                {mobileDrawerOpen && (
+                    <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true">
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+                            onClick={() => setMobileDrawerOpen(false)}
+                        />
+
+                        {/* Slide-out Drawer */}
+                        <div className="fixed inset-y-0 left-0 w-72 max-w-[80vw] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-left duration-250 z-10">
+                            <div>
+                                <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white">
+                                            <GraduationCapIcon className="w-4 h-4" />
+                                        </span>
+                                        <span className="font-bold text-base text-gray-900 dark:text-white">Instructor Studio</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileDrawerOpen(false)}
+                                        className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                        aria-label="Close instructor menu"
+                                    >
+                                        <XMarkIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <nav className="py-3 space-y-1">
+                                    {NAV_ITEMS.map((item) => {
+                                        const isActive = location.pathname === item.path;
+                                        return (
+                                            <Link
+                                                key={item.path}
+                                                to={item.path}
+                                                onClick={() => setMobileDrawerOpen(false)}
+                                                className={`
+                                                    flex items-center gap-3 px-5 py-3 text-sm font-medium transition-all border-l-3
+                                                    ${isActive
+                                                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 border-blue-600 dark:border-blue-500 font-semibold'
+                                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 border-transparent'
+                                                    }
+                                                `}
+                                            >
+                                                {item.icon}
+                                                <span>{item.label}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </nav>
+                            </div>
+
+                            <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-2 bg-gray-50/50 dark:bg-gray-900/50">
+                                <Link
+                                    to="/"
+                                    onClick={() => setMobileDrawerOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                                    </svg>
+                                    Back to Site
+                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                                    </svg>
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Main Content */}
-                <main className="flex-1 p-6 md:p-8 bg-gray-50 dark:bg-gray-950 overflow-auto transition-colors">
+                <main className="flex-1 p-4 sm:p-6 md:p-8 bg-gray-50 dark:bg-gray-950 overflow-x-auto min-w-0 transition-colors">
                     <Outlet />
                 </main>
             </div>
@@ -192,3 +324,4 @@ export function InstructorLayout() {
 }
 
 export default InstructorLayout;
+
