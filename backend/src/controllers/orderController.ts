@@ -4,6 +4,7 @@ import Order, { type IOrderItem } from "../models/Order";
 import Course from "../models/Course";
 import Coupon, { type ICoupon } from "../models/Coupon";
 import Enrollment from "../models/Enrollment";
+import Cart from "../models/Cart";
 import Notification from "../models/Notification";
 import SystemSettings from "../models/SystemSettings";
 import { PaymentService } from "../services/paymentService";
@@ -285,6 +286,12 @@ export async function checkout(req: Request, res: Response) {
       )
     );
     await Promise.all(enrollmentPromises);
+
+    // Clear user's shopping cart in database
+    await Cart.findOneAndUpdate(
+      { student: userId },
+      { $set: { items: [] } }
+    ).catch(() => {});
 
     // Trigger confirmation notification
     setImmediate(async () => {

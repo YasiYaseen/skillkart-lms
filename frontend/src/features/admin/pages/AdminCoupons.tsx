@@ -72,7 +72,7 @@ export function AdminCoupons() {
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
-      toast.warn('Please enter a coupon code (e.g. WELCOME15)');
+      toast.warning('Please enter a coupon code (e.g. WELCOME15)');
       return;
     }
 

@@ -8,6 +8,7 @@ export { default as Select } from '@components/common/Select';
 export { default as FileUpload } from '@components/common/FileUpload';
 export { default as ProtectedRoute } from '@components/common/ProtectedRoute';
 export { default as Pagination } from '@components/common/Pagination';
+export { default as UserDropdown } from '@components/common/UserDropdown';
 export { MarkdownRenderer } from '@components/common/MarkdownRenderer';
 export { BrandLogo } from '@components/common/BrandLogo';
 export type { Course } from '@components/common/CourseCard';

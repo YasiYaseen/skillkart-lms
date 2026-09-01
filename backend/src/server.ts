@@ -22,6 +22,7 @@ import couponRoutes from "./routes/couponRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import newsletterRoutes from "./routes/newsletterRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
+import cartRoutes from "./routes/cartRoutes";
 
 import path from "path";
 
@@ -63,6 +64,7 @@ app.use("/api/assignments", assignmentRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/newsletter", newsletterRoutes);
+app.use("/api/cart", cartRoutes);
 
 import { getPublicSettings } from "./controllers/admin/adminSettingsController";
 app.get("/api/settings/public", getPublicSettings);

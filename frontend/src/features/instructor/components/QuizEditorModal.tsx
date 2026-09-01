@@ -87,22 +87,22 @@ export function QuizEditorModal({ isOpen, onClose, lessonId }: QuizEditorModalPr
 
         // Validation
         if (questions.length === 0) {
-            toast.warn('Add at least one question');
+            toast.warning('Add at least one question');
             return;
         }
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
             if (!q.question.trim()) {
-                toast.warn(`Question ${i + 1} is empty`);
+                toast.warning(`Question ${i + 1} is empty`);
                 return;
             }
             if (q.options.length < 2) {
-                toast.warn(`Question ${i + 1} needs at least 2 options`);
+                toast.warning(`Question ${i + 1} needs at least 2 options`);
                 return;
             }
             for (let j = 0; j < q.options.length; j++) {
                 if (!q.options[j].trim()) {
-                    toast.warn(`Option ${j + 1} in Question ${i + 1} is empty`);
+                    toast.warning(`Option ${j + 1} in Question ${i + 1} is empty`);
                     return;
                 }
             }

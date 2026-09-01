@@ -170,7 +170,7 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
-      toast.warn('Your cart is empty');
+      toast.warning('Your cart is empty');
       return;
     }
 

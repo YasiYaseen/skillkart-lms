@@ -35,6 +35,7 @@ function Profile() {
     const [interestInput, setInterestInput] = useState('');
     const [socialLinks, setSocialLinks] = useState({ website: '', linkedin: '', twitter: '' });
     const [streakData, setStreakData] = useState<{ currentStreak: number; longestStreak: number; totalActiveDays: number } | null>(null);
+    const [memberSince, setMemberSince] = useState('');
 
     // Password change state
     const [currentPassword, setCurrentPassword] = useState('');
@@ -66,6 +67,13 @@ function Profile() {
                     twitter: userData.socialLinks?.twitter || '',
                 });
 
+                if (userData.createdAt) {
+                    const d = new Date(userData.createdAt);
+                    if (!isNaN(d.getTime())) {
+                        setMemberSince(d.toLocaleDateString(undefined, { year: 'numeric', month: 'short' }));
+                    }
+                }
+
                 if (streakRes.data) {
                     setStreakData({
                         currentStreak: streakRes.data.currentStreak || 0,
@@ -82,6 +90,8 @@ function Profile() {
 
         fetchProfile();
     }, []);
+
+    const currentStreak = streakData?.currentStreak || 0;
 
     const handleAddInterest = (item: string) => {
         const trimmed = item.trim();

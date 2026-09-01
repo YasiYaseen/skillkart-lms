@@ -183,7 +183,7 @@ export function EarningsAndPayouts() {
 
   const handleOpenPayoutModal = () => {
     if (!data || data.summary.availableBalance < 50) {
-      toast.warn(`Minimum withdrawal amount is ${formatAmount(50)}`);
+      toast.warning(`Minimum withdrawal amount is ${formatAmount(50)}`);
       return;
     }
     setWithdrawAmount(data.summary.availableBalance.toFixed(2));

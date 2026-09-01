@@ -85,7 +85,7 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
   const handleSubmit = async () => {
     if (!quiz) return;
     if (selectedAnswers.some((a) => a === -1)) {
-      toast.warn('Please answer all questions before submitting');
+      toast.warning('Please answer all questions before submitting');
       return;
     }
     setSubmitting(true);
