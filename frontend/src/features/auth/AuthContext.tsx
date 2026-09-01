@@ -30,9 +30,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return null;
+    try {
+      return JSON.parse(storedUser) as User;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const handleAuthExpired = () => {
@@ -44,36 +52,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     if (storedToken && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser) as User;
-        setToken(storedToken);
-        setUser(parsedUser);
-
-        getOnboardingStatusApi()
-          .then((res) => {
-            const serverUser = res.data?.user as User | undefined;
-            if (!serverUser) return;
-            setUser(serverUser);
-            localStorage.setItem('user', JSON.stringify(serverUser));
-          })
-          .catch(() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setToken(null);
-            setUser(null);
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
-      } catch {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setToken(null);
-        setUser(null);
-        setIsLoading(false);
-      }
-    } else {
-      setIsLoading(false);
+      getOnboardingStatusApi()
+        .then((res) => {
+          const serverUser = res.data?.user as User | undefined;
+          if (!serverUser) return;
+          setUser(serverUser);
+          localStorage.setItem('user', JSON.stringify(serverUser));
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setToken(null);
+          setUser(null);
+        });
     }
 
     return () => {
