@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button, Input, Modal } from '@/components/common';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { GoogleIcon } from '@/assets/icons';
 import { toast } from 'sonner';
@@ -13,9 +13,11 @@ interface AuthModalsProps {
     isOpen: boolean;
     initialMode: 'login' | 'register' | 'forgot';
     onClose: () => void;
+    redirectTo?: string | null;
+    onSuccess?: (user: AuthUser) => void;
 }
 
-function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
+function AuthModals({ isOpen, initialMode, onClose, redirectTo, onSuccess }: AuthModalsProps) {
     const { login } = useAuth();
     const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
     const [name, setName] = useState('');
@@ -24,6 +26,7 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
     const [loading, setLoading] = useState(false);
     const [forgotSuccess, setForgotSuccess] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     // Reset mode when opening modal
     useEffect(() => {
@@ -48,15 +51,24 @@ function AuthModals({ isOpen, initialMode, onClose }: AuthModalsProps) {
         }
 
         onClose();
+        if (onSuccess) {
+            onSuccess(currentUser);
+        }
+
         if (!currentUser.onboardingCompleted) {
-            navigate('/onboarding');
+            const currentPath = location.pathname + location.search;
+            const redirectParam = currentPath && currentPath !== '/' && currentPath !== '/onboarding'
+                ? `?redirect=${encodeURIComponent(currentPath)}`
+                : '';
+            navigate(`/onboarding${redirectParam}`);
         } else if (currentUser.role === 'admin') {
             navigate('/admin');
         } else if (currentUser.role === 'instructor') {
             navigate('/instructor');
-        } else {
-            navigate('/');
+        } else if (redirectTo !== undefined) {
+            if (redirectTo) navigate(redirectTo);
         }
+        // If regular user with no redirectTo specified, stay on current page
     };
 
     const googleLoginBtn = useGoogleLogin({

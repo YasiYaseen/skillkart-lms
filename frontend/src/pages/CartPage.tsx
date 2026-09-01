@@ -35,11 +35,11 @@ export default function CartPage() {
 
   // Auth modal state for unauthenticated guest checkout
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
 
   // Step state: 'items' | 'payment' | 'success'
   const [currentStep, setCurrentStep] = useState<'items' | 'payment'>(
-    searchParams.get('step') === 'payment' ? 'payment' : 'items'
+    searchParams.get('step') === 'payment' && user ? 'payment' : 'items'
   );
 
   // Coupon state
@@ -168,6 +168,28 @@ export default function CartPage() {
     }
   };
 
+  const handleProceedToPayment = () => {
+    if (cart.length === 0) {
+      toast.warning('Your cart is empty');
+      return;
+    }
+
+    if (!user) {
+      setAuthModalMode('register');
+      setShowAuthModal(true);
+      return;
+    }
+
+    setCurrentStep('payment');
+  };
+
+  const handleAuthModalSuccess = (authenticatedUser: { name?: string; email?: string }) => {
+    setShowAuthModal(false);
+    if (authenticatedUser.name) setBillingName(authenticatedUser.name);
+    if (authenticatedUser.email) setBillingEmail(authenticatedUser.email);
+    setCurrentStep('payment');
+  };
+
   const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.warning('Your cart is empty');
@@ -175,7 +197,7 @@ export default function CartPage() {
     }
 
     if (!user) {
-      setAuthModalMode('signup');
+      setAuthModalMode('register');
       setShowAuthModal(true);
       return;
     }
@@ -318,7 +340,7 @@ export default function CartPage() {
           <div className={`flex-1 h-0.5 mx-4 ${currentStep === 'payment' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
 
           <button
-            onClick={() => setCurrentStep('payment')}
+            onClick={() => handleProceedToPayment()}
             className={`flex items-center gap-2 ${
               currentStep === 'payment'
                 ? 'text-blue-600 dark:text-blue-400 font-extrabold'
@@ -437,11 +459,21 @@ export default function CartPage() {
                     ← Continue exploring more courses
                   </Link>
                   <button
-                    onClick={() => setCurrentStep('payment')}
-                    className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                    onClick={handleProceedToPayment}
+                    className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <span>Proceed to Payment & Billing</span>
-                    <span>→</span>
+                    {!user ? (
+                      <>
+                        <UserIcon className="w-4 h-4" />
+                        <span>Sign in to Proceed to Payment</span>
+                        <span>→</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Proceed to Payment & Billing</span>
+                        <span>→</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -697,12 +729,26 @@ export default function CartPage() {
             </div>
 
             {currentStep === 'items' ? (
-              <button
-                onClick={() => setCurrentStep('payment')}
-                className="w-full py-3.5 bg-blue-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>Proceed to Payment →</span>
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={handleProceedToPayment}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {!user ? (
+                    <span className="flex items-center gap-1.5">
+                      <UserIcon className="w-4 h-4" />
+                      <span>Sign in to Proceed to Payment →</span>
+                    </span>
+                  ) : (
+                    <span>Proceed to Payment →</span>
+                  )}
+                </button>
+                {!user && (
+                  <p className="text-[11px] text-center text-slate-500 dark:text-slate-400">
+                    Sign in or create an account to proceed to payment.
+                  </p>
+                )}
+              </div>
             ) : (
               <div className="space-y-2">
                 <button
@@ -712,20 +758,10 @@ export default function CartPage() {
                 >
                   {checkingOut ? (
                     <span>Authorizing Order...</span>
-                  ) : !user ? (
-                    <span className="flex items-center gap-1.5">
-                      <UserIcon className="w-4 h-4" />
-                      <span>Sign in to Complete Purchase ({formatAmount(finalTotal)})</span>
-                    </span>
                   ) : (
                     <span>Authorize & Complete Purchase ({formatAmount(finalTotal)})</span>
                   )}
                 </button>
-                {!user && (
-                  <p className="text-[11px] text-center text-slate-500 dark:text-slate-400">
-                    You'll be asked to sign in or create an account to activate your courses.
-                  </p>
-                )}
               </div>
             )}
 
@@ -752,6 +788,8 @@ export default function CartPage() {
         <AuthModals
           isOpen={showAuthModal}
           initialMode={authModalMode}
+          redirectTo={null}
+          onSuccess={handleAuthModalSuccess}
           onClose={() => setShowAuthModal(false)}
         />
       )}

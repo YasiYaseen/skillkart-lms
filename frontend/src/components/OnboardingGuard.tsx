@@ -12,8 +12,10 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     if (user.onboardingCompleted) return;
     if (location.pathname === '/onboarding') return;
 
-    navigate('/onboarding', { replace: true });
-  }, [user, token, location.pathname, navigate]);
+    const currentUrl = location.pathname + location.search;
+    const redirectParam = currentUrl && currentUrl !== '/' ? `?redirect=${encodeURIComponent(currentUrl)}` : '';
+    navigate(`/onboarding${redirectParam}`, { replace: true });
+  }, [user, token, location.pathname, location.search, navigate]);
 
   return <>{children}</>;
 }

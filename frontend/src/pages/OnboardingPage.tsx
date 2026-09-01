@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/AuthContext';
 import { completeOnboarding } from '@/features/auth/auth.service';
@@ -33,6 +33,8 @@ interface FormData {
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || '/';
   const { user, token, updateUser } = useAuth();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -51,9 +53,9 @@ export default function OnboardingPage() {
     }
 
     if (user?.onboardingCompleted) {
-      navigate('/', { replace: true });
+      navigate(redirectTarget, { replace: true });
     }
-  }, [token, user, user?.onboardingCompleted, navigate]);
+  }, [token, user, user?.onboardingCompleted, navigate, redirectTarget]);
 
   const firstName = useMemo(() => user?.name?.split(' ')[0] ?? '', [user?.name]);
 
@@ -89,7 +91,7 @@ export default function OnboardingPage() {
         socialLinks: updatedUser.socialLinks,
       });
       toast.success('Welcome to SkillKart!');
-      navigate('/', { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to save onboarding'));
     } finally {
