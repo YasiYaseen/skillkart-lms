@@ -36,7 +36,7 @@ function Footer() {
     };
 
     return (
-        <footer className="footer">
+        <footer className="footer print:hidden">
             <div className="container">
                 <div className="footer-inner">
                     {/* Brand Section */}

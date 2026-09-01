@@ -19,11 +19,17 @@ function Layout({ showFooter }: LayoutProps) {
 
     return (
         <div className="layout">
-            <Header />
+            <div className="print:hidden">
+                <Header />
+            </div>
             <main className="main-content">
                 <Outlet />
             </main>
-            {shouldShowFooter && <Footer />}
+            {shouldShowFooter && (
+                <div className="print:hidden">
+                    <Footer />
+                </div>
+            )}
         </div>
     );
 }

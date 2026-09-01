@@ -120,13 +120,13 @@ function Header() {
   return (
     <>
       {maintenance?.mode && (
-        <div className="bg-rose-600 text-white px-4 py-1.5 text-xs font-semibold text-center flex items-center justify-center gap-1.5 shadow-xs z-50">
+        <div className="bg-rose-600 text-white px-4 py-1.5 text-xs font-semibold text-center flex items-center justify-center gap-1.5 shadow-xs z-50 print:hidden">
           <ExclamationTriangleIcon className="w-4 h-4 text-white shrink-0" />
           <span>{maintenance.message}</span>
         </div>
       )}
 
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors print:hidden">
         <div className="container mx-auto flex items-center justify-between h-16 md:h-18 px-4 sm:px-6 lg:px-8">
 
           {/* Logo */}
@@ -397,7 +397,7 @@ function Header() {
       {/* MOBILE SLIDE-OVER DRAWER MENU (Visible when mobileMenuOpen is true)       */}
       {/* ========================================================================= */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-50 lg:hidden print:hidden" role="dialog" aria-modal="true">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
