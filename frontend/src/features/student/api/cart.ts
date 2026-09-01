@@ -93,3 +93,39 @@ export async function fetchOrderReceipt(orderId: string): Promise<OrderRecord> {
   const res = await api.get(`/orders/${orderId}/receipt`);
   return res.data.order;
 }
+
+// ---------------------------------------------------------------------------
+// Backend Cart Persistence API
+// ---------------------------------------------------------------------------
+export interface ApiCartItem {
+  courseId: string;
+  title: string;
+  price: number;
+  thumbnailUrl?: string;
+  instructorName?: string;
+  addedAt?: string;
+}
+
+export async function fetchBackendCart(): Promise<ApiCartItem[]> {
+  const res = await api.get('/cart');
+  return res.data.items || [];
+}
+
+export async function addToBackendCart(courseId: string): Promise<ApiCartItem[]> {
+  const res = await api.post('/cart/items', { courseId });
+  return res.data.items || [];
+}
+
+export async function removeFromBackendCart(courseId: string): Promise<ApiCartItem[]> {
+  const res = await api.delete(`/cart/items/${courseId}`);
+  return res.data.items || [];
+}
+
+export async function clearBackendCart(): Promise<void> {
+  await api.delete('/cart');
+}
+
+export async function mergeBackendCart(courseIds: string[]): Promise<ApiCartItem[]> {
+  const res = await api.post('/cart/merge', { courseIds });
+  return res.data.items || [];
+}
