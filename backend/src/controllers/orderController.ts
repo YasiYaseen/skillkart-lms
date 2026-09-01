@@ -5,6 +5,7 @@ import Course from "../models/Course";
 import Coupon, { type ICoupon } from "../models/Coupon";
 import Enrollment from "../models/Enrollment";
 import Cart from "../models/Cart";
+import Wishlist from "../models/Wishlist";
 import Notification from "../models/Notification";
 import SystemSettings from "../models/SystemSettings";
 import { PaymentService } from "../services/paymentService";
@@ -292,6 +293,12 @@ export async function checkout(req: Request, res: Response) {
       { student: userId },
       { $set: { items: [] } }
     ).catch(() => {});
+
+    // Clear purchased courses from user's wishlist in database
+    await Wishlist.deleteMany({
+      student: userId,
+      course: { $in: courses.map((c) => c._id) },
+    }).catch(() => {});
 
     // Trigger confirmation notification
     setImmediate(async () => {

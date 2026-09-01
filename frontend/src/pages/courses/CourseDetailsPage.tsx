@@ -800,13 +800,22 @@ function CourseDetailsSkeleton() {
                                 </div>
 
                                 <div className="p-5 sm:p-6">
-                                    {/* Price */}
+                                    {/* Price / Enrolled Status */}
                                     <div className="flex items-center gap-3 mb-5">
-                                        <span className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
-                                            {formatPrice(course.price)}
-                                        </span>
-                                        {course.oldPrice && (
-                                            <span className="text-sm text-slate-400 line-through">{formatAmount(course.oldPrice)}</span>
+                                        {isEnrolled ? (
+                                            <span className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                                                <CheckCircleIcon className="w-6 h-6" />
+                                                <span>Enrolled</span>
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <span className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+                                                    {formatPrice(course.price)}
+                                                </span>
+                                                {course.oldPrice && (
+                                                    <span className="text-sm text-slate-400 line-through">{formatAmount(course.oldPrice)}</span>
+                                                )}
+                                            </>
                                         )}
                                     </div>
 
@@ -884,13 +893,13 @@ function CourseDetailsSkeleton() {
                                                 </button>
                                             )
                                         )}
-                                        {courseId && (
+                                        {courseId && !isEnrolled && (
                                             <WishlistButton courseId={courseId} variant="button" />
                                         )}
 
                                         <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 pt-2">
                                             <ShieldCheckIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                            <span>30-Day Money-Back Guarantee &bull; Lifetime Access</span>
+                                            <span>{isEnrolled ? 'Lifetime Access & Certificate Included' : '30-Day Money-Back Guarantee • Lifetime Access'}</span>
                                         </div>
                                     </div>
 

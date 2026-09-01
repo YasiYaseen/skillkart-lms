@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/utils/errorUtils';
 import {
   fetchBackendCart,
   addToBackendCart,
@@ -167,7 +169,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCart(deduplicateCartItems(serverItems));
         }
       } catch (err) {
-        console.error('Failed to sync added cart item to backend:', err);
+        // Rollback optimistic update
+        setCart((prev) => prev.filter((i) => i.courseId !== item.courseId));
+        toast.error(getErrorMessage(err, 'Failed to add course to cart'));
       }
     }
   };

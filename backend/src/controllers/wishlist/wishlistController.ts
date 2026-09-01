@@ -38,8 +38,30 @@ export async function getWishlist(req: Request, res: Response) {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Filter out any courses that may have been deleted or are unapproved
-    const validItems = items.filter((item) => item.course != null);
+    // Check existing enrollments to exclude any courses the student already owns
+    const enrollments = await Enrollment.find({
+      student: req.user.id,
+      status: { $in: ["active", "completed"] },
+    }).select("course").lean();
+
+    const enrolledCourseIds = new Set(enrollments.map((e) => e.course.toString()));
+
+    // Filter out deleted courses and already enrolled courses
+    const validItems = items.filter(
+      (item) => item.course != null && !enrolledCourseIds.has(item.course._id.toString())
+    );
+
+    // Clean up any stale wishlist entries for enrolled courses
+    const staleWishlistCourseIds = items
+      .filter((item) => item.course != null && enrolledCourseIds.has(item.course._id.toString()))
+      .map((item) => item.course._id);
+
+    if (staleWishlistCourseIds.length > 0) {
+      Wishlist.deleteMany({
+        student: req.user.id,
+        course: { $in: staleWishlistCourseIds },
+      }).catch(() => {});
+    }
 
     interface PopulatedWishlistItem {
       _id: Types.ObjectId;
@@ -108,6 +130,16 @@ export async function addToWishlist(req: Request, res: Response) {
 
     if (course.status !== "published" || course.isActive === false || course.isApproved === false) {
       return res.status(400).json({ message: "Cannot wishlist unavailable course" });
+    }
+
+    // Check if user is already enrolled
+    const isEnrolled = await Enrollment.exists({
+      student: req.user.id,
+      course: course._id,
+      status: { $in: ["active", "completed"] },
+    });
+    if (isEnrolled) {
+      return res.status(400).json({ message: "You are already enrolled in this course." });
     }
 
     const wishlistItem = await Wishlist.findOneAndUpdate(

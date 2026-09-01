@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { api } from '@/lib/api';
+import { enrollmentService } from '@/features/enrollment/services/enrollmentService';
 import { Course } from '@/components/common/CourseCard';
 import { SearchBar } from '@/components/common';
 import ContinueLearningShelf from '../components/ContinueLearningShelf';
@@ -87,6 +88,26 @@ export function LearnerHome() {
     const [searchQuery, setSearchQuery] = useState('');
     const [feed, setFeed] = useState<DiscoveryFeedData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        if (user) {
+            enrollmentService.getMyEnrollments({ limit: 500 })
+                .then((res) => {
+                    const enrollments = res.data?.data || res.data?.enrollments || res.data || [];
+                    const ids = new Set<string>();
+                    for (const item of (Array.isArray(enrollments) ? enrollments : [])) {
+                        const courseObj = item.course || item;
+                        const cId = typeof courseObj === 'object' ? (courseObj._id || courseObj.id) : courseObj;
+                        if (cId) ids.add(String(cId));
+                    }
+                    setEnrolledCourseIds(ids);
+                })
+                .catch(() => {});
+        } else {
+            setEnrolledCourseIds(new Set());
+        }
+    }, [user]);
 
     useEffect(() => {
         api.get<DiscoveryFeedData>('/courses/discovery-feed')
@@ -107,10 +128,15 @@ export function LearnerHome() {
     };
 
     const greeting = getTimeOfDayGreeting();
-    const trendingCourses = (feed?.trending || []).map(mapRawCourse);
-    const topRatedCourses = (feed?.topRated || []).map(mapRawCourse);
-    const freeCourses = (feed?.freeStarters || []).map(mapRawCourse);
-    const newCourses = (feed?.newReleases || []).map(mapRawCourse);
+    const mapWithEnrollment = (c: RawApiCourse) => ({
+        ...mapRawCourse(c),
+        isEnrolled: enrolledCourseIds.has(String(c._id)),
+    });
+
+    const trendingCourses = (feed?.trending || []).map(mapWithEnrollment);
+    const topRatedCourses = (feed?.topRated || []).map(mapWithEnrollment);
+    const freeCourses = (feed?.freeStarters || []).map(mapWithEnrollment);
+    const newCourses = (feed?.newReleases || []).map(mapWithEnrollment);
 
     return (
         <div className="container py-8 space-y-10">

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { SearchBar, CourseCard, Button, Course } from '../../components/common';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
+import { enrollmentService } from '@/features/enrollment/services/enrollmentService';
 import CourseRecommendations from '@/components/course/CourseRecommendations';
 import RecentlyViewedCourses from '@/components/course/RecentlyViewedCourses';
 import {
@@ -145,6 +146,29 @@ function CourseList() {
     const [activeCategoryInfo, setActiveCategoryInfo] = useState<CategoryInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(9);
+    const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
+
+    // Fetch enrolled courses for authenticated user
+    useEffect(() => {
+        if (user) {
+            enrollmentService.getMyEnrollments({ limit: 500 })
+                .then((res) => {
+                    const enrollments = res.data?.data || res.data?.enrollments || res.data || [];
+                    const ids = new Set<string>();
+                    for (const item of (Array.isArray(enrollments) ? enrollments : [])) {
+                        const courseObj = item.course || item;
+                        const cId = typeof courseObj === 'object' ? (courseObj._id || courseObj.id) : courseObj;
+                        if (cId) ids.add(String(cId));
+                    }
+                    setEnrolledCourseIds(ids);
+                })
+                .catch(() => {
+                    setEnrolledCourseIds(new Set());
+                });
+        } else {
+            setEnrolledCourseIds(new Set());
+        }
+    }, [user]);
 
     // Fetch categories with live stats
     useEffect(() => {
@@ -817,66 +841,92 @@ function CourseList() {
                     ) : viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                             {displayedCourses.map((course) => (
-                                <CourseCard key={course.id} course={course} />
+                                <CourseCard
+                                    key={course.id}
+                                    course={course}
+                                    isEnrolled={enrolledCourseIds.has(String(course.id))}
+                                />
                             ))}
                         </div>
                     ) : (
                         // List View Mode
                         <div className="space-y-3">
-                            {displayedCourses.map((course) => (
-                                <div
-                                    key={course.id}
-                                    className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col sm:flex-row gap-4 items-center group"
-                                >
-                                    <div className="w-full sm:w-48 aspect-16/10 rounded-lg overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800">
-                                        <img
-                                            src={course.thumbnail}
-                                            alt={course.title}
-                                            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                                        />
-                                    </div>
-                                    <div className="flex-1 space-y-1.5 w-full">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
-                                                {course.level}
-                                            </span>
-                                            {course.rating > 0 && (
-                                                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                                                    <StarIcon className="w-3.5 h-3.5" />
-                                                    <span>{course.rating.toFixed(1)}</span>
-                                                    <span className="text-slate-400 font-normal">({course.reviewCount})</span>
-                                                </span>
+                            {displayedCourses.map((course) => {
+                                const isEnrolled = enrolledCourseIds.has(String(course.id));
+                                return (
+                                    <div
+                                        key={course.id}
+                                        className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col sm:flex-row gap-4 items-center group"
+                                    >
+                                        <div className="w-full sm:w-48 aspect-16/10 rounded-lg overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800 relative">
+                                            <img
+                                                src={course.thumbnail}
+                                                alt={course.title}
+                                                className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                                            />
+                                            {isEnrolled && (
+                                                <div className="absolute top-2 left-2 z-10">
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-600 text-white shadow-2xs flex items-center gap-1">
+                                                        <CheckIcon className="w-3 h-3" />
+                                                        <span>Enrolled</span>
+                                                    </span>
+                                                </div>
                                             )}
                                         </div>
-                                        <h3 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                            <Link to={`/courses/${course.id}`}>{course.title}</Link>
-                                        </h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            {course.instructor}
-                                        </p>
-                                        <div className="flex flex-wrap gap-1 pt-1">
-                                            {course.tags.slice(0, 4).map((t) => (
-                                                <span key={t} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                                    {t}
+                                        <div className="flex-1 space-y-1.5 w-full">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
+                                                    {course.level}
                                                 </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="sm:border-l sm:border-slate-100 sm:dark:border-slate-800 sm:pl-4 flex sm:flex-col justify-between sm:justify-center items-end gap-2.5 w-full sm:w-auto shrink-0">
-                                        <div className="text-right">
-                                            <p className="text-base font-bold text-slate-900 dark:text-white">
-                                                {course.price === 0 ? 'Free' : `$${course.price.toFixed(2)}`}
+                                                {course.rating > 0 && (
+                                                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                                        <StarIcon className="w-3.5 h-3.5" />
+                                                        <span>{course.rating.toFixed(1)}</span>
+                                                        <span className="text-slate-400 font-normal">({course.reviewCount})</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h3 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                <Link to={`/courses/${course.id}`}>{course.title}</Link>
+                                            </h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                {course.instructor}
                                             </p>
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                                {course.tags.slice(0, 4).map((t) => (
+                                                    <span key={t} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                                        {t}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <Link
-                                            to={`/courses/${course.id}`}
-                                            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition-colors shadow-2xs"
-                                        >
-                                            View Course
-                                        </Link>
+                                        <div className="sm:border-l sm:border-slate-100 sm:dark:border-slate-800 sm:pl-4 flex sm:flex-col justify-between sm:justify-center items-end gap-2.5 w-full sm:w-auto shrink-0">
+                                            <div className="text-right">
+                                                {isEnrolled ? (
+                                                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                                        <CheckIcon className="w-3.5 h-3.5" />
+                                                        <span>Enrolled</span>
+                                                    </span>
+                                                ) : (
+                                                    <p className="text-base font-bold text-slate-900 dark:text-white">
+                                                        {course.price === 0 ? 'Free' : `$${course.price.toFixed(2)}`}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <Link
+                                                to={`/courses/${course.id}`}
+                                                className={`px-3.5 py-1.5 font-medium text-xs rounded-lg transition-colors shadow-2xs ${
+                                                    isEnrolled
+                                                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                                        : 'bg-blue-600 hover:bg-blue-500 text-white'
+                                                }`}
+                                            >
+                                                {isEnrolled ? 'Continue Learning' : 'View Course'}
+                                            </Link>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 

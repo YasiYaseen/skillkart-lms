@@ -175,7 +175,7 @@ function MarketingLanding() {
 
                     <div className="flex justify-center gap-3 mb-14">
                         <Button size="lg" onClick={() => navigate('/courses')}>Explore Catalog</Button>
-                        <Button size="lg" variant="secondary" onClick={() => navigate('/courses?priceTier=free')}>Free Courses &rarr;</Button>
+                        <Button size="lg" variant="secondary" onClick={() => navigate('/courses?price=free')}>Free Courses &rarr;</Button>
                     </div>
 
                     <div className="space-y-3">

@@ -8,6 +8,7 @@ import LessonProgress from "../../models/LessonProgress";
 import Certificate from "../../models/Certificate";
 import Notification from "../../models/Notification";
 import User from "../../models/User";
+import Wishlist from "../../models/Wishlist";
 import { sendEnrollmentEmail } from "../../services/emailService";
 import { recordUserActivity } from "../../services/streakService";
 import {
@@ -134,6 +135,12 @@ export async function enrollInCourse(req: Request, res: Response) {
     recordUserActivity(req.user.id).catch((err) =>
       console.error("Streak recording on enrollment failed:", err)
     );
+
+    // Clear enrolled course from user's wishlist
+    Wishlist.findOneAndDelete({
+      student: req.user.id,
+      course: course._id,
+    }).catch(() => {});
 
     return res.status(201).json({ message: "Enrolled successfully", enrollment });
   } catch (error) {
