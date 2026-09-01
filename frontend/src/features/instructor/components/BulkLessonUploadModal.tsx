@@ -63,7 +63,7 @@ export function BulkLessonUploadModal({
       .filter((l) => l.length > 0);
 
     if (lines.length === 0) {
-      toast.warn("CSV input is empty");
+      toast.warning("CSV input is empty");
       return;
     }
 
@@ -88,7 +88,7 @@ export function BulkLessonUploadModal({
     }
 
     if (parsed.length === 0) {
-      toast.warn("Could not parse any lessons from CSV format");
+      toast.warning("Could not parse any lessons from CSV format");
       return;
     }
 

@@ -10,7 +10,8 @@ export const AppToaster: React.FC = () => {
       position="bottom-right"
       theme={resolvedTheme}
       closeButton
-      expand={true}
+      expand={false}
+      visibleToasts={5}
       duration={4000}
       gap={12}
       icons={{

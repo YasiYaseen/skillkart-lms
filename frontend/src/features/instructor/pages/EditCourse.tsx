@@ -398,7 +398,7 @@ function EditCourse() {
     const handleAddItem = async (e: React.FormEvent, sectionId: string, lessonId: string) => {
         e.preventDefault();
         if (!newItemContent.trim()) {
-            toast.warn('Content URL or text is required');
+            toast.warning('Content URL or text is required');
             return;
         }
         setAddingItem(true);

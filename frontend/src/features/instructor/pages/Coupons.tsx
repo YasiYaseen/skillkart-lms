@@ -93,7 +93,7 @@ export function Coupons() {
   const handleSaveCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
-      toast.warn('Please provide a coupon code (e.g. FLASH50)');
+      toast.warning('Please provide a coupon code (e.g. FLASH50)');
       return;
     }
 
