@@ -30,28 +30,34 @@ interface FormattedCartItem {
 }
 
 function formatCartItems(items: Array<{ course: any; addedAt: Date }>): FormattedCartItem[] {
-  return items
-    .filter((item) => {
-      const course = item.course as PopulatedCourseDoc | null;
-      return (
-        course &&
-        course._id &&
-        course.status === "published" &&
-        course.isActive !== false &&
-        course.isApproved !== false
-      );
-    })
-    .map((item) => {
-      const course = item.course as PopulatedCourseDoc;
-      return {
-        courseId: course._id.toString(),
-        title: course.title,
-        price: typeof course.price === "number" ? course.price : 0,
-        thumbnailUrl: course.thumbnailUrl,
-        instructorName: course.instructor?.name || "SkillKart Instructor",
-        addedAt: item.addedAt,
-      };
-    });
+  const seen = new Set<string>();
+  const result: FormattedCartItem[] = [];
+
+  for (const item of items) {
+    const course = item.course as PopulatedCourseDoc | null;
+    if (
+      course &&
+      course._id &&
+      course.status === "published" &&
+      course.isActive !== false &&
+      course.isApproved !== false
+    ) {
+      const idStr = course._id.toString();
+      if (!seen.has(idStr)) {
+        seen.add(idStr);
+        result.push({
+          courseId: idStr,
+          title: course.title,
+          price: typeof course.price === "number" ? course.price : 0,
+          thumbnailUrl: course.thumbnailUrl,
+          instructorName: course.instructor?.name || "SkillKart Instructor",
+          addedAt: item.addedAt,
+        });
+      }
+    }
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,16 +139,32 @@ export async function addToCart(req: Request, res: Response) {
       });
     }
 
+    // Sanitize any existing duplicates in cart items
+    const seenCourseIds = new Set<string>();
+    const uniqueItems: typeof cart.items = [];
+    for (const item of cart.items) {
+      if (item && item.course) {
+        const idStr = item.course.toString();
+        if (!seenCourseIds.has(idStr)) {
+          seenCourseIds.add(idStr);
+          uniqueItems.push(item);
+        }
+      }
+    }
+    const hadDuplicates = uniqueItems.length !== cart.items.length;
+    cart.items = uniqueItems;
+
     // Check if item is already in cart
-    const alreadyInCart = cart.items.some(
-      (item) => item.course.toString() === course._id.toString()
-    );
+    const targetCourseId = course._id.toString();
+    const alreadyInCart = seenCourseIds.has(targetCourseId);
 
     if (!alreadyInCart) {
       cart.items.push({
         course: course._id as Types.ObjectId,
         addedAt: new Date(),
       });
+      await cart.save();
+    } else if (hadDuplicates) {
       await cart.save();
     }
 
@@ -248,7 +270,10 @@ export async function mergeCart(req: Request, res: Response) {
     }
 
     const { courseIds } = parsed.data;
-    const validCourseIds = courseIds.filter((id) => isValidObjectId(id));
+    // Deduplicate valid course IDs passed in the request
+    const validCourseIds = Array.from(
+      new Set(courseIds.filter((id) => isValidObjectId(id)))
+    );
 
     let cart = await Cart.findOne({ student: req.user.id });
     if (!cart) {
@@ -257,6 +282,23 @@ export async function mergeCart(req: Request, res: Response) {
         items: [],
       });
     }
+
+    // Sanitize any existing duplicates in user's cart
+    const existingCartCourseIds = new Set<string>();
+    const uniqueItems: typeof cart.items = [];
+    for (const item of cart.items) {
+      if (item && item.course) {
+        const idStr = item.course.toString();
+        if (!existingCartCourseIds.has(idStr)) {
+          existingCartCourseIds.add(idStr);
+          uniqueItems.push(item);
+        }
+      }
+    }
+    const hadExistingDuplicates = uniqueItems.length !== cart.items.length;
+    cart.items = uniqueItems;
+
+    let itemsModified = hadExistingDuplicates;
 
     if (validCourseIds.length > 0) {
       // Find existing enrollments so we don't add courses the student already owns
@@ -277,10 +319,6 @@ export async function mergeCart(req: Request, res: Response) {
         isApproved: { $ne: false },
       }).select("_id").lean();
 
-      const existingCartCourseIds = new Set(
-        cart.items.map((item) => item.course.toString())
-      );
-
       for (const course of validCourses) {
         const cId = course._id.toString();
         if (!existingCartCourseIds.has(cId) && !enrolledCourseIdSet.has(cId)) {
@@ -289,9 +327,12 @@ export async function mergeCart(req: Request, res: Response) {
             addedAt: new Date(),
           });
           existingCartCourseIds.add(cId);
+          itemsModified = true;
         }
       }
+    }
 
+    if (itemsModified) {
       await cart.save();
     }
 

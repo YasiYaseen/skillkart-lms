@@ -32,13 +32,26 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const GUEST_CART_STORAGE_KEY = 'skillkart_cart_guest';
 const LEGACY_CART_STORAGE_KEY = 'skillkart_cart_items';
 
+function deduplicateCartItems(items: CartItem[]): CartItem[] {
+  if (!Array.isArray(items)) return [];
+  const seen = new Set<string>();
+  const unique: CartItem[] = [];
+  for (const item of items) {
+    if (item && item.courseId && !seen.has(item.courseId)) {
+      seen.add(item.courseId);
+      unique.push(item);
+    }
+  }
+  return unique;
+}
+
 function readGuestStorage(): CartItem[] {
   try {
     const guestStored = localStorage.getItem(GUEST_CART_STORAGE_KEY);
-    if (guestStored) return JSON.parse(guestStored);
+    if (guestStored) return deduplicateCartItems(JSON.parse(guestStored));
 
     const legacyStored = localStorage.getItem(LEGACY_CART_STORAGE_KEY);
-    if (legacyStored) return JSON.parse(legacyStored);
+    if (legacyStored) return deduplicateCartItems(JSON.parse(legacyStored));
 
     return [];
   } catch {
@@ -48,11 +61,12 @@ function readGuestStorage(): CartItem[] {
 
 function writeGuestStorage(items: CartItem[]) {
   try {
-    if (items.length === 0) {
+    const unique = deduplicateCartItems(items);
+    if (unique.length === 0) {
       localStorage.removeItem(GUEST_CART_STORAGE_KEY);
       localStorage.removeItem(LEGACY_CART_STORAGE_KEY);
     } else {
-      localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(items));
+      localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(unique));
     }
   } catch {
     // Ignore storage write issues
@@ -98,15 +112,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoadingCart(true);
 
       if (guestItems.length > 0) {
-        const guestCourseIds = guestItems.map((i) => i.courseId);
+        const guestCourseIds = Array.from(new Set(guestItems.map((i) => i.courseId)));
         mergeBackendCart(guestCourseIds)
           .then((serverItems) => {
-            setCart(serverItems);
+            setCart(deduplicateCartItems(serverItems));
             clearAllGuestStorage();
           })
           .catch(() => {
             // Fallback to fetch
-            return fetchBackendCart().then((serverItems) => setCart(serverItems));
+            return fetchBackendCart().then((serverItems) => setCart(deduplicateCartItems(serverItems)));
           })
           .finally(() => {
             setIsLoadingCart(false);
@@ -114,7 +128,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         fetchBackendCart()
           .then((serverItems) => {
-            setCart(serverItems);
+            setCart(deduplicateCartItems(serverItems));
           })
           .catch(() => {
             setCart([]);
@@ -141,18 +155,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [cart, user, token, isAuthLoading]);
 
   const addToCart = async (item: CartItem) => {
-    if (cart.some((i) => i.courseId === item.courseId)) {
-      return;
-    }
+    if (!item?.courseId) return;
 
-    // Optimistic UI update
-    setCart((prev) => [...prev, item]);
+    // Functional optimistic UI update to prevent duplicate entries
+    setCart((prev) => (prev.some((i) => i.courseId === item.courseId) ? prev : [...prev, item]));
 
     if (token && user) {
       try {
         const serverItems = await addToBackendCart(item.courseId);
-        if (Array.isArray(serverItems) && serverItems.length > 0) {
-          setCart(serverItems);
+        if (Array.isArray(serverItems)) {
+          setCart(deduplicateCartItems(serverItems));
         }
       } catch (err) {
         console.error('Failed to sync added cart item to backend:', err);
@@ -167,7 +179,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (token && user) {
       try {
         const serverItems = await removeFromBackendCart(courseId);
-        setCart(serverItems);
+        setCart(deduplicateCartItems(serverItems));
       } catch (err) {
         console.error('Failed to remove cart item from backend:', err);
       }
