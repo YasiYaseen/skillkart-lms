@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { toast } from 'sonner';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
+import Modal from '@/components/common/Modal';
 import { FileUpload } from '@/components/common';
 import { getErrorMessage } from '@/utils/errorUtils';
-import { FireIcon, UserIcon, LockClosedIcon } from '@heroicons/react/20/solid';
+import { FireIcon, UserIcon, LockClosedIcon, AcademicCapIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
 
 const POPULAR_INTERESTS = [
     'Web Development',
@@ -23,6 +25,7 @@ const POPULAR_INTERESTS = [
 
 function Profile() {
     const { user, updateUser } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
 
     // Profile state
@@ -45,6 +48,20 @@ function Profile() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [changingPassword, setChangingPassword] = useState(false);
+
+    // Instructor Application State
+    const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+    const [applyHeadline, setApplyHeadline] = useState('');
+    const [applyBio, setApplyBio] = useState('');
+    const [applyLinkedin, setApplyLinkedin] = useState('');
+    const [submittingApplication, setSubmittingApplication] = useState(false);
+
+    // Auto-open modal if URL has ?apply=instructor
+    useEffect(() => {
+        if (searchParams.get('apply') === 'instructor' && user?.role === 'student') {
+            setIsApplyModalOpen(true);
+        }
+    }, [searchParams, user?.role]);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -163,6 +180,35 @@ function Profile() {
         }
     };
 
+    const handleApplyInstructor = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmittingApplication(true);
+        try {
+            const res = await api.post('/users/apply-instructor', {
+                headline: applyHeadline || headline,
+                bio: applyBio || bio,
+                linkedin: applyLinkedin || socialLinks.linkedin,
+            });
+
+            toast.success(res.data.message || 'Application submitted successfully!');
+            if (res.data.user) {
+                updateUser(res.data.user);
+            } else {
+                updateUser({ instructorStatus: 'pending' });
+            }
+            setIsApplyModalOpen(false);
+            // Clear search param if present
+            if (searchParams.get('apply')) {
+                searchParams.delete('apply');
+                setSearchParams(searchParams);
+            }
+        } catch (err: unknown) {
+            toast.error(getErrorMessage(err, 'Failed to submit instructor application'));
+        } finally {
+            setSubmittingApplication(false);
+        }
+    };
+
     if (loading) {
         return <div className="py-20 text-center text-gray-500 dark:text-gray-400">Loading your profile...</div>;
     }
@@ -245,6 +291,76 @@ function Profile() {
                             </p>
                         )}
                     </div>
+
+                    {/* Instructor Status & Application Cards for Students */}
+                    {user?.role === 'student' && (
+                        <>
+                            {user?.instructorStatus === 'pending' ? (
+                                <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-5 shadow-xs">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 shrink-0">
+                                            <ClockIcon className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                                                Instructor Application Pending
+                                            </h3>
+                                            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
+                                                Your application to teach on SkillKart has been submitted and is currently being reviewed by administrators. You'll receive full instructor studio access once approved.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-blue-950/40 border border-indigo-100 dark:border-indigo-900/60 rounded-2xl p-5 shadow-xs">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2 rounded-xl bg-indigo-600 text-white shrink-0 shadow-xs">
+                                            <AcademicCapIcon className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                                                Teach on SkillKart
+                                            </h3>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                                                Share your expertise, publish courses, and monetize your knowledge while keeping all your enrolled courses.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setApplyHeadline(headline);
+                                                    setApplyBio(bio);
+                                                    setApplyLinkedin(socialLinks.linkedin);
+                                                    setIsApplyModalOpen(true);
+                                                }}
+                                                className="mt-3.5 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer"
+                                            >
+                                                <span>Apply to Become an Instructor</span>
+                                                <span>&rarr;</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {user?.role === 'instructor' && (
+                        <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-2xl p-5 shadow-xs">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-xl bg-blue-600 text-white shrink-0 shadow-xs">
+                                    <CheckCircleIcon className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                                        Verified Instructor
+                                    </h3>
+                                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
+                                        You have full access to create courses and manage students via the Instructor Studio.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Card: Dynamic Tab Content */}
@@ -481,6 +597,88 @@ function Profile() {
                     )}
                 </div>
             </div>
+
+            {/* Instructor Application Modal */}
+            <Modal
+                isOpen={isApplyModalOpen}
+                onClose={() => {
+                    setIsApplyModalOpen(false);
+                    if (searchParams.get('apply')) {
+                        searchParams.delete('apply');
+                        setSearchParams(searchParams);
+                    }
+                }}
+                title="Apply to Become an Instructor"
+            >
+                <form onSubmit={handleApplyInstructor} className="space-y-4">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Instructors can build courses, upload video lectures, generate quizzes, and earn revenue. Fill in your details below for administrative review.
+                    </p>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                            Professional Headline <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            required
+                            maxLength={120}
+                            placeholder="e.g. Senior Full-Stack Engineer | 8+ yrs teaching React"
+                            value={applyHeadline}
+                            onChange={(e) => setApplyHeadline(e.target.value)}
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                            Instructor Bio & Teaching Experience <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            rows={4}
+                            required
+                            maxLength={500}
+                            placeholder="Tell us about what courses you plan to teach and your relevant background or industry credentials..."
+                            value={applyBio}
+                            onChange={(e) => setApplyBio(e.target.value)}
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <p className="text-[11px] text-gray-400 text-right mt-1">{applyBio.length}/500</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                            LinkedIn / Portfolio URL
+                        </label>
+                        <input
+                            type="url"
+                            placeholder="https://linkedin.com/in/..."
+                            value={applyLinkedin}
+                            onChange={(e) => setApplyLinkedin(e.target.value)}
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsApplyModalOpen(false);
+                                if (searchParams.get('apply')) {
+                                    searchParams.delete('apply');
+                                    setSearchParams(searchParams);
+                                }
+                            }}
+                            className="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                        >
+                            Cancel
+                        </button>
+                        <Button type="submit" disabled={submittingApplication}>
+                            {submittingApplication ? 'Submitting Application...' : 'Submit Application'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 }

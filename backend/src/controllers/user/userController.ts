@@ -4,6 +4,7 @@ import User from "../../models/User";
 import Course from "../../models/Course";
 import Review from "../../models/Review";
 import Enrollment from "../../models/Enrollment";
+import SystemSettings from "../../models/SystemSettings";
 import { getTodayDateString } from "../../services/streakService";
 import { updateProfileSchema } from "../../validators/content.validator";
 
@@ -271,4 +272,66 @@ export async function getRecentlyViewedCourses(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function applyForInstructor(req: Request, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.role === "instructor" || user.role === "admin") {
+      return res.status(400).json({ message: "You already have instructor or administrative privileges" });
+    }
+
+    if (user.instructorStatus === "pending") {
+      return res.status(400).json({ message: "Your instructor application is already submitted and under review" });
+    }
+
+    const { headline, bio, linkedin } = req.body;
+
+    if (headline && typeof headline === "string") user.headline = headline.trim().slice(0, 120);
+    if (bio && typeof bio === "string") user.bio = bio.trim().slice(0, 500);
+    if (linkedin && typeof linkedin === "string") {
+      user.socialLinks = {
+        ...user.socialLinks,
+        linkedin: linkedin.trim(),
+      };
+    }
+
+    const settings = await SystemSettings.findOne({ isSingleton: true });
+    const requireApproval = settings?.requireInstructorApproval ?? true;
+
+    if (requireApproval) {
+      user.instructorStatus = "pending";
+      user.isInstructorApproved = false;
+    } else {
+      user.role = "instructor";
+      user.instructorStatus = "approved";
+      user.isInstructorApproved = true;
+    }
+
+    await user.save();
+
+    return res.json({
+      message: requireApproval
+        ? "Your instructor application has been submitted successfully and is under review by administrators."
+        : "Instructor privileges granted! Welcome to the Instructor Studio.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        instructorStatus: user.instructorStatus,
+        isInstructorApproved: user.isInstructorApproved,
+        headline: user.headline,
+        bio: user.bio,
+      },
+    });
+  } catch (error) {
+    console.error("Error in applyForInstructor:", error);
+    return res.status(500).json({ message: "Server error submitting instructor application" });
+  }
+}
+
 

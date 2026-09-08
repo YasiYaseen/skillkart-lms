@@ -254,6 +254,17 @@ function Header() {
               </Link>
             )}
 
+            {/* Teach on SkillKart Shortcut for Students */}
+            {user && user.role === 'student' && user.instructorStatus !== 'pending' && (
+              <Link
+                to="/profile?apply=instructor"
+                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors shadow-2xs"
+                title="Apply to Become an Instructor"
+              >
+                <span>Teach on SkillKart</span>
+              </Link>
+            )}
+
             {/* Shopping Cart with Interactive Dropdown */}
             <div className="relative group">
               <Link
@@ -565,6 +576,21 @@ function Header() {
                       <ReceiptPercentIcon className="w-5 h-5 text-slate-400" />
                       <span>Purchase History</span>
                     </Link>
+
+                    {user.role === 'student' && user.instructorStatus !== 'pending' && (
+                      <Link
+                        to="/profile?apply=instructor"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                          location.pathname === '/profile' && location.search.includes('apply=instructor')
+                            ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold'
+                            : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40'
+                        }`}
+                      >
+                        <SparklesIcon className="w-5 h-5 text-indigo-500" />
+                        <span>Teach on SkillKart</span>
+                      </Link>
+                    )}
                   </>
                 )}
 

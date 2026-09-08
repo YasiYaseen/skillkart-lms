@@ -7,6 +7,8 @@ interface User {
   email: string;
   role: 'student' | 'instructor' | 'admin';
   onboardingCompleted: boolean;
+  isInstructorApproved?: boolean;
+  instructorStatus?: 'none' | 'pending' | 'approved' | 'rejected';
   avatar?: string;
   headline?: string;
   bio?: string;

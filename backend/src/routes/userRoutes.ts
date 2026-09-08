@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getProfile,
   updateProfile,
+  applyForInstructor,
   getPublicInstructorProfile,
   getStudentStreak,
   getRecentlyViewedCourses,
@@ -16,6 +17,9 @@ router.get("/profile", protect, getProfile);
 router.put("/profile", protect, updateProfile);
 router.get("/me", protect, getProfile);
 router.put("/me", protect, updateProfile);
+
+// Instructor application endpoint
+router.post("/apply-instructor", protect, applyForInstructor);
 
 // Streak endpoint
 router.get("/streak", protect, getStudentStreak);
