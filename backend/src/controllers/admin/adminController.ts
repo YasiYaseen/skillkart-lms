@@ -107,6 +107,78 @@ export async function toggleUserStatus(req: Request, res: Response) {
   }
 }
 
+export async function updateUserRole(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    if (!role || !["student", "instructor", "admin"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role. Allowed values: student, instructor, admin" });
+    }
+
+    if (req.user && userId === req.user.id && role !== "admin") {
+      return res.status(400).json({ message: "Admin cannot demote their own account from admin" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const previousRole = user.role;
+    const previousInstructorStatus = user.instructorStatus;
+    user.role = role;
+
+    if (role === "instructor") {
+      user.isInstructorApproved = true;
+      user.instructorStatus = "approved";
+    } else if (role === "student") {
+      user.isInstructorApproved = false;
+      user.instructorStatus = "none";
+    }
+
+    await user.save();
+
+    if (req.user) {
+      await recordAuditLog({
+        adminId: req.user.id,
+        action: "USER_ROLE_UPDATED",
+        targetType: "user",
+        targetId: user._id.toString(),
+        targetName: user.name,
+        details: {
+          email: user.email,
+          previousRole,
+          newRole: role,
+          previousInstructorStatus,
+          newInstructorStatus: user.instructorStatus,
+        },
+        req,
+      });
+    }
+
+    return res.json({
+      message: `User role updated to ${role} successfully`,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        isInstructorApproved: user.isInstructorApproved,
+        instructorStatus: user.instructorStatus,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
 export async function getCourses(req: Request, res: Response) {
   try {
     const courses = await Course.find()

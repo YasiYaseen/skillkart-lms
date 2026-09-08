@@ -5,6 +5,7 @@ import {
   getStats,
   getUsers,
   toggleUserStatus,
+  updateUserRole,
   getCourses,
   updateCourseStatus,
   getEnrollments,
@@ -50,6 +51,7 @@ router.post("/settings/test-email", testEmailDiagnostics);
 
 router.get("/users", getUsers);
 router.patch("/users/:userId/status", toggleUserStatus);
+router.patch("/users/:userId/role", updateUserRole);
 
 router.get("/courses", getCourses);
 router.patch("/courses/:courseId/status", updateCourseStatus);

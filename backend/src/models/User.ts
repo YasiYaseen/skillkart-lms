@@ -17,6 +17,8 @@ export interface IUser extends Document {
     twitter?: string;
   };
   isActive: boolean;
+  isInstructorApproved?: boolean;
+  instructorStatus?: "none" | "pending" | "approved" | "rejected";
   currentStreak: number;
   longestStreak: number;
   lastActiveDate?: string;
@@ -50,6 +52,12 @@ const UserSchema = new Schema<IUser>(
       twitter: String,
     },
     isActive: { type: Boolean, default: true },
+    isInstructorApproved: { type: Boolean, default: true },
+    instructorStatus: {
+      type: String,
+      enum: ["none", "pending", "approved", "rejected"],
+      default: "none",
+    },
     currentStreak: { type: Number, default: 0 },
     longestStreak: { type: Number, default: 0 },
     lastActiveDate: { type: String },

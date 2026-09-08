@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import axios from "axios";
 import jwt from "jsonwebtoken";
 import User from "../../models/User";
+import SystemSettings from "../../models/SystemSettings";
 import { sendWelcomeEmail } from "../../services/emailService";
 
 export async function googleLogin(req: Request, res: Response) {
@@ -23,12 +24,22 @@ export async function googleLogin(req: Request, res: Response) {
     let isNewUser = false;
     let user = await User.findOne({ email });
     if (!user) {
+      const settings = await SystemSettings.findOne({ isSingleton: true });
+      if (settings && settings.allowUserRegistration === false) {
+        return res.status(403).json({
+          message: "User registration is currently disabled by the platform administrator.",
+        });
+      }
+
       user = await User.create({
         email,
         name,
         googleId: sub,
         avatar: picture,
         password: "",
+        role: "student",
+        isInstructorApproved: true,
+        instructorStatus: "none",
         onboardingCompleted: false,
       });
       isNewUser = true;

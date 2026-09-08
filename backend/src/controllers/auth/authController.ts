@@ -3,6 +3,7 @@ import { randomBytes } from "crypto";
 import User from "../../models/User";
 import { hash, compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
+import SystemSettings from "../../models/SystemSettings";
 import {
   registerSchema,
   loginSchema,
@@ -24,6 +25,13 @@ export async function register(req: Request, res: Response) {
     const { name, email, password, role } = parsed.data;
     const normalizedRole = role === "instructor" ? "instructor" : "student";
 
+    const settings = await SystemSettings.findOne({ isSingleton: true });
+    if (settings && settings.allowUserRegistration === false) {
+      return res.status(403).json({
+        message: "User registration is currently disabled by the platform administrator.",
+      });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -31,11 +39,33 @@ export async function register(req: Request, res: Response) {
 
     const hashedPassword = await hash(password, 10);
 
+    let finalRole: "student" | "instructor" = "student";
+    let isInstructorApproved = true;
+    let instructorStatus: "none" | "pending" | "approved" = "none";
+    let registrationMessage = "User registered successfully";
+
+    if (normalizedRole === "instructor") {
+      const requireApproval = settings?.requireInstructorApproval ?? true;
+      if (requireApproval) {
+        finalRole = "student";
+        isInstructorApproved = false;
+        instructorStatus = "pending";
+        registrationMessage =
+          "User registered successfully. Your instructor application has been submitted for administrator review.";
+      } else {
+        finalRole = "instructor";
+        isInstructorApproved = true;
+        instructorStatus = "approved";
+      }
+    }
+
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role: normalizedRole,
+      role: finalRole,
+      isInstructorApproved,
+      instructorStatus,
       onboardingCompleted: false,
     });
 
@@ -49,13 +79,15 @@ export async function register(req: Request, res: Response) {
     });
 
     res.status(201).json({
-      message: "User registered successfully",
+      message: registrationMessage,
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
+        isInstructorApproved: user.isInstructorApproved,
+        instructorStatus: user.instructorStatus,
         onboardingCompleted: user.onboardingCompleted,
       },
     });
@@ -102,6 +134,8 @@ export async function login(req: Request, res: Response) {
         name: user.name,
         email: user.email,
         role: user.role,
+        isInstructorApproved: user.isInstructorApproved,
+        instructorStatus: user.instructorStatus,
         onboardingCompleted: user.onboardingCompleted,
       },
     });
