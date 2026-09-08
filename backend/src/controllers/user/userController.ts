@@ -60,6 +60,8 @@ export async function updateProfile(req: Request, res: Response) {
         name: user.name,
         email: user.email,
         role: user.role,
+        isInstructorApproved: user.isInstructorApproved,
+        instructorStatus: user.instructorStatus,
         avatar: user.avatar,
         headline: user.headline,
         bio: user.bio,

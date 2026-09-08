@@ -80,7 +80,7 @@ export async function getOnboardingStatus(req: Request, res: Response) {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
     const user = await User.findById(req.user.id).select(
-      "name email role onboardingCompleted headline bio interests socialLinks"
+      "name email role isInstructorApproved instructorStatus onboardingCompleted headline bio interests socialLinks"
     );
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -92,6 +92,8 @@ export async function getOnboardingStatus(req: Request, res: Response) {
         name: user.name,
         email: user.email,
         role: user.role,
+        isInstructorApproved: user.isInstructorApproved,
+        instructorStatus: user.instructorStatus,
         onboardingCompleted: user.onboardingCompleted,
         headline: user.headline,
         bio: user.bio,

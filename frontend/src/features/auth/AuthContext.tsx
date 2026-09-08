@@ -54,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     if (storedToken && storedUser) {
+      setIsLoading(true);
       getOnboardingStatusApi()
         .then((res) => {
           const serverUser = res.data?.user as User | undefined;
@@ -66,6 +67,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem('user');
           setToken(null);
           setUser(null);
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     }
 

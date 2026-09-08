@@ -98,6 +98,15 @@ function Profile() {
                         totalActiveDays: streakRes.data.totalActiveDays || 0,
                     });
                 }
+
+                // Keep AuthContext in sync with latest role and instructor status
+                if (userData.role) {
+                    updateUser({
+                        role: userData.role,
+                        instructorStatus: userData.instructorStatus,
+                        isInstructorApproved: userData.isInstructorApproved,
+                    });
+                }
             } catch (err: unknown) {
                 toast.error(getErrorMessage(err, 'Failed to load profile data'));
             } finally {

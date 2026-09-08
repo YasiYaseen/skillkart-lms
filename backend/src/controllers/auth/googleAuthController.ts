@@ -64,6 +64,8 @@ export async function googleLogin(req: Request, res: Response) {
         name: user.name,
         email: user.email,
         role: user.role,
+        isInstructorApproved: user.isInstructorApproved,
+        instructorStatus: user.instructorStatus,
         avatar: user.avatar,
         onboardingCompleted: user.onboardingCompleted,
       },
