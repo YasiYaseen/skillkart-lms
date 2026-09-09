@@ -71,8 +71,8 @@ export function AdminDashboard() {
 
   const statCards = [
     { title: "Total Users", value: stats.totalUsers, link: "/admin/users", icon: <UserGroupIcon className="w-5 h-5 text-blue-600" /> },
-    { title: "Students", value: stats.totalStudents, link: "/admin/users", icon: <AcademicCapIcon className="w-5 h-5 text-emerald-600" /> },
-    { title: "Instructors", value: stats.totalInstructors, link: "/admin/users", icon: <UserIcon className="w-5 h-5 text-indigo-600" /> },
+    { title: "Students", value: stats.totalStudents, link: "/admin/users?role=student", icon: <AcademicCapIcon className="w-5 h-5 text-emerald-600" /> },
+    { title: "Instructors", value: stats.totalInstructors, link: "/admin/users?role=instructor", icon: <UserIcon className="w-5 h-5 text-indigo-600" /> },
     { title: "Courses", value: stats.totalCourses, link: "/admin/courses", icon: <BookOpenIcon className="w-5 h-5 text-amber-600" /> },
     { title: "Categories", value: categories.length, link: "/admin/categories", icon: <TagIcon className="w-5 h-5 text-rose-600" /> },
     { title: "Enrollments", value: stats.totalEnrollments, link: "/admin/enrollments", icon: <ChartBarIcon className="w-5 h-5 text-purple-600" /> },

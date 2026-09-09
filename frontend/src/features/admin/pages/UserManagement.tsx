@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import { toast } from 'sonner';
 import { Pagination } from "@/components/common";
@@ -18,18 +19,35 @@ export interface AdminUser {
 
 const PAGE_SIZE = 10;
 
+const parseRoleParam = (role: string | null): string => {
+  if (!role) return "all";
+  const normalized = role.toLowerCase().trim();
+  if (normalized === "student" || normalized === "students") return "student";
+  if (normalized === "instructor" || normalized === "instructors") return "instructor";
+  if (normalized === "admin" || normalized === "admins") return "admin";
+  if (normalized === "pending") return "pending";
+  return "all";
+};
+
 export function UserManagement() {
   const { user: currentUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRole, setSelectedRole] = useState<string>("all");
+  const [selectedRole, setSelectedRole] = useState<string>(() => parseRoleParam(searchParams.get("role")));
   const [currentPage, setCurrentPage] = useState(1);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    const roleFromUrl = parseRoleParam(searchParams.get("role"));
+    setSelectedRole(roleFromUrl);
+    setCurrentPage(1);
+  }, [searchParams]);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -122,6 +140,13 @@ export function UserManagement() {
   const handleRoleChange = (val: string) => {
     setSelectedRole(val);
     setCurrentPage(1);
+    const nextParams = new URLSearchParams(searchParams);
+    if (val === "all") {
+      nextParams.delete("role");
+    } else {
+      nextParams.set("role", val);
+    }
+    setSearchParams(nextParams, { replace: true });
   };
 
   const getRoleBadge = (user: AdminUser) => {
