@@ -1,9 +1,33 @@
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
 import Enrollment from "../../models/Enrollment";
+import SystemSettings from "../../models/SystemSettings";
 
 export function isCourseManager(userId: string, role: string, instructorId: string): boolean {
   return role === "admin" || userId === instructorId;
+}
+
+export async function isCourseApprovalRequired(): Promise<boolean> {
+  const settings = await SystemSettings.findOne({ isSingleton: true }).select("requireCourseApproval").lean();
+  return settings?.requireCourseApproval ?? true;
+}
+
+export async function getCourseApprovalFilter(): Promise<Record<string, unknown>> {
+  const required = await isCourseApprovalRequired();
+  return required ? { isApproved: true } : { isApproved: { $ne: false } };
+}
+
+export function isCoursePubliclyAccessible(
+  course: { status?: string; isActive?: boolean; isApproved?: boolean },
+  requireCourseApproval: boolean
+): boolean {
+  if (course.status !== "published" || course.isActive === false || course.isApproved === false) {
+    return false;
+  }
+  if (requireCourseApproval && course.isApproved !== true) {
+    return false;
+  }
+  return true;
 }
 
 export async function getCourseDurationMinutes(courseId: string): Promise<number> {

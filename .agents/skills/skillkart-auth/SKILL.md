@@ -1,4 +1,4 @@
-﻿---
+---
 name: skillkart-auth
 description: Authentication and authorization patterns for SkillKart — JWT, Google OAuth, onboarding flow, and route protection middleware.
 ---
@@ -40,7 +40,19 @@ Covers email/password auth, Google OAuth, JWT issuance, route protection, and ro
   headline?: string;      // max 120 chars
   interests?: string[];
   socialLinks?: { website?, linkedin?, twitter? };
-  isActive: boolean;      // default: true — false = account disabled
+  isActive: boolean;                   // default: true — false = account disabled
+  isInstructorApproved?: boolean;      // default: false
+  instructorStatus?: "none" | "pending" | "approved" | "rejected"; // default: "none"
+  instructorRejectionReason?: string;  // feedback from reviewer if rejected
+  instructorApplication?: {            // dedicated instructor vetting dossier
+    teachingExperience: "none" | "in_person" | "online" | "professional";
+    primaryTopic: string;
+    experienceDetails: string;
+    sampleVideoOrPortfolioUrl?: string;
+    linkedinUrl?: string;
+    appliedAt: Date;
+    rejectionReason?: string;
+  };
 }
 ```
 

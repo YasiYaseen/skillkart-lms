@@ -30,12 +30,19 @@ This skill explains how the Platform System Configuration subsystem works in the
    - `PUT /api/admin/settings`: Validates inputs with Zod, applies updates, and logs an immutable entry in the `AuditLog`.
    - `POST /api/admin/settings/test-email`: Runs a simulated diagnostic SMTP dispatch test with latency, deliverability status, and handshake feedback.
 
+### Access Policies & Auto-Approval Toggles:
+- `requireInstructorApproval` (boolean): When true, student-to-instructor applications require manual review in `/admin/instructor-reviews`. When false, applicants are promoted to instructors automatically upon submission.
+- `requireCourseApproval` (boolean): When true, newly created or published courses must be reviewed in `/admin/courses` before appearing publicly on the catalog. When false, courses go live immediately upon publishing.
+- `allowUserRegistration` (boolean): Toggles whether new registrations are permitted.
+- `requireEmailVerification` (boolean): Enforces student email verification.
+
 ---
 
 ## Key Rules
 
 - Always use Zod `updateAdminSettingsSchema` in the controller to validate ranges (e.g., commission rates `0-100`, positive payout thresholds).
 - Synchronize `platformCommissionRate` and `instructorPayoutShare` so their sum always equals 100%.
+- Maintain `requireInstructorApproval` and `requireCourseApproval` as completely separate, decoupled settings.
 - Log all configuration modifications in `AuditLog` using `recordAuditLog({ targetType: "system" })`.
 - Wrap side effects and audit logs in `try/catch` so unexpected errors do not block settings persistence.
 
