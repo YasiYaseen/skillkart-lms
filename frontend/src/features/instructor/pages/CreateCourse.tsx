@@ -7,7 +7,7 @@ import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { Button, FileUpload } from '@/components/common';
 import { useCurrency } from '@/context/CurrencyContext';
 import { getErrorMessage } from '@/utils/errorUtils';
-import { ArrowUpTrayIcon, TrashIcon, AcademicCapIcon, PlusIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { ArrowUpTrayIcon, TrashIcon, AcademicCapIcon } from '@heroicons/react/20/solid';
 
 export interface CourseLessonItem {
     _id: string;
@@ -68,17 +68,14 @@ export const CreateCourse = () => {
     const [newLessonTitle, setNewLessonTitle] = useState('');
     const [newLessonDuration, setNewLessonDuration] = useState('10');
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-    const [itemType, setItemType] = useState('text');
-    const [itemContent, setItemContent] = useState('');
+    const [newItemType, setNewItemType] = useState('text');
+    const [newItemContent, setNewItemContent] = useState('');
 
     // Quiz state
     const [quizLessonId, setQuizLessonId] = useState<string | null>(null);
-    const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
 
     // Bulk lesson upload modal state
-    const [bulkModalOpen, setBulkModalOpen] = useState(false);
-    const [bulkSectionId, setBulkSectionId] = useState<string | null>(null);
-    const [bulkSectionTitle, setBulkSectionTitle] = useState<string>('');
+    const [bulkUploadSectionId, setBulkUploadSectionId] = useState<string | null>(null);
 
     // Categories
     const [availableCategories, setAvailableCategories] = useState<Array<{ id: string; name: string; slug: string; icon: string }>>([]);
@@ -127,7 +124,7 @@ export const CreateCourse = () => {
         setWhatYouWillLearn(whatYouWillLearn.filter((item) => item !== itemToRemove));
     };
 
-    const handleAddPrereq = () => {
+    const handleAddPrereqItem = () => {
         if (!prereqInput.trim()) return;
         if (!prerequisites.includes(prereqInput.trim())) {
             setPrerequisites([...prerequisites, prereqInput.trim()]);
@@ -135,7 +132,7 @@ export const CreateCourse = () => {
         setPrereqInput('');
     };
 
-    const handleRemovePrereq = (itemToRemove: string) => {
+    const handleRemovePrereqItem = (itemToRemove: string) => {
         setPrerequisites(prerequisites.filter((item) => item !== itemToRemove));
     };
 
@@ -800,7 +797,7 @@ export const CreateCourse = () => {
                                                 min="1"
                                                 placeholder="Mins"
                                                 value={newLessonDuration}
-                                                onChange={(e) => setNewLessonDuration(Number(e.target.value))}
+                                                onChange={(e) => setNewLessonDuration(e.target.value)}
                                                 className="w-20 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             />
                                             <button
