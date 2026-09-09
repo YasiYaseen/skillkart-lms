@@ -140,8 +140,8 @@ export function AdminLayout() {
         let cancelled = false;
         const fetchCount = async () => {
             try {
-                const data = await api.get<{ count: number }>('/admin/instructor-reviews');
-                if (!cancelled) setPendingCount(data.count ?? 0);
+                const res = await api.get<{ count: number }>('/admin/instructor-reviews');
+                if (!cancelled) setPendingCount(res.data.count ?? 0);
             } catch {
                 // silently ignore — sidebar badge is non-critical
             }

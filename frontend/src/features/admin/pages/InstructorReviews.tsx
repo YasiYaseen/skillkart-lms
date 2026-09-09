@@ -34,10 +34,10 @@ export function InstructorReviews() {
   const fetchPending = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.get<{ pendingInstructors: PendingInstructor[]; count: number }>(
+      const res = await api.get<{ pendingInstructors: PendingInstructor[]; count: number }>(
         '/admin/instructor-reviews'
       );
-      setInstructors(data.pendingInstructors);
+      setInstructors(res.data.pendingInstructors ?? []);
       setSelected(new Set());
     } catch {
       toast.error('Failed to load pending instructor applications');
@@ -77,11 +77,11 @@ export function InstructorReviews() {
     }
     try {
       setActing(true);
-      const data = await api.post<{ message: string; processed: number }>(
+      const res = await api.post<{ message: string; processed: number }>(
         '/admin/instructor-reviews/bulk',
         { action, userIds: ids }
       );
-      toast.success(data.message ?? `${label}d ${data.processed} application(s)`);
+      toast.success(res.data.message ?? `${label}d ${res.data.processed} application(s)`);
       await fetchPending();
     } catch {
       toast.error(`Failed to ${action} applications`);

@@ -52,7 +52,7 @@ const UserSchema = new Schema<IUser>(
       twitter: String,
     },
     isActive: { type: Boolean, default: true },
-    isInstructorApproved: { type: Boolean, default: true },
+    isInstructorApproved: { type: Boolean, default: false },
     instructorStatus: {
       type: String,
       enum: ["none", "pending", "approved", "rejected"],
