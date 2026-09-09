@@ -382,3 +382,118 @@ export async function sendPasswordResetEmail(
   });
 }
 
+export interface DiagnosticEmailResult {
+  success: boolean;
+  message: string;
+  smtpHost: string;
+  smtpPort: number;
+  sender: string;
+  recipient: string;
+  latencyMs: number;
+  timestamp: string;
+  status: "delivered" | "failed";
+  previewUrl?: string;
+  isMockOrTest?: boolean;
+}
+
+/**
+ * Executes a real SMTP roundtrip diagnostic and sends an actual verification email
+ */
+export async function sendDiagnosticEmail({
+  targetEmail,
+  hostOverride,
+  portOverride,
+  senderOverride,
+}: {
+  targetEmail: string;
+  hostOverride?: string;
+  portOverride?: number;
+  senderOverride?: string;
+}): Promise<DiagnosticEmailResult> {
+  const host = process.env.SMTP_HOST || hostOverride || "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT) || portOverride || 587;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const secure = process.env.SMTP_SECURE === "true" || port === 465;
+  const sender = process.env.SMTP_FROM || senderOverride || user || "notifications@skillkart.com";
+
+  const startTime = Date.now();
+  let clientMailer: nodemailer.Transporter;
+  let isEthereal = false;
+  let effectiveSender = sender;
+
+  if (user && pass) {
+    clientMailer = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    });
+  } else {
+    // If no credentials configured, create real Ethereal test mailer to test SMTP connectivity
+    isEthereal = true;
+    const testAccount = await nodemailer.createTestAccount();
+    effectiveSender = testAccount.user;
+    clientMailer = nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+  }
+
+  const title = "SkillKart LMS - SMTP Diagnostics Check";
+  const preheader = "Verifying live email delivery and SMTP transport latency.";
+  const bodyHtml = `
+    <p>Hello,</p>
+    <p>This is a live diagnostic test message sent from <strong>SkillKart LMS Admin Center</strong> to verify that your SMTP mail server transport is functioning properly.</p>
+    <div class="card">
+      <p style="margin: 0 0 8px 0; font-weight: 700; color: #0f172a;">Transmission Details:</p>
+      <ul style="margin: 0; padding-left: 20px; color: #475569; font-size: 13px;">
+        <li><strong>SMTP Host:</strong> ${isEthereal ? "smtp.ethereal.email (Testing Sandbox)" : host}:${port}</li>
+        <li><strong>Sender:</strong> ${effectiveSender}</li>
+        <li><strong>Recipient:</strong> ${targetEmail}</li>
+        <li><strong>Dispatched:</strong> ${new Date().toLocaleString()}</li>
+        <li><strong>Delivery Mode:</strong> ${isEthereal ? "Ethereal Test Sandbox (Add credentials to .env for real Gmail delivery)" : "Live SMTP Delivery"}</li>
+      </ul>
+    </div>
+  `;
+
+  const info = await clientMailer.sendMail({
+    from: isEthereal ? `"SkillKart LMS (Test)" <${effectiveSender}>` : `"${senderOverride || "SkillKart LMS"}" <${effectiveSender}>`,
+    to: targetEmail,
+    subject: `[Diagnostic] SkillKart Mail Server Test - ${new Date().toLocaleTimeString()}`,
+    text: `SkillKart LMS SMTP Diagnostic Test Email dispatched to ${targetEmail}. Host: ${host}:${port}`,
+    html: buildEmailTemplate(title, preheader, bodyHtml, {
+      text: "Open SkillKart",
+      url: getClientUrl(),
+    }),
+  });
+
+  const latencyMs = Date.now() - startTime;
+  const previewUrl = nodemailer.getTestMessageUrl(info) || undefined;
+
+  return {
+    success: true,
+    message: isEthereal
+      ? `Dispatched via Ethereal test mailer (Preview link generated below. Configure SMTP_USER and SMTP_PASS in backend/.env for real inbox delivery).`
+      : `Real diagnostic email delivered to ${targetEmail} via ${host}:${port}`,
+    smtpHost: isEthereal ? "smtp.ethereal.email" : host,
+    smtpPort: port,
+    sender: effectiveSender,
+    recipient: targetEmail,
+    latencyMs,
+    timestamp: new Date().toISOString(),
+    status: "delivered",
+    previewUrl,
+    isMockOrTest: isEthereal,
+  };
+}
+
+

@@ -48,6 +48,8 @@ export interface DiagnosticResult {
   latencyMs: number;
   timestamp: string;
   status: string;
+  previewUrl?: string;
+  isMockOrTest?: boolean;
 }
 
 type SettingsTab = 'general' | 'financials' | 'access' | 'maintenance' | 'email';
@@ -60,6 +62,7 @@ export function SystemSettings() {
   const [saving, setSaving] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticResult | null>(null);
+  const [diagnosticError, setDiagnosticError] = useState<string | null>(null);
   const [testEmailAddress, setTestEmailAddress] = useState('');
 
   const [formData, setFormData] = useState<SystemSettingsData>({
@@ -169,14 +172,17 @@ export function SystemSettings() {
   const handleTestEmail = async () => {
     setTestingEmail(true);
     setDiagnosticResult(null);
+    setDiagnosticError(null);
     try {
       const res = await api.post('/admin/settings/test-email', {
         targetEmail: testEmailAddress.trim() || user?.email,
       });
       setDiagnosticResult(res.data);
-      toast.success('Diagnostic test email dispatched successfully!');
-    } catch {
-      toast.error('Failed to run mail server diagnostic');
+      toast.success(res.data.message || 'Diagnostic test email dispatched successfully!');
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to run mail server diagnostic';
+      setDiagnosticError(errMsg);
+      toast.error(errMsg);
     } finally {
       setTestingEmail(false);
     }
@@ -782,10 +788,24 @@ export function SystemSettings() {
                 </button>
               </div>
 
+              {diagnosticError && (
+                <div className="p-3.5 rounded-lg bg-black/60 font-mono text-xs text-rose-400 space-y-1.5 border border-rose-500/40">
+                  <div className="flex items-center justify-between text-rose-400 text-[10px]">
+                    <span className="font-bold">STATUS: 500 SMTP CONNECTION / AUTH ERROR</span>
+                  </div>
+                  <div className="text-rose-200 text-[11px] break-all">
+                    ✕ {diagnosticError}
+                  </div>
+                  <div className="text-slate-400 text-[10px] pt-1.5 border-t border-slate-800">
+                    💡 Tip: Check your SMTP credentials in <code className="text-slate-200 bg-slate-800 px-1 py-0.5 rounded">backend/.env</code> (SMTP_USER, SMTP_PASS).
+                  </div>
+                </div>
+              )}
+
               {diagnosticResult && (
-                <div className="p-3.5 rounded-lg bg-black/60 font-mono text-xs text-emerald-400 space-y-1 border border-emerald-500/30">
+                <div className="p-3.5 rounded-lg bg-black/60 font-mono text-xs text-emerald-400 space-y-1.5 border border-emerald-500/30">
                   <div className="flex items-center justify-between text-slate-400 text-[10px]">
-                    <span>STATUS: 250 OK (DELIVERED)</span>
+                    <span>STATUS: 250 OK ({diagnosticResult.status.toUpperCase()})</span>
                     <span>LATENCY: {diagnosticResult.latencyMs}ms</span>
                   </div>
                   <div className="text-slate-300 text-[11px]">
@@ -800,6 +820,19 @@ export function SystemSettings() {
                   <div className="text-emerald-300 font-semibold text-[11px]">
                     ✓ {diagnosticResult.message}
                   </div>
+                  {diagnosticResult.previewUrl && (
+                    <div className="pt-2 mt-1 border-t border-emerald-500/20 text-sky-400 text-[11px] flex items-center gap-2">
+                      <span className="text-slate-400">📬 Test Sandbox View:</span>
+                      <a
+                        href={diagnosticResult.previewUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline hover:text-sky-300 transition-colors font-sans font-medium text-xs bg-sky-950/60 text-sky-300 px-2 py-0.5 rounded border border-sky-800"
+                      >
+                        Open Delivered Email in Browser ↗
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

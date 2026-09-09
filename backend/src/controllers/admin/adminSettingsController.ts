@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import SystemSettings from "../../models/SystemSettings";
 import { recordAuditLog } from "../../services/auditService";
+import { sendDiagnosticEmail } from "../../services/emailService";
 import {
   updateAdminSettingsSchema,
   testEmailDiagnosticsSchema,
@@ -162,22 +163,19 @@ export async function testEmailDiagnostics(req: Request, res: Response) {
       parsed.data.targetEmail ||
       (req.user && "email" in req.user && typeof req.user.email === "string" ? req.user.email : "admin@skillkart.com");
 
-    // Simulate diagnostic SMTP roundtrip
-    const latencyMs = Math.floor(80 + Math.random() * 90);
-
-    return res.json({
-      success: true,
-      message: `Diagnostic test message dispatched to ${targetEmail}`,
-      smtpHost: settings.smtpHost,
-      smtpPort: settings.smtpPort,
-      sender: settings.smtpSenderEmail,
-      recipient: targetEmail,
-      latencyMs,
-      timestamp: new Date().toISOString(),
-      status: "delivered",
+    const result = await sendDiagnosticEmail({
+      targetEmail,
+      hostOverride: settings.smtpHost,
+      portOverride: settings.smtpPort,
+      senderOverride: settings.smtpSenderEmail,
     });
-  } catch (error) {
+
+    return res.json(result);
+  } catch (error: any) {
     console.error("Error in testEmailDiagnostics:", error);
-    return res.status(500).json({ message: "Failed to run email diagnostics" });
+    return res.status(500).json({
+      success: false,
+      message: error?.message || "Failed to run email diagnostics",
+    });
   }
 }
