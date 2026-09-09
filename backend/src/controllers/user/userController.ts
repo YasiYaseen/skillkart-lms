@@ -307,10 +307,12 @@ export async function applyForInstructor(req: Request, res: Response) {
     if (requireApproval) {
       user.instructorStatus = "pending";
       user.isInstructorApproved = false;
+      user.instructorRejectionReason = undefined;
     } else {
       user.role = "instructor";
       user.instructorStatus = "approved";
       user.isInstructorApproved = true;
+      user.instructorRejectionReason = undefined;
     }
 
     await user.save();
@@ -326,6 +328,7 @@ export async function applyForInstructor(req: Request, res: Response) {
         role: user.role,
         instructorStatus: user.instructorStatus,
         isInstructorApproved: user.isInstructorApproved,
+        instructorRejectionReason: user.instructorRejectionReason,
         headline: user.headline,
         bio: user.bio,
       },

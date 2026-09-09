@@ -19,6 +19,8 @@ export interface InstructorCourse {
     students: number;
     status: string;
     level: string;
+    isApproved?: boolean;
+    rejectionReason?: string;
 }
 
 interface RawInstructorCourse {
@@ -29,6 +31,8 @@ interface RawInstructorCourse {
     price?: number;
     status: string;
     level?: string;
+    isApproved?: boolean;
+    rejectionReason?: string;
 }
 
 function MyCourses() {
@@ -52,6 +56,8 @@ function MyCourses() {
                 students: c.enrollmentCount || 0,
                 status: c.status,
                 level: c.level || 'beginner',
+                isApproved: c.isApproved,
+                rejectionReason: c.rejectionReason,
             }));
             setCourses(mapped);
         } catch {
@@ -179,6 +185,14 @@ function MyCourses() {
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[course.status] || STATUS_BADGE.draft}`}>
                                             {course.status === 'published' ? 'Live' : course.status === 'archived' ? 'Archived' : 'Draft'}
                                         </span>
+                                        {course.isApproved === false && (
+                                            <span
+                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                                                title={course.rejectionReason ? `Reason: ${course.rejectionReason}` : 'Submission rejected by moderation'}
+                                            >
+                                                Rejected
+                                            </span>
+                                        )}
                                     </div>
                                 </td>
 

@@ -56,6 +56,7 @@ interface RawCourseData {
     thumbnailUrl?: string;
     status: string;
     isApproved?: boolean;
+    rejectionReason?: string;
     isActive?: boolean;
     sections?: Array<{
         _id: string;
@@ -110,6 +111,7 @@ function EditCourse() {
     const [thumbnailUrl, setThumbnailUrl] = useState('');
     const [courseStatus, setCourseStatus] = useState('draft');
     const [isApproved, setIsApproved] = useState<boolean | undefined>(undefined);
+    const [rejectionReason, setRejectionReason] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         api.get<{ categories: Array<{ id: string; name: string; icon: string; slug: string }> }>('/categories')
@@ -166,6 +168,7 @@ function EditCourse() {
             setThumbnailUrl(c.thumbnailUrl || '');
             setCourseStatus(c.status || 'draft');
             setIsApproved(c.isApproved);
+            setRejectionReason(c.rejectionReason);
 
             const rawSections = c.sections || [];
             const rawLessons = c.lessons || [];
@@ -508,6 +511,32 @@ function EditCourse() {
                     </a>
                 )}
             </div>
+
+            {/* Course Moderation Rejection Banner */}
+            {isApproved === false && (
+                <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 flex items-start gap-3 shadow-xs">
+                    <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                    <div className="flex-1 min-w-0 text-xs">
+                        <p className="font-bold text-sm text-rose-950 dark:text-rose-100">Course Submission Not Approved</p>
+                        <p className="mt-0.5 text-rose-700 dark:text-rose-300">
+                            This course was reviewed and requires updates before it can be published on SkillKart.
+                        </p>
+                        {rejectionReason && (
+                            <div className="mt-2.5 p-3 rounded-lg bg-white/80 dark:bg-gray-900/80 border border-rose-200 dark:border-rose-800/80">
+                                <span className="font-semibold text-rose-950 dark:text-rose-100 block mb-0.5">Admin Review Feedback:</span>
+                                <span className="text-rose-800 dark:text-rose-300 whitespace-pre-wrap">{rejectionReason}</span>
+                            </div>
+                        )}
+                        <p className="mt-2 text-[11px] text-rose-600 dark:text-rose-400">
+                            You can edit your content, save changes, and submit again once the issues have been addressed.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-1">
                 <button

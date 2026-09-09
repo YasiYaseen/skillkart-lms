@@ -136,9 +136,11 @@ export async function updateUserRole(req: Request, res: Response) {
     if (role === "instructor") {
       user.isInstructorApproved = true;
       user.instructorStatus = "approved";
+      user.instructorRejectionReason = undefined;
     } else if (role === "student") {
       user.isInstructorApproved = false;
       user.instructorStatus = "none";
+      user.instructorRejectionReason = undefined;
     }
 
     await user.save();
@@ -195,7 +197,11 @@ export async function getPendingInstructors(req: Request, res: Response) {
 
 export async function bulkApproveInstructors(req: Request, res: Response) {
   try {
-    const { userIds, action } = req.body as { userIds?: string[]; action: "approve" | "reject" };
+    const { userIds, action, rejectionReason } = req.body as {
+      userIds?: string[];
+      action: "approve" | "reject";
+      rejectionReason?: string;
+    };
 
     if (!["approve", "reject"].includes(action)) {
       return res.status(400).json({ message: "action must be 'approve' or 'reject'" });
@@ -214,6 +220,7 @@ export async function bulkApproveInstructors(req: Request, res: Response) {
     }
 
     const results: Array<{ userId: string; name: string; success: boolean }> = [];
+    const sanitizedReason = typeof rejectionReason === "string" && rejectionReason.trim() ? rejectionReason.trim() : undefined;
 
     for (const user of usersToProcess) {
       try {
@@ -221,9 +228,11 @@ export async function bulkApproveInstructors(req: Request, res: Response) {
           user.role = "instructor";
           user.isInstructorApproved = true;
           user.instructorStatus = "approved";
+          user.instructorRejectionReason = undefined;
         } else {
           user.instructorStatus = "rejected";
           user.isInstructorApproved = false;
+          user.instructorRejectionReason = sanitizedReason;
           // Keep role as student
         }
         await user.save();
@@ -236,7 +245,7 @@ export async function bulkApproveInstructors(req: Request, res: Response) {
             message:
               action === "approve"
                 ? "Congratulations! Your application to become an instructor on SkillKart has been approved. You can now create and publish courses."
-                : "Thank you for applying to become an instructor. Unfortunately, your application was not approved at this time. You may reapply in the future.",
+                : `Thank you for applying to become an instructor. Unfortunately, your application was not approved at this time.${sanitizedReason ? ` Reason: ${sanitizedReason}` : " You may reapply in the future with updated information."}`,
             type: action === "approve" ? "success" : "warning",
             link: action === "approve" ? "/instructor/dashboard" : "/profile",
           });
@@ -257,6 +266,7 @@ export async function bulkApproveInstructors(req: Request, res: Response) {
               newRole: action === "approve" ? "instructor" : "student",
               bulkAction: true,
               decision: action,
+              rejectionReason: sanitizedReason,
             },
             req,
           });

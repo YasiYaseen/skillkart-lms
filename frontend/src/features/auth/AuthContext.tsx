@@ -9,6 +9,7 @@ interface User {
   onboardingCompleted: boolean;
   isInstructorApproved?: boolean;
   instructorStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+  instructorRejectionReason?: string;
   avatar?: string;
   headline?: string;
   bio?: string;

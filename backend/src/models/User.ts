@@ -19,6 +19,7 @@ export interface IUser extends Document {
   isActive: boolean;
   isInstructorApproved?: boolean;
   instructorStatus?: "none" | "pending" | "approved" | "rejected";
+  instructorRejectionReason?: string;
   currentStreak: number;
   longestStreak: number;
   lastActiveDate?: string;
@@ -58,6 +59,7 @@ const UserSchema = new Schema<IUser>(
       enum: ["none", "pending", "approved", "rejected"],
       default: "none",
     },
+    instructorRejectionReason: { type: String, trim: true },
     currentStreak: { type: Number, default: 0 },
     longestStreak: { type: Number, default: 0 },
     lastActiveDate: { type: String },

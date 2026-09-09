@@ -7,14 +7,24 @@ import {
   UserGroupIcon,
   ClockIcon,
   LinkIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/20/solid';
+import Modal from '@/components/common/Modal';
+import Button from '@/components/common/Button';
 
 interface PendingInstructor {
   _id: string;
   name: string;
   email: string;
   avatar?: string;
+  headline?: string;
+  bio?: string;
+  socialLinks?: {
+    linkedin?: string;
+    website?: string;
+    twitter?: string;
+  };
   instructorHeadline?: string;
   instructorBio?: string;
   linkedin?: string;
@@ -30,6 +40,12 @@ export function InstructorReviews() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [acting, setActing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Rejection modal state
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectingTargets, setRejectingTargets] = useState<{ ids: string[]; nameSummary: string } | null>(null);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState('');
+  const [submittingRejection, setSubmittingRejection] = useState(false);
 
   const fetchPending = useCallback(async () => {
     try {
@@ -67,7 +83,7 @@ export function InstructorReviews() {
     }
   };
 
-  const handleBulk = async (action: 'approve' | 'reject', userIds?: string[]) => {
+  const handleBulk = async (action: 'approve' | 'reject', userIds?: string[], reason?: string) => {
     const ids = userIds ?? (selected.size > 0 ? Array.from(selected) : undefined);
     const label = action === 'approve' ? 'Approve' : 'Reject';
     const count = ids ? ids.length : instructors.length;
@@ -79,7 +95,7 @@ export function InstructorReviews() {
       setActing(true);
       const res = await api.post<{ message: string; processed: number }>(
         '/admin/instructor-reviews/bulk',
-        { action, userIds: ids }
+        { action, userIds: ids, rejectionReason: reason }
       );
       toast.success(res.data.message ?? `${label}d ${res.data.processed} application(s)`);
       await fetchPending();
@@ -90,8 +106,33 @@ export function InstructorReviews() {
     }
   };
 
-  const handleSingle = async (userId: string, action: 'approve' | 'reject') => {
-    await handleBulk(action, [userId]);
+  const handleSingleApprove = async (userId: string) => {
+    await handleBulk('approve', [userId]);
+  };
+
+  const openRejectModal = (userIds: string[], nameSummary: string) => {
+    setRejectingTargets({ ids: userIds, nameSummary });
+    setRejectionReasonInput('');
+    setRejectModalOpen(true);
+  };
+
+  const handleConfirmReject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rejectingTargets) return;
+    if (!rejectionReasonInput.trim()) {
+      toast.error('Please enter a reason for rejection.');
+      return;
+    }
+
+    try {
+      setSubmittingRejection(true);
+      await handleBulk('reject', rejectingTargets.ids, rejectionReasonInput.trim());
+      setRejectModalOpen(false);
+      setRejectingTargets(null);
+      setRejectionReasonInput('');
+    } finally {
+      setSubmittingRejection(false);
+    }
   };
 
   const allSelected = instructors.length > 0 && selected.size === instructors.length;
@@ -124,7 +165,7 @@ export function InstructorReviews() {
                 Approve Selected ({selected.size})
               </button>
               <button
-                onClick={() => handleBulk('reject')}
+                onClick={() => openRejectModal(Array.from(selected), `${selected.size} selected applicant(s)`)}
                 disabled={acting}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-60 transition-colors cursor-pointer"
               >
@@ -245,7 +286,7 @@ export function InstructorReviews() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 flex-wrap">
                             <button
-                              onClick={() => handleSingle(inst._id, 'approve')}
+                              onClick={() => handleSingleApprove(inst._id)}
                               disabled={acting}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/70 disabled:opacity-60 transition-colors cursor-pointer"
                             >
@@ -253,7 +294,7 @@ export function InstructorReviews() {
                               Approve
                             </button>
                             <button
-                              onClick={() => handleSingle(inst._id, 'reject')}
+                              onClick={() => openRejectModal([inst._id], inst.name)}
                               disabled={acting}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-900/70 disabled:opacity-60 transition-colors cursor-pointer"
                             >
@@ -275,27 +316,27 @@ export function InstructorReviews() {
                         <tr key={`${inst._id}-expanded`} className="bg-gray-50 dark:bg-gray-800/30">
                           <td colSpan={5} className="px-6 py-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-                              {inst.instructorBio && (
+                              {(inst.bio || inst.instructorBio) && (
                                 <div>
                                   <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Bio</p>
-                                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{inst.instructorBio}</p>
+                                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{inst.bio || inst.instructorBio}</p>
                                 </div>
                               )}
-                              {inst.linkedin && (
+                              {(inst.socialLinks?.linkedin || inst.linkedin) && (
                                 <div>
                                   <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">LinkedIn</p>
                                   <a
-                                    href={inst.linkedin}
+                                    href={inst.socialLinks?.linkedin || inst.linkedin}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline break-all"
                                   >
                                     <LinkIcon className="w-3.5 h-3.5 shrink-0" />
-                                    {inst.linkedin}
+                                    {inst.socialLinks?.linkedin || inst.linkedin}
                                   </a>
                                 </div>
                               )}
-                              {!inst.instructorBio && !inst.linkedin && (
+                              {!(inst.bio || inst.instructorBio) && !(inst.socialLinks?.linkedin || inst.linkedin) && (
                                 <p className="text-sm text-gray-400 italic col-span-2">No additional details provided</p>
                               )}
                             </div>
@@ -310,6 +351,73 @@ export function InstructorReviews() {
           </div>
         )}
       </div>
+
+      {/* Reject Reason Modal */}
+      <Modal
+        isOpen={rejectModalOpen}
+        onClose={() => {
+          if (!submittingRejection) {
+            setRejectModalOpen(false);
+            setRejectingTargets(null);
+            setRejectionReasonInput('');
+          }
+        }}
+        title="Reject Instructor Application"
+      >
+        <form onSubmit={handleConfirmReject} className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300">
+            <ExclamationTriangleIcon className="w-5 h-5 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+            <div className="text-xs leading-relaxed">
+              <p className="font-semibold text-rose-900 dark:text-rose-200">
+                Rejecting: {rejectingTargets?.nameSummary}
+              </p>
+              <p className="mt-0.5">
+                The reason provided below will be saved and shown to the applicant in their &quot;Teach on SkillKart&quot; tab so they can review your feedback and reapply.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              Reason for Rejection <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              rows={4}
+              required
+              maxLength={500}
+              placeholder="e.g. Please provide a more detailed bio with links to your portfolio, GitHub, or previous teaching experience..."
+              value={rejectionReasonInput}
+              onChange={(e) => setRejectionReasonInput(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500 resize-none"
+            />
+            <p className="text-[11px] text-gray-400 text-right mt-1">
+              {rejectionReasonInput.length}/500
+            </p>
+          </div>
+
+          <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              disabled={submittingRejection}
+              onClick={() => {
+                setRejectModalOpen(false);
+                setRejectingTargets(null);
+                setRejectionReasonInput('');
+              }}
+              className="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submittingRejection}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-colors disabled:opacity-60 shadow-xs cursor-pointer"
+            >
+              {submittingRejection ? 'Rejecting...' : 'Confirm Rejection'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

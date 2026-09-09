@@ -8,7 +8,7 @@ import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import { FileUpload } from '@/components/common';
 import { getErrorMessage } from '@/utils/errorUtils';
-import { FireIcon, UserIcon, LockClosedIcon, AcademicCapIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
+import { FireIcon, UserIcon, LockClosedIcon, AcademicCapIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/20/solid';
 
 const POPULAR_INTERESTS = [
     'Web Development',
@@ -111,6 +111,7 @@ function Profile() {
                         role: userData.role,
                         instructorStatus: userData.instructorStatus,
                         isInstructorApproved: userData.isInstructorApproved,
+                        instructorRejectionReason: userData.instructorRejectionReason,
                     });
                 }
             } catch (err: unknown) {
@@ -631,6 +632,45 @@ function Profile() {
                                                 Your application to become a SkillKart instructor is being reviewed by our administrative team. Once approved, your role will be upgraded automatically and you will gain full access to the Instructor Studio.
                                             </p>
                                         </div>
+                                    </div>
+                                </div>
+                            ) : user?.instructorStatus === 'rejected' ? (
+                                <div className="space-y-6">
+                                    <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-5 flex items-start gap-4">
+                                        <div className="p-2.5 rounded-xl bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 shrink-0">
+                                            <XCircleIcon className="w-6 h-6" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-sm font-bold text-rose-900 dark:text-rose-200">
+                                                Application Not Approved
+                                            </h3>
+                                            <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 leading-relaxed">
+                                                Thank you for your interest in teaching on SkillKart. Unfortunately, your instructor application was not approved by our review team.
+                                            </p>
+                                            {user?.instructorRejectionReason && (
+                                                <div className="mt-3 p-3 rounded-lg bg-white/80 dark:bg-gray-900/80 border border-rose-200 dark:border-rose-800 text-xs">
+                                                    <span className="font-semibold text-rose-900 dark:text-rose-200 block mb-0.5">Reason provided by reviewer:</span>
+                                                    <span className="text-rose-800 dark:text-rose-300 whitespace-pre-wrap">{user.instructorRejectionReason}</span>
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-rose-600 dark:text-rose-400 mt-3">
+                                                You may address the feedback and submit a new application below.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <Button
+                                            type="button"
+                                            onClick={() => {
+                                                setApplyHeadline(headline);
+                                                setApplyBio(bio);
+                                                setApplyLinkedin(socialLinks.linkedin);
+                                                setIsApplyModalOpen(true);
+                                            }}
+                                        >
+                                            Reapply to Become an Instructor
+                                        </Button>
                                     </div>
                                 </div>
                             ) : (
