@@ -18,7 +18,7 @@ export interface ICourse extends Document {
   whatYouWillLearn?: string[];
   prerequisites?: string[];
   isActive: boolean;
-  isApproved: boolean;
+  isApproved?: boolean;
   rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -93,7 +93,7 @@ const CourseSchema = new Schema<ICourse>(
       index: true,
     },
     isActive: { type: Boolean, default: true },
-    isApproved: { type: Boolean, default: true },
+    isApproved: { type: Boolean },
     rejectionReason: { type: String, trim: true },
   },
   { timestamps: true }

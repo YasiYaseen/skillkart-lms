@@ -55,13 +55,22 @@ export function InstructorReviews() {
   const [rejectionReasonInput, setRejectionReasonInput] = useState('');
   const [submittingRejection, setSubmittingRejection] = useState(false);
 
+  // System settings auto-approval toggle state
+  const [autoApprove, setAutoApprove] = useState(false);
+  const [updatingAutoApprove, setUpdatingAutoApprove] = useState(false);
+
   const fetchPending = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get<{ pendingInstructors: PendingInstructor[]; count: number }>(
-        '/admin/instructor-reviews'
-      );
-      setInstructors(res.data.pendingInstructors ?? []);
+      const [reviewsRes, settingsRes] = await Promise.all([
+        api.get<{ pendingInstructors: PendingInstructor[]; count: number }>('/admin/instructor-reviews'),
+        api.get<{ settings?: { requireInstructorApproval?: boolean } }>('/admin/settings'),
+      ]);
+      setInstructors(reviewsRes.data.pendingInstructors ?? []);
+      if (settingsRes.data?.settings) {
+        // If requireInstructorApproval is false, auto-approval is ON
+        setAutoApprove(!settingsRes.data.settings.requireInstructorApproval);
+      }
       setSelected(new Set());
     } catch {
       toast.error('Failed to load pending instructor applications');
@@ -69,6 +78,26 @@ export function InstructorReviews() {
       setLoading(false);
     }
   }, []);
+
+  const handleToggleAutoApprove = async () => {
+    const nextAuto = !autoApprove;
+    try {
+      setUpdatingAutoApprove(true);
+      await api.patch('/admin/settings', {
+        requireInstructorApproval: !nextAuto,
+      });
+      setAutoApprove(nextAuto);
+      toast.success(
+        nextAuto
+          ? 'Auto-approval enabled: New instructor applicants will be approved automatically.'
+          : 'Manual review enabled: New applicants require administrator review.'
+      );
+    } catch {
+      toast.error('Failed to update instructor auto-approval setting');
+    } finally {
+      setUpdatingAutoApprove(false);
+    }
+  };
 
   useEffect(() => {
     fetchPending();
@@ -160,8 +189,26 @@ export function InstructorReviews() {
           </p>
         </div>
 
-        {/* Bulk Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        {/* Actions & Auto-Approval Toggle */}
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          {/* Auto-Approval Toggle */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-850">
+            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Auto-Approve</span>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={autoApprove}
+                disabled={updatingAutoApprove}
+                onChange={handleToggleAutoApprove}
+                className="sr-only peer"
+              />
+              <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-600"></div>
+            </label>
+            <span className={`text-[11px] font-bold ${autoApprove ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>
+              {autoApprove ? 'ON' : 'OFF'}
+            </span>
+          </div>
+
           {someSelected && (
             <>
               <button

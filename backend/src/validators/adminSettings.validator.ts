@@ -13,6 +13,7 @@ export const updateAdminSettingsSchema = z.object({
   maintenanceEstimatedEndTime: z.string().datetime().nullable().optional().or(z.literal("")),
   allowUserRegistration: z.boolean().optional(),
   requireInstructorApproval: z.boolean().optional(),
+  requireCourseApproval: z.boolean().optional(),
   requireEmailVerification: z.boolean().optional(),
   smtpHost: z.string().trim().optional(),
   smtpPort: z.number().int().min(1).max(65535).optional(),

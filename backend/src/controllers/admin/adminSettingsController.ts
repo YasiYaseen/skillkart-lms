@@ -69,6 +69,7 @@ export async function updateAdminSettings(req: Request, res: Response) {
       maintenanceEstimatedEndTime,
       allowUserRegistration,
       requireInstructorApproval,
+      requireCourseApproval,
       requireEmailVerification,
       smtpHost,
       smtpPort,
@@ -103,6 +104,7 @@ export async function updateAdminSettings(req: Request, res: Response) {
 
     if (allowUserRegistration !== undefined) settings.allowUserRegistration = allowUserRegistration;
     if (requireInstructorApproval !== undefined) settings.requireInstructorApproval = requireInstructorApproval;
+    if (requireCourseApproval !== undefined) settings.requireCourseApproval = requireCourseApproval;
     if (requireEmailVerification !== undefined) settings.requireEmailVerification = requireEmailVerification;
 
     if (smtpHost !== undefined) settings.smtpHost = smtpHost;

@@ -14,6 +14,7 @@ import Announcement from "../../models/Announcement";
 import Comment from "../../models/Comment";
 import Certificate from "../../models/Certificate";
 import Category from "../../models/Category";
+import SystemSettings from "../../models/SystemSettings";
 import { getCourseDurationMinutes, isCourseManager } from "./shared";
 import { createCourseSchema, updateCourseSchema } from "../../validators/course.validator";
 
@@ -67,6 +68,9 @@ export async function createCourse(req: Request, res: Response) {
       }
     }
 
+    const settings = await SystemSettings.findOne({ isSingleton: true });
+    const requireCourseApproval = settings?.requireCourseApproval ?? true;
+
     const course = await Course.create({
       title: data.title,
       description: data.description,
@@ -80,6 +84,7 @@ export async function createCourse(req: Request, res: Response) {
       price: data.isPaid ? data.price : null,
       instructor: req.user.id,
       status: "draft",
+      isApproved: requireCourseApproval ? undefined : true,
     });
 
     return res.status(201).json({
@@ -459,6 +464,16 @@ export async function publishCourse(req: Request, res: Response) {
 
     course.status = "published";
     course.publishedAt = new Date();
+
+    const settings = await SystemSettings.findOne({ isSingleton: true });
+    const requireCourseApproval = settings?.requireCourseApproval ?? true;
+    if (!requireCourseApproval) {
+      course.isApproved = true;
+      course.rejectionReason = undefined;
+    } else if (course.isApproved === undefined) {
+      // Keep pending admin moderation
+    }
+
     await course.save();
 
     return res.json({ message: "Course published", course });

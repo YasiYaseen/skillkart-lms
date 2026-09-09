@@ -18,6 +18,7 @@ export interface ISystemSettings extends Document {
   // Access & Registration
   allowUserRegistration: boolean;
   requireInstructorApproval: boolean;
+  requireCourseApproval: boolean;
   requireEmailVerification: boolean;
   // Email Diagnostics
   smtpHost: string;
@@ -89,6 +90,10 @@ const SystemSettingsSchema = new Schema<ISystemSettings>(
       default: true,
     },
     requireInstructorApproval: {
+      type: Boolean,
+      default: true,
+    },
+    requireCourseApproval: {
       type: Boolean,
       default: true,
     },

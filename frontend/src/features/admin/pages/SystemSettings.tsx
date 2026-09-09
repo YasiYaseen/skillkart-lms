@@ -29,6 +29,7 @@ export interface SystemSettingsData {
   maintenanceEstimatedEndTime?: string;
   allowUserRegistration: boolean;
   requireInstructorApproval: boolean;
+  requireCourseApproval: boolean;
   requireEmailVerification: boolean;
   smtpHost: string;
   smtpPort: number;
@@ -74,6 +75,7 @@ export function SystemSettings() {
     maintenanceEstimatedEndTime: '',
     allowUserRegistration: true,
     requireInstructorApproval: true,
+    requireCourseApproval: true,
     requireEmailVerification: false,
     smtpHost: 'smtp.mailtrap.io',
     smtpPort: 587,
@@ -101,6 +103,7 @@ export function SystemSettings() {
           maintenanceEstimatedEndTime: s.maintenanceEstimatedEndTime ? new Date(s.maintenanceEstimatedEndTime).toISOString().slice(0, 16) : '',
           allowUserRegistration: s.allowUserRegistration ?? true,
           requireInstructorApproval: s.requireInstructorApproval ?? true,
+          requireCourseApproval: s.requireCourseApproval ?? true,
           requireEmailVerification: Boolean(s.requireEmailVerification),
           smtpHost: s.smtpHost || 'smtp.mailtrap.io',
           smtpPort: s.smtpPort || 587,
@@ -532,9 +535,9 @@ export function SystemSettings() {
               {/* Require Instructor Approval */}
               <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850">
                 <div className="space-y-0.5 pr-4">
-                  <h4 className="font-semibold text-xs text-slate-900 dark:text-white">Require Course Moderation / Instructor Approval</h4>
+                  <h4 className="font-semibold text-xs text-slate-900 dark:text-white">Require Instructor Application Review</h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Newly created courses remain in &apos;draft&apos; or &apos;pending_review&apos; status until reviewed by an administrator.
+                    When enabled, students applying to become instructors must be manually reviewed and approved by an administrator before gaining Instructor Studio access. If disabled, applicants are auto-approved immediately.
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -542,6 +545,25 @@ export function SystemSettings() {
                     type="checkbox"
                     checked={formData.requireInstructorApproval}
                     onChange={(e) => setFormData({ ...formData, requireInstructorApproval: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {/* Require Course Approval / Content Moderation */}
+              <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850">
+                <div className="space-y-0.5 pr-4">
+                  <h4 className="font-semibold text-xs text-slate-900 dark:text-white">Require Course Content Moderation</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    When enabled, newly created or published courses require approval in Course Moderation before appearing on the public catalog. If disabled, courses go live automatically without waiting for admin review.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={formData.requireCourseApproval}
+                    onChange={(e) => setFormData({ ...formData, requireCourseApproval: e.target.checked })}
                     className="sr-only peer"
                   />
                   <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
