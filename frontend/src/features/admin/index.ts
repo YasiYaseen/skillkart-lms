@@ -9,6 +9,7 @@ export { CourseGenerator } from "./pages/CourseGenerator";
 export { CategoryManagement } from "./pages/CategoryManagement";
 export { AdminCoupons } from "./pages/AdminCoupons";
 export { AdminPayouts } from "./pages/AdminPayouts";
+export { InstructorReviews } from "./pages/InstructorReviews";
 export { AdminLayout } from "./layout/AdminLayout";
 
 

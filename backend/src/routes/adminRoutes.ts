@@ -6,6 +6,8 @@ import {
   getUsers,
   toggleUserStatus,
   updateUserRole,
+  getPendingInstructors,
+  bulkApproveInstructors,
   getCourses,
   updateCourseStatus,
   getEnrollments,
@@ -52,6 +54,9 @@ router.post("/settings/test-email", testEmailDiagnostics);
 router.get("/users", getUsers);
 router.patch("/users/:userId/status", toggleUserStatus);
 router.patch("/users/:userId/role", updateUserRole);
+
+router.get("/instructor-reviews", getPendingInstructors);
+router.post("/instructor-reviews/bulk", bulkApproveInstructors);
 
 router.get("/courses", getCourses);
 router.patch("/courses/:courseId/status", updateCourseStatus);

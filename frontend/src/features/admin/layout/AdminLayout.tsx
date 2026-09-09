@@ -5,8 +5,16 @@ import { ThemeToggle } from '@/components/common/ThemeToggle';
 import UserDropdown from '@/components/common/UserDropdown';
 import { useAuth } from '@/features/auth/AuthContext';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { api } from '@/lib/api';
 
-const NAV_ITEMS = [
+interface NavItem {
+    label: string;
+    path: string;
+    icon: React.ReactNode;
+    badge?: number; // optional red count badge
+}
+
+const BASE_NAV_ITEMS: Omit<NavItem, 'badge'>[] = [
     {
         label: 'Dashboard',
         path: '/admin',
@@ -31,6 +39,15 @@ const NAV_ITEMS = [
         icon: (
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+        ),
+    },
+    {
+        label: 'Instructor Reviews',
+        path: '/admin/instructor-reviews',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
             </svg>
         ),
     },
@@ -116,6 +133,32 @@ export function AdminLayout() {
     const navigate = useNavigate();
     const { logout } = useAuth();
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+    const [pendingCount, setPendingCount] = useState(0);
+
+    // Fetch pending instructor count on mount and every 60 seconds
+    useEffect(() => {
+        let cancelled = false;
+        const fetchCount = async () => {
+            try {
+                const data = await api.get<{ count: number }>('/admin/instructor-reviews');
+                if (!cancelled) setPendingCount(data.count ?? 0);
+            } catch {
+                // silently ignore — sidebar badge is non-critical
+            }
+        };
+        fetchCount();
+        const interval = setInterval(fetchCount, 60_000);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, []);
+
+    // Build nav items, injecting live badge count for Instructor Reviews
+    const NAV_ITEMS: NavItem[] = BASE_NAV_ITEMS.map((item) => ({
+        ...item,
+        badge: item.path === '/admin/instructor-reviews' && pendingCount > 0 ? pendingCount : undefined,
+    }));
 
     // Auto close mobile drawer on route change
     useEffect(() => {
@@ -210,7 +253,12 @@ export function AdminLayout() {
                                     `}
                                 >
                                     {item.icon}
-                                    {item.label}
+                                    <span className="flex-1 truncate">{item.label}</span>
+                                    {item.badge !== undefined && item.badge > 0 && (
+                                        <span className="ml-auto min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none shrink-0">
+                                            {item.badge > 99 ? '99+' : item.badge}
+                                        </span>
+                                    )}
                                 </Link>
                             );
                         })}
@@ -279,7 +327,12 @@ export function AdminLayout() {
                                                 `}
                                             >
                                                 {item.icon}
-                                                <span>{item.label}</span>
+                                                <span className="flex-1">{item.label}</span>
+                                                {item.badge !== undefined && item.badge > 0 && (
+                                                    <span className="min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none shrink-0">
+                                                        {item.badge > 99 ? '99+' : item.badge}
+                                                    </span>
+                                                )}
                                             </Link>
                                         );
                                     })}

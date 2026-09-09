@@ -41,6 +41,7 @@ import {
     CategoryManagement,
     AdminCoupons,
     AdminPayouts,
+    InstructorReviews,
 } from '@features/admin';
 
 /**
@@ -102,6 +103,7 @@ function App() {
                         <Route element={<AdminLayout />}>
                             <Route path="/admin" element={<AdminDashboard />} />
                             <Route path="/admin/users" element={<UserManagement />} />
+                            <Route path="/admin/instructor-reviews" element={<InstructorReviews />} />
                             <Route path="/admin/categories" element={<CategoryManagement />} />
                             <Route path="/admin/courses" element={<CourseModeration />} />
                             <Route path="/admin/enrollments" element={<EnrollmentList />} />

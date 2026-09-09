@@ -179,6 +179,107 @@ export async function updateUserRole(req: Request, res: Response) {
   }
 }
 
+export async function getPendingInstructors(req: Request, res: Response) {
+  try {
+    const pendingUsers = await User.find({ instructorStatus: "pending" })
+      .select("-password")
+      .sort({ updatedAt: -1 })
+      .lean();
+    const count = pendingUsers.length;
+    return res.json({ pendingInstructors: pendingUsers, count });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function bulkApproveInstructors(req: Request, res: Response) {
+  try {
+    const { userIds, action } = req.body as { userIds?: string[]; action: "approve" | "reject" };
+
+    if (!["approve", "reject"].includes(action)) {
+      return res.status(400).json({ message: "action must be 'approve' or 'reject'" });
+    }
+
+    // If no userIds provided, process ALL pending instructors
+    const filter: Record<string, unknown> = { instructorStatus: "pending" };
+    if (userIds && Array.isArray(userIds) && userIds.length > 0) {
+      filter._id = { $in: userIds };
+    }
+
+    const usersToProcess = await User.find(filter);
+
+    if (usersToProcess.length === 0) {
+      return res.json({ message: "No pending instructors found", processed: 0 });
+    }
+
+    const results: Array<{ userId: string; name: string; success: boolean }> = [];
+
+    for (const user of usersToProcess) {
+      try {
+        if (action === "approve") {
+          user.role = "instructor";
+          user.isInstructorApproved = true;
+          user.instructorStatus = "approved";
+        } else {
+          user.instructorStatus = "rejected";
+          user.isInstructorApproved = false;
+          // Keep role as student
+        }
+        await user.save();
+
+        // Notify user
+        try {
+          await Notification.create({
+            recipient: user._id,
+            title: action === "approve" ? "Instructor Application Approved! 🎉" : "Instructor Application Update",
+            message:
+              action === "approve"
+                ? "Congratulations! Your application to become an instructor on SkillKart has been approved. You can now create and publish courses."
+                : "Thank you for applying to become an instructor. Unfortunately, your application was not approved at this time. You may reapply in the future.",
+            type: action === "approve" ? "success" : "warning",
+            link: action === "approve" ? "/instructor/dashboard" : "/profile",
+          });
+        } catch (notifErr) {
+          console.error("Failed to notify user:", notifErr);
+        }
+
+        if (req.user) {
+          await recordAuditLog({
+            adminId: req.user.id,
+            action: action === "approve" ? "USER_ROLE_UPDATED" : "USER_ROLE_UPDATED",
+            targetType: "user",
+            targetId: user._id.toString(),
+            targetName: user.name,
+            details: {
+              email: user.email,
+              previousRole: "student",
+              newRole: action === "approve" ? "instructor" : "student",
+              bulkAction: true,
+              decision: action,
+            },
+            req,
+          });
+        }
+
+        results.push({ userId: user._id.toString(), name: user.name, success: true });
+      } catch (err) {
+        results.push({ userId: user._id.toString(), name: user.name, success: false });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    return res.json({
+      message: `${successCount} instructor application(s) ${action === "approve" ? "approved" : "rejected"} successfully.`,
+      processed: successCount,
+      results,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
 export async function getCourses(req: Request, res: Response) {
   try {
     const courses = await Course.find()
