@@ -318,57 +318,8 @@ function Profile() {
                         )}
                     </div>
 
-                    {/* Instructor Status & Application Cards for Students */}
-                    {user?.role === 'student' && (
-                        <>
-                            {user?.instructorStatus === 'pending' ? (
-                                <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-5 shadow-xs">
-                                    <div className="flex items-start gap-3">
-                                        <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 shrink-0">
-                                            <ClockIcon className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">
-                                                Instructor Application Pending
-                                            </h3>
-                                            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
-                                                Your application to teach on SkillKart has been submitted and is currently being reviewed by administrators. You'll receive full instructor studio access once approved.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-blue-950/40 border border-indigo-100 dark:border-indigo-900/60 rounded-2xl p-5 shadow-xs">
-                                    <div className="flex items-start gap-3">
-                                        <div className="p-2 rounded-xl bg-indigo-600 text-white shrink-0 shadow-xs">
-                                            <AcademicCapIcon className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                                                Teach on SkillKart
-                                            </h3>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
-                                                Share your expertise, publish courses, and monetize your knowledge while keeping all your enrolled courses.
-                                            </p>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setApplyHeadline(headline);
-                                                    setApplyBio(bio);
-                                                    setApplyLinkedin(socialLinks.linkedin);
-                                                    setIsApplyModalOpen(true);
-                                                }}
-                                                className="mt-3.5 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer"
-                                            >
-                                                <span>Apply to Become an Instructor</span>
-                                                <span>&rarr;</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
+
+
 
                     {user?.role === 'instructor' && (
                         <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-2xl p-5 shadow-xs">

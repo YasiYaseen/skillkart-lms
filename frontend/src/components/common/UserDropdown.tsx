@@ -247,18 +247,6 @@ export default function UserDropdown() {
                                         Teach on SkillKart
                                     </Link>
                                 )}
-                                {user.role === 'student' && user.instructorStatus === 'pending' && (
-                                    <Link
-                                        to="/profile"
-                                        onClick={() => setIsOpen(false)}
-                                        className="flex items-center gap-2.5 px-4 py-2 text-amber-600 dark:text-amber-400 font-medium hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-amber-500">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                        </svg>
-                                        Instructor Application Pending
-                                    </Link>
-                                )}
                             </>
                         )}
 
