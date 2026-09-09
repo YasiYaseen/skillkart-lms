@@ -26,7 +26,7 @@ const POPULAR_INTERESTS = [
 function Profile() {
     const { user, updateUser } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
-    const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'teaching'>('profile');
 
     // Profile state
     const [name, setName] = useState('');
@@ -56,10 +56,16 @@ function Profile() {
     const [applyLinkedin, setApplyLinkedin] = useState('');
     const [submittingApplication, setSubmittingApplication] = useState(false);
 
-    // Auto-open modal if URL has ?apply=instructor
+    // Auto-open modal if URL has ?apply=instructor or switch tab
     useEffect(() => {
-        if (searchParams.get('apply') === 'instructor' && user?.role === 'student') {
-            setIsApplyModalOpen(true);
+        if (searchParams.get('tab') === 'teaching') {
+            setActiveTab('teaching');
+        }
+        if (searchParams.get('apply') === 'instructor') {
+            setActiveTab('teaching');
+            if (user?.role === 'student') {
+                setIsApplyModalOpen(true);
+            }
         }
     }, [searchParams, user?.role]);
 
@@ -235,7 +241,7 @@ function Profile() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-xl self-start">
+                <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-xl self-start flex-wrap">
                     <button
                         onClick={() => setActiveTab('profile')}
                         className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
@@ -257,6 +263,17 @@ function Profile() {
                     >
                         <LockClosedIcon className="w-3.5 h-3.5" />
                         <span>Security & Password</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('teaching')}
+                        className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
+                            activeTab === 'teaching'
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                    >
+                        <AcademicCapIcon className="w-3.5 h-3.5" />
+                        <span>{user?.role === 'instructor' ? 'Instructor Status' : 'Teach on SkillKart'}</span>
                     </button>
                 </div>
             </div>
@@ -543,7 +560,7 @@ function Profile() {
                                 </div>
                             </form>
                         </div>
-                    ) : (
+                    ) : activeTab === 'security' ? (
                         /* Security Tab */
                         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-700 shadow-xs">
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Change Password</h2>
@@ -602,6 +619,101 @@ function Profile() {
                                     </Button>
                                 </div>
                             </form>
+                        </div>
+                    ) : (
+                        /* Teaching / Instructor Status Tab */
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-700 shadow-xs space-y-6">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                                    {user?.role === 'instructor' ? 'Instructor Account & Studio' : 'Teach on SkillKart'}
+                                </h2>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {user?.role === 'instructor'
+                                        ? 'Manage your instructor credentials and quickly jump into your teaching dashboard.'
+                                        : 'Earn revenue, share your knowledge, and teach thousands of learners worldwide.'}
+                                </p>
+                            </div>
+
+                            {user?.role === 'instructor' ? (
+                                <div className="space-y-4">
+                                    <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-5 flex items-start gap-4">
+                                        <div className="p-2.5 rounded-xl bg-emerald-600 text-white shrink-0 shadow-xs">
+                                            <CheckCircleIcon className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">
+                                                Active Instructor Privileges
+                                            </h3>
+                                            <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 leading-relaxed">
+                                                Your instructor account is fully verified. You have complete access to create courses, post announcements, issue quizzes, and review assignments.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2 flex flex-wrap gap-3">
+                                        <a
+                                            href="/instructor"
+                                            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors"
+                                        >
+                                            <AcademicCapIcon className="w-4 h-4" />
+                                            <span>Open Instructor Studio</span>
+                                        </a>
+                                        <a
+                                            href="/instructor/create-course"
+                                            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 shadow-2xs transition-colors"
+                                        >
+                                            <span>Create New Course</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            ) : user?.instructorStatus === 'pending' ? (
+                                <div className="space-y-4">
+                                    <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-5 flex items-start gap-4">
+                                        <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 shrink-0">
+                                            <ClockIcon className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                                                Application Under Review
+                                            </h3>
+                                            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
+                                                Your application to become a SkillKart instructor is being reviewed by our administrative team. Once approved, your role will be upgraded automatically and you will gain full access to the Instructor Studio.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40">
+                                            <p className="text-xs font-bold text-gray-900 dark:text-white">Reach Learners</p>
+                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Publish courses to thousands of motivated students on SkillKart.</p>
+                                        </div>
+                                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40">
+                                            <p className="text-xs font-bold text-gray-900 dark:text-white">Keep Your Courses</p>
+                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Retain 100% of your enrolled student courses, certificates, and cart.</p>
+                                        </div>
+                                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40">
+                                            <p className="text-xs font-bold text-gray-900 dark:text-white">Earn Revenue</p>
+                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Set course pricing, offer discount coupons, and track payouts.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <Button
+                                            type="button"
+                                            onClick={() => {
+                                                setApplyHeadline(headline);
+                                                setApplyBio(bio);
+                                                setApplyLinkedin(socialLinks.linkedin);
+                                                setIsApplyModalOpen(true);
+                                            }}
+                                        >
+                                            Apply to Become an Instructor
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
