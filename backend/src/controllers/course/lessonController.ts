@@ -146,3 +146,79 @@ export async function deleteLesson(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function reorderLessons(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { sectionId } = req.params;
+    if (!isValidObjectId(sectionId)) {
+      return res.status(400).json({ message: "Invalid section id" });
+    }
+
+    const section = await Section.findById(sectionId);
+    if (!section) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
+    const course = await Course.findById(section.course);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const { lessonIds } = req.body;
+    if (!Array.isArray(lessonIds) || lessonIds.length === 0) {
+      return res.status(400).json({ message: "lessonIds must be a non-empty array" });
+    }
+
+    for (const id of lessonIds) {
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ message: `Invalid lesson ID: ${id}` });
+      }
+    }
+
+    // Verify all lessons exist and belong to this section
+    const existingLessons = await Lesson.find({
+      _id: { $in: lessonIds },
+      section: section._id,
+    });
+
+    if (existingLessons.length !== lessonIds.length) {
+      return res.status(400).json({ message: "One or more lessons do not belong to this section" });
+    }
+
+    // Two-pass update to prevent unique compound index collision ({ section: 1, order: 1 })
+    // Pass 1: Set temporary negative order indices
+    await Lesson.bulkWrite(
+      lessonIds.map((id, index) => ({
+        updateOne: {
+          filter: { _id: id, section: section._id },
+          update: { $set: { order: -(index + 1) } },
+        },
+      }))
+    );
+
+    // Pass 2: Set final positive order indices (1-based)
+    await Lesson.bulkWrite(
+      lessonIds.map((id, index) => ({
+        updateOne: {
+          filter: { _id: id, section: section._id },
+          update: { $set: { order: index + 1 } },
+        },
+      }))
+    );
+
+    const updatedLessons = await Lesson.find({ section: section._id }).sort({ order: 1 });
+    return res.json({ message: "Lessons reordered successfully", lessons: updatedLessons });
+  } catch (error) {
+    console.error("reorderLessons error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+

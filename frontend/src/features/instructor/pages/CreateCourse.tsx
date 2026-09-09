@@ -7,6 +7,7 @@ import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { Button, FileUpload } from '@/components/common';
 import { useCurrency } from '@/context/CurrencyContext';
 import { getErrorMessage } from '@/utils/errorUtils';
+import { resolveMediaUrl } from '@/utils/mediaUtils';
 import { ArrowUpTrayIcon, TrashIcon, AcademicCapIcon } from '@heroicons/react/20/solid';
 
 export interface CourseLessonItem {
@@ -190,14 +191,23 @@ export const CreateCourse = () => {
         }
     };
 
-    const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+    const handleMoveSection = async (index: number, direction: 'up' | 'down') => {
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
-        if (targetIndex < 0 || targetIndex >= sections.length) return;
+        if (targetIndex < 0 || targetIndex >= sections.length || !courseId) return;
+        const previousSections = [...sections];
         const updated = [...sections];
         const temp = updated[index];
         updated[index] = updated[targetIndex];
         updated[targetIndex] = temp;
         setSections(updated);
+
+        try {
+            const sectionIds = updated.map((s) => s._id);
+            await api.patch(`/courses/${courseId}/sections/reorder`, { sectionIds });
+        } catch (err) {
+            setSections(previousSections);
+            toast.error(getErrorMessage(err, 'Failed to update section order'));
+        }
     };
 
     const handleAddLesson = async (e: React.FormEvent, sectionId: string) => {
@@ -239,16 +249,25 @@ export const CreateCourse = () => {
         }
     };
 
-    const handleMoveLesson = (sectionId: string, index: number, direction: 'up' | 'down') => {
+    const handleMoveLesson = async (sectionId: string, index: number, direction: 'up' | 'down') => {
         const sec = sections.find((s) => s._id === sectionId);
         if (!sec) return;
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
         if (targetIndex < 0 || targetIndex >= sec.lessons.length) return;
+        const previousLessons = [...sec.lessons];
         const updatedLessons = [...sec.lessons];
         const temp = updatedLessons[index];
         updatedLessons[index] = updatedLessons[targetIndex];
         updatedLessons[targetIndex] = temp;
         setSections(sections.map((s) => (s._id === sectionId ? { ...s, lessons: updatedLessons } : s)));
+
+        try {
+            const lessonIds = updatedLessons.map((l) => l._id);
+            await api.patch(`/sections/${sectionId}/lessons/reorder`, { lessonIds });
+        } catch (err) {
+            setSections(sections.map((s) => (s._id === sectionId ? { ...s, lessons: previousLessons } : s)));
+            toast.error(getErrorMessage(err, 'Failed to update lesson order'));
+        }
     };
 
     const handleAddItem = async (e: React.FormEvent, sectionId: string, lessonId: string) => {
@@ -559,12 +578,12 @@ export const CreateCourse = () => {
                                 <FileUpload
                                     label="Course Thumbnail"
                                     accept="image/jpeg, image/png, image/webp"
-                                    maxSizeMB={5}
-                                    onUploadSuccess={(url) => setThumbnail(import.meta.env.VITE_API_BASE_URL + url)}
+                                    maxSizeMB={10}
+                                    onUploadSuccess={(url) => setThumbnail(url)}
                                 />
                                 {thumbnail && (
                                     <img
-                                        src={thumbnail}
+                                        src={resolveMediaUrl(thumbnail)}
                                         alt="Preview"
                                         className="mt-2 h-20 w-32 object-cover rounded border border-gray-200 dark:border-gray-700"
                                     />

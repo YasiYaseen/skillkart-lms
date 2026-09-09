@@ -4,6 +4,7 @@ import { WishlistButton } from '@/features/wishlist';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { toast } from 'sonner';
+import { resolveMediaUrl } from '@/utils/mediaUtils';
 import {
     ClockIcon,
     AcademicCapIcon,
@@ -102,7 +103,7 @@ export function CourseCard({ course, className = '', showWishlist = true, isEnro
                 {/* Thumbnail & Level / Enrolled Badge */}
                 <div className="relative aspect-16/10 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                     <img
-                        src={thumbnail}
+                        src={resolveMediaUrl(thumbnail)}
                         alt={title}
                         className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                         loading="lazy"

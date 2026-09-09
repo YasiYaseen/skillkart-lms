@@ -148,3 +148,74 @@ export async function deleteSection(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function reorderSections(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { courseId } = req.params;
+    if (!isValidObjectId(courseId)) {
+      return res.status(400).json({ message: "Invalid course id" });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const { sectionIds } = req.body;
+    if (!Array.isArray(sectionIds) || sectionIds.length === 0) {
+      return res.status(400).json({ message: "sectionIds must be a non-empty array" });
+    }
+
+    for (const id of sectionIds) {
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ message: `Invalid section ID: ${id}` });
+      }
+    }
+
+    // Verify all sections exist and belong to this course
+    const existingSections = await Section.find({
+      _id: { $in: sectionIds },
+      course: course._id,
+    });
+
+    if (existingSections.length !== sectionIds.length) {
+      return res.status(400).json({ message: "One or more sections do not belong to this course" });
+    }
+
+    // Two-pass update to prevent unique compound index collision ({ course: 1, order: 1 })
+    // Pass 1: Set temporary negative order indices
+    await Section.bulkWrite(
+      sectionIds.map((id, index) => ({
+        updateOne: {
+          filter: { _id: id, course: course._id },
+          update: { $set: { order: -(index + 1) } },
+        },
+      }))
+    );
+
+    // Pass 2: Set final positive order indices (1-based)
+    await Section.bulkWrite(
+      sectionIds.map((id, index) => ({
+        updateOne: {
+          filter: { _id: id, course: course._id },
+          update: { $set: { order: index + 1 } },
+        },
+      }))
+    );
+
+    const updatedSections = await Section.find({ course: course._id }).sort({ order: 1 });
+    return res.json({ message: "Sections reordered successfully", sections: updatedSections });
+  } catch (error) {
+    console.error("reorderSections error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+

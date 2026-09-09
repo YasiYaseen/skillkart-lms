@@ -13,6 +13,7 @@ import {
     fetchCourseBookmarks,
 } from '@/features/student/api/bookmarks';
 import { MarkdownRenderer } from '@components/common';
+import { resolveMediaUrl } from '@/utils/mediaUtils';
 import {
     AcademicCapIcon,
     BookmarkIcon,
@@ -515,7 +516,7 @@ function LessonViewer() {
                                                                 </iframe>
                                                             ) : (
                                                                 <video controls className="w-full h-full">
-                                                                    <source src={rawUrl} />
+                                                                    <source src={resolveMediaUrl(rawUrl)} />
                                                                 </video>
                                                             )}
                                                         </div>
@@ -524,15 +525,16 @@ function LessonViewer() {
                                             );
                                         } else if (item.type === 'pdf') {
                                             const url = content.url || '';
+                                            const resolvedPdfUrl = resolveMediaUrl(url);
                                             return (
                                                 <div key={item._id} className="item-content">
                                                     <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                                                         <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                                                             <DocumentTextIcon className="w-4 h-4 text-rose-500" />
                                                             <span className="font-semibold text-slate-700 dark:text-slate-300 text-xs">PDF Resource</span>
-                                                            <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-blue-600 hover:underline font-medium">Open in new tab ↗</a>
+                                                            <a href={resolvedPdfUrl} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-blue-600 hover:underline font-medium">Open in new tab ↗</a>
                                                         </div>
-                                                        <iframe src={url} className="w-full h-[65vh] min-h-[400px] border-0" title="PDF viewer" />
+                                                        <iframe src={resolvedPdfUrl} className="w-full h-[65vh] min-h-[400px] border-0" title="PDF viewer" />
                                                     </div>
                                                 </div>
                                             );

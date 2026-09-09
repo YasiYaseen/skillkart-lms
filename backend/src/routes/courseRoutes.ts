@@ -11,7 +11,7 @@ import {
   getCourseRecommendations,
   getLearnerDiscoveryFeed,
 } from "../controllers/course/courseController";
-import { createSection } from "../controllers/course/sectionController";
+import { createSection, reorderSections } from "../controllers/course/sectionController";
 import {
   getCurriculumForCourse,
   getCourseStudents,
@@ -102,6 +102,13 @@ router.post(
   requireOnboardingCompleted,
   authorize("instructor", "admin"),
   createSection
+);
+router.patch(
+  "/:courseId/sections/reorder",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  reorderSections
 );
 
 router.get(

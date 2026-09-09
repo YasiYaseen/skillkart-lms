@@ -8,6 +8,7 @@ import { QuizEditorModal } from '../components/QuizEditorModal';
 import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { useCurrency } from '@/context/CurrencyContext';
 import { getErrorMessage } from '@/utils/errorUtils';
+import { resolveMediaUrl } from '@/utils/mediaUtils';
 import {
     ClipboardDocumentListIcon,
     BookOpenIcon,
@@ -16,6 +17,8 @@ import {
     ArrowUpTrayIcon,
     AcademicCapIcon,
     TrashIcon,
+    ChevronUpIcon,
+    ChevronDownIcon,
 } from '@heroicons/react/20/solid';
 
 export interface CourseLessonItem {
@@ -322,6 +325,46 @@ function EditCourse() {
             toast.success('Section deleted');
         } catch {
             toast.error('Failed to delete section');
+        }
+    };
+
+    const handleMoveSection = async (index: number, direction: 'up' | 'down') => {
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= sections.length || !courseId) return;
+        const previousSections = [...sections];
+        const updated = [...sections];
+        const temp = updated[index];
+        updated[index] = updated[targetIndex];
+        updated[targetIndex] = temp;
+        setSections(updated);
+
+        try {
+            const sectionIds = updated.map((s) => s._id);
+            await api.patch(`/courses/${courseId}/sections/reorder`, { sectionIds });
+        } catch (err) {
+            setSections(previousSections);
+            toast.error(getErrorMessage(err, 'Failed to update section order'));
+        }
+    };
+
+    const handleMoveLesson = async (sectionId: string, index: number, direction: 'up' | 'down') => {
+        const sec = sections.find((s) => s._id === sectionId);
+        if (!sec) return;
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= sec.lessons.length) return;
+        const previousLessons = [...sec.lessons];
+        const updatedLessons = [...sec.lessons];
+        const temp = updatedLessons[index];
+        updatedLessons[index] = updatedLessons[targetIndex];
+        updatedLessons[targetIndex] = temp;
+        setSections(sections.map((s) => (s._id === sectionId ? { ...s, lessons: updatedLessons } : s)));
+
+        try {
+            const lessonIds = updatedLessons.map((l) => l._id);
+            await api.patch(`/sections/${sectionId}/lessons/reorder`, { lessonIds });
+        } catch (err) {
+            setSections(sections.map((s) => (s._id === sectionId ? { ...s, lessons: previousLessons } : s)));
+            toast.error(getErrorMessage(err, 'Failed to update lesson order'));
         }
     };
 
@@ -850,7 +893,7 @@ function EditCourse() {
                         </label>
                         {thumbnailUrl && (
                             <div className="mb-4 relative w-48 aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xs">
-                                <img src={thumbnailUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                                <img src={resolveMediaUrl(thumbnailUrl)} alt="Thumbnail preview" className="w-full h-full object-cover" />
                                 <button
                                     type="button"
                                     onClick={() => setThumbnailUrl('')}
@@ -862,6 +905,7 @@ function EditCourse() {
                         )}
                         <FileUpload
                             accept="image/*"
+                            maxSizeMB={10}
                             onUploadSuccess={(url) => setThumbnailUrl(url)}
                         />
                     </div>
@@ -960,6 +1004,26 @@ function EditCourse() {
                                         </div>
 
                                         <div className="flex items-center gap-2 self-end sm:self-auto">
+                                            <div className="flex items-center gap-0.5 border-r border-slate-200 dark:border-slate-700 pr-1.5 mr-0.5">
+                                                <button
+                                                    type="button"
+                                                    disabled={sIdx === 0}
+                                                    onClick={() => handleMoveSection(sIdx, 'up')}
+                                                    className="p-1 rounded text-slate-500 hover:text-blue-600 disabled:opacity-30 disabled:hover:text-slate-500 cursor-pointer disabled:cursor-not-allowed"
+                                                    title="Move section up"
+                                                >
+                                                    <ChevronUpIcon className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={sIdx === sections.length - 1}
+                                                    onClick={() => handleMoveSection(sIdx, 'down')}
+                                                    className="p-1 rounded text-slate-500 hover:text-blue-600 disabled:opacity-30 disabled:hover:text-slate-500 cursor-pointer disabled:cursor-not-allowed"
+                                                    title="Move section down"
+                                                >
+                                                    <ChevronDownIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -1092,6 +1156,26 @@ function EditCourse() {
                                                     </div>
 
                                                     <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                                                        <div className="flex items-center gap-0.5 border-r border-slate-200 dark:border-slate-700 pr-1 mr-0.5">
+                                                            <button
+                                                                type="button"
+                                                                disabled={lIdx === 0}
+                                                                onClick={() => handleMoveLesson(section._id, lIdx, 'up')}
+                                                                className="p-1 rounded text-slate-400 hover:text-blue-600 disabled:opacity-25 disabled:hover:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
+                                                                title="Move lesson up"
+                                                            >
+                                                                <ChevronUpIcon className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={lIdx === section.lessons.length - 1}
+                                                                onClick={() => handleMoveLesson(section._id, lIdx, 'down')}
+                                                                className="p-1 rounded text-slate-400 hover:text-blue-600 disabled:opacity-25 disabled:hover:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
+                                                                title="Move lesson down"
+                                                            >
+                                                                <ChevronDownIcon className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1180,6 +1264,7 @@ function EditCourse() {
                                                                 <p className="text-[11px] text-gray-500 dark:text-gray-400">Or upload video file directly:</p>
                                                                 <FileUpload
                                                                     accept="video/*"
+                                                                    maxSizeMB={100}
                                                                     onUploadSuccess={(url) => setNewItemContent(url)}
                                                                 />
                                                             </div>
@@ -1195,7 +1280,8 @@ function EditCourse() {
                                                                     className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                                                                 />
                                                                 <FileUpload
-                                                                    accept=".pdf,.doc,.docx"
+                                                                    accept=".pdf,.doc,.docx,application/pdf"
+                                                                    maxSizeMB={50}
                                                                     onUploadSuccess={(url) => setNewItemContent(url)}
                                                                 />
                                                             </div>

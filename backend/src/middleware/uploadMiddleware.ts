@@ -14,13 +14,48 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter (images and PDFs only)
+// File filter (images, videos, audio, and documents)
+const allowedMimeTypes = [
+  // Images
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  // Documents & Archives
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/zip',
+  'application/x-zip-compressed',
+  'text/plain',
+  // Videos
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-matroska',
+  'video/ogg',
+  // Audio
+  'audio/mpeg',
+  'audio/wav',
+  'audio/mp4',
+  'audio/ogg',
+  'audio/webm',
+];
+
+const allowedExtensions = [
+  '.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg',
+  '.pdf', '.doc', '.docx', '.zip', '.txt',
+  '.mp4', '.webm', '.mov', '.mkv', '.ogg',
+  '.mp3', '.wav', '.m4a'
+];
+
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedMimeTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, WEBP, and PDF are allowed.'));
+    cb(new Error('Invalid file type. Allowed: Images, PDFs, Docs (.doc, .docx), Zip, Audio, and Video files (.mp4, .webm, .mov, .mkv).'));
   }
 };
 
@@ -29,6 +64,6 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 15 * 1024 * 1024, // 15MB limit
+    fileSize: 100 * 1024 * 1024, // 100MB limit
   },
 });
