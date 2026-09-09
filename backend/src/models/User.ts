@@ -1,5 +1,15 @@
 import { Schema, model, Document, Types } from "mongoose";
 
+export interface IInstructorApplication {
+  teachingExperience: "none" | "in_person" | "online" | "professional";
+  primaryTopic: string;
+  experienceDetails: string;
+  sampleVideoOrPortfolioUrl?: string;
+  linkedinUrl?: string;
+  appliedAt: Date;
+  rejectionReason?: string;
+}
+
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -20,6 +30,7 @@ export interface IUser extends Document {
   isInstructorApproved?: boolean;
   instructorStatus?: "none" | "pending" | "approved" | "rejected";
   instructorRejectionReason?: string;
+  instructorApplication?: IInstructorApplication;
   currentStreak: number;
   longestStreak: number;
   lastActiveDate?: string;
@@ -60,6 +71,19 @@ const UserSchema = new Schema<IUser>(
       default: "none",
     },
     instructorRejectionReason: { type: String, trim: true },
+    instructorApplication: {
+      teachingExperience: {
+        type: String,
+        enum: ["none", "in_person", "online", "professional"],
+        default: "none",
+      },
+      primaryTopic: { type: String, trim: true },
+      experienceDetails: { type: String, trim: true },
+      sampleVideoOrPortfolioUrl: { type: String, trim: true },
+      linkedinUrl: { type: String, trim: true },
+      appliedAt: { type: Date, default: Date.now },
+      rejectionReason: { type: String, trim: true },
+    },
     currentStreak: { type: Number, default: 0 },
     longestStreak: { type: Number, default: 0 },
     lastActiveDate: { type: String },

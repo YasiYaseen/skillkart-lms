@@ -13,6 +13,16 @@ import { CheckIcon } from '@heroicons/react/20/solid';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 
+interface InstructorApplicationData {
+  teachingExperience: 'none' | 'in_person' | 'online' | 'professional';
+  primaryTopic: string;
+  experienceDetails: string;
+  sampleVideoOrPortfolioUrl?: string;
+  linkedinUrl?: string;
+  appliedAt?: string;
+  rejectionReason?: string;
+}
+
 interface PendingInstructor {
   _id: string;
   name: string;
@@ -25,9 +35,7 @@ interface PendingInstructor {
     website?: string;
     twitter?: string;
   };
-  instructorHeadline?: string;
-  instructorBio?: string;
-  linkedin?: string;
+  instructorApplication?: InstructorApplicationData;
   role: string;
   instructorStatus: string;
   createdAt: string;
@@ -226,8 +234,9 @@ export function InstructorReviews() {
                     </button>
                   </th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">Applicant</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 hidden md:table-cell">Headline</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 hidden lg:table-cell">Applied</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 hidden md:table-cell">Primary Topic</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 hidden lg:table-cell">Teaching Exp.</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 hidden xl:table-cell">Applied</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                 </tr>
               </thead>
@@ -235,6 +244,16 @@ export function InstructorReviews() {
                 {instructors.map((inst) => {
                   const isSelected = selected.has(inst._id);
                   const isExpanded = expandedId === inst._id;
+                  const app = inst.instructorApplication;
+                  const expLabel = {
+                    professional: 'Industry Professional',
+                    online: 'Online Instructor',
+                    in_person: 'In-person Teacher',
+                    none: 'Beginner / First-time',
+                  }[app?.teachingExperience || 'none'];
+
+                  const appliedDate = app?.appliedAt || inst.updatedAt || inst.createdAt;
+
                   return (
                     <>
                       <tr
@@ -272,16 +291,21 @@ export function InstructorReviews() {
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <p className="text-gray-700 dark:text-gray-300 truncate max-w-xs">
-                            {inst.instructorHeadline || <span className="text-gray-400 italic">No headline</span>}
+                          <p className="text-gray-900 dark:text-gray-100 font-medium truncate max-w-xs">
+                            {app?.primaryTopic || inst.headline || <span className="text-gray-400 italic">No topic specified</span>}
                           </p>
                         </td>
-                        <td className="px-4 py-3 hidden lg:table-cell text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                          {new Date(inst.updatedAt).toLocaleDateString(undefined, {
+                        <td className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                            {expLabel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 hidden xl:table-cell text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          {appliedDate ? new Date(appliedDate).toLocaleDateString(undefined, {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric',
-                          })}
+                          }) : '—'}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -305,40 +329,71 @@ export function InstructorReviews() {
                               onClick={() => setExpandedId(isExpanded ? null : inst._id)}
                               className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                             >
-                              {isExpanded ? 'Less' : 'Details'}
+                              {isExpanded ? 'Hide Details' : 'View Application'}
                             </button>
                           </div>
                         </td>
                       </tr>
 
-                      {/* Expanded detail row */}
+                      {/* Expanded application detail row */}
                       {isExpanded && (
-                        <tr key={`${inst._id}-expanded`} className="bg-gray-50 dark:bg-gray-800/30">
-                          <td colSpan={5} className="px-6 py-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-                              {(inst.bio || inst.instructorBio) && (
+                        <tr key={`${inst._id}-expanded`} className="bg-blue-50/40 dark:bg-blue-950/20 border-t border-b border-blue-100 dark:border-blue-900/40">
+                          <td colSpan={6} className="px-6 py-4">
+                            <div className="space-y-3 max-w-3xl">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
+                                  Instructor Application Dossier
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  Experience Level: <strong>{expLabel}</strong>
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800">
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Bio</p>
-                                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{inst.bio || inst.instructorBio}</p>
+                                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Primary Topic / Domain to Teach</p>
+                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {app?.primaryTopic || inst.headline || 'Not specified'}
+                                  </p>
                                 </div>
-                              )}
-                              {(inst.socialLinks?.linkedin || inst.linkedin) && (
+
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">LinkedIn</p>
-                                  <a
-                                    href={inst.socialLinks?.linkedin || inst.linkedin}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline break-all"
-                                  >
-                                    <LinkIcon className="w-3.5 h-3.5 shrink-0" />
-                                    {inst.socialLinks?.linkedin || inst.linkedin}
-                                  </a>
+                                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Teaching & Industry Background</p>
+                                  <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                                    {app?.experienceDetails || inst.bio || 'No credentials submitted.'}
+                                  </p>
                                 </div>
-                              )}
-                              {!(inst.bio || inst.instructorBio) && !(inst.socialLinks?.linkedin || inst.linkedin) && (
-                                <p className="text-sm text-gray-400 italic col-span-2">No additional details provided</p>
-                              )}
+
+                                {app?.sampleVideoOrPortfolioUrl && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Sample Video / Portfolio Demo</p>
+                                    <a
+                                      href={app.sampleVideoOrPortfolioUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline break-all"
+                                    >
+                                      <LinkIcon className="w-3.5 h-3.5 shrink-0" />
+                                      {app.sampleVideoOrPortfolioUrl}
+                                    </a>
+                                  </div>
+                                )}
+
+                                {(app?.linkedinUrl || inst.socialLinks?.linkedin || inst.linkedin) && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">LinkedIn / Professional Profile</p>
+                                    <a
+                                      href={app?.linkedinUrl || inst.socialLinks?.linkedin || inst.linkedin}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline break-all"
+                                    >
+                                      <LinkIcon className="w-3.5 h-3.5 shrink-0" />
+                                      {app?.linkedinUrl || inst.socialLinks?.linkedin || inst.linkedin}
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </td>
                         </tr>

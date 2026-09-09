@@ -1,6 +1,16 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { getOnboardingStatusApi } from './auth.api';
 
+export interface InstructorApplication {
+  teachingExperience: 'none' | 'in_person' | 'online' | 'professional';
+  primaryTopic: string;
+  experienceDetails: string;
+  sampleVideoOrPortfolioUrl?: string;
+  linkedinUrl?: string;
+  appliedAt?: string;
+  rejectionReason?: string;
+}
+
 interface User {
   id: string;
   name: string;
@@ -10,6 +20,7 @@ interface User {
   isInstructorApproved?: boolean;
   instructorStatus?: 'none' | 'pending' | 'approved' | 'rejected';
   instructorRejectionReason?: string;
+  instructorApplication?: InstructorApplication;
   avatar?: string;
   headline?: string;
   bio?: string;

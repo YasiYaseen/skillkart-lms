@@ -290,16 +290,35 @@ export async function applyForInstructor(req: Request, res: Response) {
       return res.status(400).json({ message: "Your instructor application is already submitted and under review" });
     }
 
-    const { headline, bio, linkedin } = req.body;
+    const {
+      teachingExperience,
+      primaryTopic,
+      experienceDetails,
+      sampleVideoOrPortfolioUrl,
+      linkedinUrl,
+    } = req.body;
 
-    if (headline && typeof headline === "string") user.headline = headline.trim().slice(0, 120);
-    if (bio && typeof bio === "string") user.bio = bio.trim().slice(0, 500);
-    if (linkedin && typeof linkedin === "string") {
-      user.socialLinks = {
-        ...user.socialLinks,
-        linkedin: linkedin.trim(),
-      };
+    if (!primaryTopic || typeof primaryTopic !== "string" || !primaryTopic.trim()) {
+      return res.status(400).json({ message: "Please enter the primary topic or domain you plan to teach" });
     }
+
+    if (!experienceDetails || typeof experienceDetails !== "string" || experienceDetails.trim().length < 20) {
+      return res.status(400).json({ message: "Please provide detailed background or credentials (minimum 20 characters)" });
+    }
+
+    const validExperience = ["none", "in_person", "online", "professional"].includes(teachingExperience)
+      ? teachingExperience
+      : "none";
+
+    user.instructorApplication = {
+      teachingExperience: validExperience,
+      primaryTopic: primaryTopic.trim().slice(0, 120),
+      experienceDetails: experienceDetails.trim().slice(0, 1000),
+      sampleVideoOrPortfolioUrl: typeof sampleVideoOrPortfolioUrl === "string" ? sampleVideoOrPortfolioUrl.trim().slice(0, 300) : undefined,
+      linkedinUrl: typeof linkedinUrl === "string" ? linkedinUrl.trim().slice(0, 300) : undefined,
+      appliedAt: new Date(),
+      rejectionReason: undefined,
+    };
 
     const settings = await SystemSettings.findOne({ isSingleton: true });
     const requireApproval = settings?.requireInstructorApproval ?? true;
@@ -329,6 +348,7 @@ export async function applyForInstructor(req: Request, res: Response) {
         instructorStatus: user.instructorStatus,
         isInstructorApproved: user.isInstructorApproved,
         instructorRejectionReason: user.instructorRejectionReason,
+        instructorApplication: user.instructorApplication,
         headline: user.headline,
         bio: user.bio,
       },

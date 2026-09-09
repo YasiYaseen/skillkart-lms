@@ -229,10 +229,16 @@ export async function bulkApproveInstructors(req: Request, res: Response) {
           user.isInstructorApproved = true;
           user.instructorStatus = "approved";
           user.instructorRejectionReason = undefined;
+          if (user.instructorApplication) {
+            user.instructorApplication.rejectionReason = undefined;
+          }
         } else {
           user.instructorStatus = "rejected";
           user.isInstructorApproved = false;
           user.instructorRejectionReason = sanitizedReason;
+          if (user.instructorApplication) {
+            user.instructorApplication.rejectionReason = sanitizedReason;
+          }
           // Keep role as student
         }
         await user.save();

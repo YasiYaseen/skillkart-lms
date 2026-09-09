@@ -49,10 +49,12 @@ function Profile() {
     const [saving, setSaving] = useState(false);
     const [changingPassword, setChangingPassword] = useState(false);
 
-    // Instructor Application State
+    // Instructor Application State (Industry Standard Vetting)
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-    const [applyHeadline, setApplyHeadline] = useState('');
-    const [applyBio, setApplyBio] = useState('');
+    const [applyTopic, setApplyTopic] = useState('');
+    const [applyExperience, setApplyExperience] = useState<'none' | 'in_person' | 'online' | 'professional'>('online');
+    const [applyDetails, setApplyDetails] = useState('');
+    const [applyVideoUrl, setApplyVideoUrl] = useState('');
     const [applyLinkedin, setApplyLinkedin] = useState('');
     const [submittingApplication, setSubmittingApplication] = useState(false);
 
@@ -198,12 +200,23 @@ function Profile() {
 
     const handleApplyInstructor = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!applyTopic.trim()) {
+            toast.error('Please enter the primary topic or domain you plan to teach');
+            return;
+        }
+        if (!applyDetails.trim() || applyDetails.trim().length < 20) {
+            toast.error('Please share some details about your credentials and background (minimum 20 characters)');
+            return;
+        }
+
         setSubmittingApplication(true);
         try {
             const res = await api.post('/users/apply-instructor', {
-                headline: applyHeadline || headline,
-                bio: applyBio || bio,
-                linkedin: applyLinkedin || socialLinks.linkedin,
+                primaryTopic: applyTopic.trim(),
+                teachingExperience: applyExperience,
+                experienceDetails: applyDetails.trim(),
+                sampleVideoOrPortfolioUrl: applyVideoUrl.trim() || undefined,
+                linkedinUrl: applyLinkedin.trim() || socialLinks.linkedin || undefined,
             });
 
             toast.success(res.data.message || 'Application submitted successfully!');
@@ -663,9 +676,11 @@ function Profile() {
                                         <Button
                                             type="button"
                                             onClick={() => {
-                                                setApplyHeadline(headline);
-                                                setApplyBio(bio);
-                                                setApplyLinkedin(socialLinks.linkedin);
+                                                setApplyTopic(user?.instructorApplication?.primaryTopic || '');
+                                                setApplyExperience(user?.instructorApplication?.teachingExperience || 'online');
+                                                setApplyDetails(user?.instructorApplication?.experienceDetails || '');
+                                                setApplyVideoUrl(user?.instructorApplication?.sampleVideoOrPortfolioUrl || '');
+                                                setApplyLinkedin(user?.instructorApplication?.linkedinUrl || socialLinks.linkedin || '');
                                                 setIsApplyModalOpen(true);
                                             }}
                                         >
@@ -694,9 +709,11 @@ function Profile() {
                                         <Button
                                             type="button"
                                             onClick={() => {
-                                                setApplyHeadline(headline);
-                                                setApplyBio(bio);
-                                                setApplyLinkedin(socialLinks.linkedin);
+                                                setApplyTopic('');
+                                                setApplyExperience('online');
+                                                setApplyDetails('');
+                                                setApplyVideoUrl('');
+                                                setApplyLinkedin(socialLinks.linkedin || '');
                                                 setIsApplyModalOpen(true);
                                             }}
                                         >
@@ -710,57 +727,90 @@ function Profile() {
                 </div>
             </div>
 
-            {/* Instructor Application Modal */}
+            {/* Instructor Application Modal (Industry Standard Vetting) */}
             <Modal
                 isOpen={isApplyModalOpen}
                 onClose={() => {
-                    setIsApplyModalOpen(false);
-                    if (searchParams.get('apply')) {
-                        searchParams.delete('apply');
-                        setSearchParams(searchParams);
+                    if (!submittingApplication) {
+                        setIsApplyModalOpen(false);
+                        if (searchParams.get('apply')) {
+                            searchParams.delete('apply');
+                            setSearchParams(searchParams);
+                        }
                     }
                 }}
-                title="Apply to Become an Instructor"
+                title="Apply to Teach on SkillKart"
             >
                 <form onSubmit={handleApplyInstructor} className="space-y-4">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Instructors can build courses, upload video lectures, generate quizzes, and earn revenue. Fill in your details below for administrative review.
+                        Join our instructor community. This application is reviewed by our curation team to ensure high quality courses for learners. Your student profile remains completely untouched.
                     </p>
 
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                            Professional Headline <span className="text-red-500">*</span>
+                            Primary Subject or Domain to Teach <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
                             required
                             maxLength={120}
-                            placeholder="e.g. Senior Full-Stack Engineer | 8+ yrs teaching React"
-                            value={applyHeadline}
-                            onChange={(e) => setApplyHeadline(e.target.value)}
+                            placeholder="e.g. Modern React & Next.js, Cloud Architecture, or Machine Learning"
+                            value={applyTopic}
+                            onChange={(e) => setApplyTopic(e.target.value)}
                             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
 
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                            Instructor Bio & Teaching Experience <span className="text-red-500">*</span>
+                            Prior Teaching Experience <span className="text-red-500">*</span>
                         </label>
-                        <textarea
-                            rows={4}
-                            required
-                            maxLength={500}
-                            placeholder="Tell us about what courses you plan to teach and your relevant background or industry credentials..."
-                            value={applyBio}
-                            onChange={(e) => setApplyBio(e.target.value)}
-                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                        <p className="text-[11px] text-gray-400 text-right mt-1">{applyBio.length}/500</p>
+                        <select
+                            value={applyExperience}
+                            onChange={(e) => setApplyExperience(e.target.value as 'none' | 'in_person' | 'online' | 'professional')}
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                        >
+                            <option value="professional">Industry Professional (senior engineer, architect, consultant)</option>
+                            <option value="online">Online Instructor (taught on YouTube, Udemy, Coursera, or webinars)</option>
+                            <option value="in_person">In-Person Educator (university lecturer, bootcamp mentor, workshop host)</option>
+                            <option value="none">Beginner / First-time teacher (have domain mastery, new to teaching)</option>
+                        </select>
                     </div>
 
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                            LinkedIn / Portfolio URL
+                            Teaching Credentials & Background <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            rows={4}
+                            required
+                            minLength={20}
+                            maxLength={1000}
+                            placeholder="Describe your expertise, work experience, certifications, and what topics or projects you intend to build for your learners..."
+                            value={applyDetails}
+                            onChange={(e) => setApplyDetails(e.target.value)}
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <p className="text-[11px] text-gray-400 text-right mt-1">{applyDetails.length}/1000</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                            Sample Video or Portfolio Link <span className="text-gray-400 font-normal">(Optional but recommended)</span>
+                        </label>
+                        <input
+                            type="url"
+                            placeholder="https://youtube.com/watch?v=... or https://loom.com/... or portfolio/GitHub"
+                            value={applyVideoUrl}
+                            onChange={(e) => setApplyVideoUrl(e.target.value)}
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <span className="text-[11px] text-gray-400 mt-1 block">A 2-3 minute audio/video sample or project demo significantly speeds up approval.</span>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                            LinkedIn / Public Professional Profile
                         </label>
                         <input
                             type="url"
@@ -774,6 +824,7 @@ function Profile() {
                     <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-2.5">
                         <button
                             type="button"
+                            disabled={submittingApplication}
                             onClick={() => {
                                 setIsApplyModalOpen(false);
                                 if (searchParams.get('apply')) {
@@ -781,12 +832,12 @@ function Profile() {
                                     setSearchParams(searchParams);
                                 }
                             }}
-                            className="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                            className="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50"
                         >
                             Cancel
                         </button>
                         <Button type="submit" disabled={submittingApplication}>
-                            {submittingApplication ? 'Submitting Application...' : 'Submit Application'}
+                            {submittingApplication ? 'Submitting Application...' : 'Submit Application for Review'}
                         </Button>
                     </div>
                 </form>
