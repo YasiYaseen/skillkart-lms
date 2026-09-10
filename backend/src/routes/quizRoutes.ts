@@ -2,7 +2,7 @@ import { Router } from "express";
 import { protect } from "../middleware/authMiddleware";
 import { authorize } from "../middleware/roleMiddleware";
 import { requireOnboardingCompleted } from "../middleware/onboardingMiddleware";
-import { createOrReplaceQuiz, getQuiz, submitQuiz } from "../controllers/course/quizController";
+import { createOrReplaceQuiz, getQuiz, submitQuiz, deleteQuiz } from "../controllers/course/quizController";
 
 const router = Router();
 
@@ -13,6 +13,15 @@ router.post(
   requireOnboardingCompleted,
   authorize("instructor", "admin"),
   createOrReplaceQuiz
+);
+
+// Instructor/admin: delete quiz
+router.delete(
+  "/lessons/:lessonId/quiz",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  deleteQuiz
 );
 
 // Student: get quiz (no correct answers)

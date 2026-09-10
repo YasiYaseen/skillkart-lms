@@ -10,6 +10,7 @@ export interface InstructorCoupon {
   maxDiscountAmount?: number;
   maxRedemptions?: number;
   timesRedeemed: number;
+  description?: string;
   expiresAt?: string;
   isActive: boolean;
   createdAt: string;

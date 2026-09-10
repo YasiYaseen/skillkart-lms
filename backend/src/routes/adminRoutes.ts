@@ -62,6 +62,7 @@ router.post("/instructor-reviews/bulk", bulkApproveInstructors);
 
 router.get("/courses", getCourses);
 router.patch("/courses/:courseId/status", updateCourseStatus);
+router.patch("/courses/:courseId/moderation", updateCourseStatus);
 
 router.get("/enrollments", getEnrollments);
 

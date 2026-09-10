@@ -65,11 +65,11 @@ function Profile() {
         }
         if (searchParams.get('apply') === 'instructor') {
             setActiveTab('teaching');
-            if (user?.role === 'student') {
+            if (user?.role === 'student' && user?.instructorStatus !== 'pending' && user?.instructorStatus !== 'approved') {
                 setIsApplyModalOpen(true);
             }
         }
-    }, [searchParams, user?.role]);
+    }, [searchParams, user?.role, user?.instructorStatus]);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -114,6 +114,8 @@ function Profile() {
                         instructorStatus: userData.instructorStatus,
                         isInstructorApproved: userData.isInstructorApproved,
                         instructorRejectionReason: userData.instructorRejectionReason,
+                        instructorApplication: userData.instructorApplication,
+                        hasPassword: userData.hasPassword,
                     });
                 }
             } catch (err: unknown) {
@@ -171,6 +173,8 @@ function Profile() {
         }
     };
 
+    const hasExistingPassword = user?.hasPassword !== false;
+
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
@@ -184,10 +188,11 @@ function Profile() {
         setChangingPassword(true);
         try {
             await api.post('/auth/change-password', {
-                currentPassword,
+                currentPassword: hasExistingPassword ? currentPassword : '',
                 newPassword,
             });
-            toast.success('Password changed successfully!');
+            toast.success(hasExistingPassword ? 'Password changed successfully!' : 'Password set successfully!');
+            updateUser({ hasPassword: true });
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
@@ -528,25 +533,31 @@ function Profile() {
                     ) : activeTab === 'security' ? (
                         /* Security Tab */
                         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-700 shadow-xs">
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Change Password</h2>
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                                {hasExistingPassword ? 'Change Password' : 'Set Password'}
+                            </h2>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
-                                Ensure your account is using a long, random password to stay secure.
+                                {hasExistingPassword
+                                    ? 'Ensure your account is using a long, random password to stay secure.'
+                                    : 'You signed in via Google OAuth. Set a local password to enable direct email & password sign-in.'}
                             </p>
 
                             <form onSubmit={handlePasswordSubmit} className="space-y-5 max-w-lg">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                        Current Password <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={currentPassword}
-                                        onChange={(e) => setCurrentPassword(e.target.value)}
-                                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                        placeholder="••••••••"
-                                    />
-                                </div>
+                                {hasExistingPassword && (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                            Current Password <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -580,7 +591,13 @@ function Profile() {
 
                                 <div className="pt-4">
                                     <Button type="submit" disabled={changingPassword}>
-                                        {changingPassword ? 'Updating Password...' : 'Update Password'}
+                                        {changingPassword
+                                            ? hasExistingPassword
+                                                ? 'Updating Password...'
+                                                : 'Setting Password...'
+                                            : hasExistingPassword
+                                            ? 'Update Password'
+                                            : 'Set Password'}
                                     </Button>
                                 </div>
                             </form>

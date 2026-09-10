@@ -9,6 +9,7 @@ import CourseFAQ from "../models/CourseFAQ";
 import Announcement from "../models/Announcement";
 import Assignment from "../models/Assignment";
 import Category from "../models/Category";
+import Enrollment from "../models/Enrollment";
 import { syncEnrollmentLessonCount } from "../controllers/course/shared";
 
 export interface InstructorSeedInput {
@@ -1211,6 +1212,17 @@ export async function generateInstructorAndCourses(options: GeneratorOptions): P
     }
 
     if (existingCourse && options.forceRegenerate) {
+      // AUDIT-44: Guard force-regeneration against active enrollments
+      const activeEnrollmentsCount = await Enrollment.countDocuments({
+        course: existingCourse._id,
+        status: { $in: ["active", "completed"] },
+      });
+      if (activeEnrollmentsCount > 0) {
+        throw new Error(
+          `Cannot force-regenerate course "${existingCourse.title}": ${activeEnrollmentsCount} active or completed student enrollment(s) exist. This would corrupt student progress.`
+        );
+      }
+
       // Clean up previous child data to do a fresh replacement
       const oldSections = await Section.find({ course: existingCourse._id }).select("_id").lean();
       const oldSectionIds = oldSections.map((s) => s._id);

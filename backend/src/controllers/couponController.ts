@@ -136,6 +136,8 @@ export async function validateCoupon(req: Request, res: Response) {
         discountTotal = Math.min(coursePrice, coupon.discountValue);
       }
 
+      const preCapDiscount = discountTotal;
+
       // If platform-funded, cap discount at current live platform commission
       if (fundedBy === "platform") {
         const maxPlatformCap = (coursePrice * liveCommissionRate) / 100;
@@ -181,6 +183,17 @@ export async function validateCoupon(req: Request, res: Response) {
       discountTotal = Math.min(discountTotal, maxPlatformCap);
     }
 
+    // AUDIT-57: Detect if discount was constrained by platform subsidy cap or maxDiscountAmount
+    let uncappedDiscount = discountTotal;
+    if (scope === "single_course" || coupon.course) {
+      const targetCourse = courses.find((c) => c._id.toString() === coupon.course?.toString());
+      const coursePrice = typeof targetCourse?.price === "number" ? targetCourse.price : 0;
+      uncappedDiscount = coupon.discountType === "percentage" ? (coursePrice * coupon.discountValue) / 100 : Math.min(coursePrice, coupon.discountValue);
+    } else if (scope !== "instructor_all") {
+      uncappedDiscount = coupon.discountType === "percentage" ? (subtotal * coupon.discountValue) / 100 : Math.min(subtotal, coupon.discountValue);
+    }
+    const isCapped = discountTotal < uncappedDiscount || (Boolean(coupon.maxDiscountAmount) && discountTotal >= (coupon.maxDiscountAmount ?? 0));
+
     // Cap at max discount if defined
     if (coupon.maxDiscountAmount && discountTotal > coupon.maxDiscountAmount) {
       discountTotal = coupon.maxDiscountAmount;
@@ -211,6 +224,7 @@ export async function validateCoupon(req: Request, res: Response) {
       discountTotal,
       totalAmount,
       applicableItemsCount,
+      isCapped,
     });
   } catch (error) {
     return res.status(500).json({ message: "Server error validating coupon" });

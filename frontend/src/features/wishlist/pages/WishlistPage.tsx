@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { fetchWishlist, removeFromWishlist, type WishlistItem } from "../api/wishlist";
 import { toast } from 'sonner';
 import Rating from "@/components/common/Rating";
+import { useCart } from "@/context/CartContext";
 
 export function WishlistPage() {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { addToCart, isInCart } = useCart();
 
   useEffect(() => {
     loadWishlist();
@@ -157,12 +159,34 @@ export function WishlistPage() {
                     {course.isPaid && course.price ? `$${course.price}` : "Free"}
                   </div>
 
-                  <Link
-                    to={`/courses/${course._id}`}
-                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                  >
-                    View Course
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    {course.isPaid && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await addToCart({
+                            courseId: course._id,
+                            title: course.title,
+                            price: course.price || 0,
+                            thumbnailUrl: course.thumbnailUrl,
+                            instructorName: course.instructor?.name || '',
+                          });
+                          toast.success(`"${course.title}" added to cart`);
+                        }}
+                        disabled={isInCart(course._id)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isInCart(course._id) ? "In Cart" : "Add to Cart"}
+                      </button>
+                    )}
+
+                    <Link
+                      to={`/courses/${course._id}`}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    >
+                      View
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

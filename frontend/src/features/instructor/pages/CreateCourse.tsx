@@ -382,8 +382,8 @@ export const CreateCourse = () => {
     const handlePublish = async () => {
         if (!courseId) return;
         try {
-            await api.patch(`/courses/${courseId}/publish`);
-            toast.success('Course Published Successfully!');
+            const res = await api.patch<{ message?: string }>(`/courses/${courseId}/publish`);
+            toast.success(res.data?.message || 'Course submitted successfully!');
             navigate('/instructor/courses');
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Publish failed';

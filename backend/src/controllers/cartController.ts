@@ -36,7 +36,8 @@ interface FormattedCartItem {
 
 function formatCartItems(
   items: Array<{ course: any; addedAt: Date }>,
-  requireApproval: boolean
+  requireApproval: boolean,
+  currentUserId?: string
 ): FormattedCartItem[] {
   const seen = new Set<string>();
   const result: FormattedCartItem[] = [];
@@ -48,6 +49,12 @@ function formatCartItems(
       course._id &&
       isCoursePubliclyAccessible(course, requireApproval)
     ) {
+      const instructorId = course.instructor?._id
+        ? course.instructor._id.toString()
+        : course.instructor?.toString();
+      if (currentUserId && instructorId === currentUserId) {
+        continue;
+      }
       const idStr = course._id.toString();
       if (!seen.has(idStr)) {
         seen.add(idStr);
@@ -75,8 +82,9 @@ export async function getCart(req: Request, res: Response) {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    const userId = req.user.id;
 
-    let cart = await Cart.findOne({ student: req.user.id }).populate({
+    let cart = await Cart.findOne({ student: userId }).populate({
       path: "items.course",
       select: "_id title price thumbnailUrl isPaid status isActive isApproved instructor",
       populate: { path: "instructor", select: "name" },
@@ -87,7 +95,30 @@ export async function getCart(req: Request, res: Response) {
     }
 
     const requireApproval = await isCourseApprovalRequired();
-    const formattedItems = formatCartItems(cart.items, requireApproval);
+
+    // Prune unpurchasable, deleted, or self-authored courses from database cart
+    const validItems = cart.items.filter((item) => {
+      const course = (item.course as unknown) as PopulatedCourseDoc | null;
+      if (!course || !course._id || !isCoursePubliclyAccessible(course, requireApproval)) {
+        return false;
+      }
+      const instructorId = course.instructor?._id
+        ? course.instructor._id.toString()
+        : course.instructor?.toString();
+      if (instructorId && instructorId === userId) {
+        return false;
+      }
+      return true;
+    });
+
+    if (validItems.length !== cart.items.length) {
+      cart.items = validItems;
+      await cart.save().catch((err) => {
+        console.error("Error saving pruned cart:", err);
+      });
+    }
+
+    const formattedItems = formatCartItems(validItems, requireApproval, userId);
     return res.json({ items: formattedItems });
   } catch (error) {
     console.error("Error in getCart:", error);
@@ -119,9 +150,14 @@ export async function addToCart(req: Request, res: Response) {
     }
 
     // Verify course exists and is available
-    const course = await Course.findById(courseId).select("_id title status isActive isApproved isPaid price");
+    const course = await Course.findById(courseId).select("_id title status isActive isApproved isPaid price instructor");
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
+    }
+
+    // AUDIT-21: Prevent instructor self-purchase
+    if (course.instructor && course.instructor.toString() === req.user.id) {
+      return res.status(400).json({ message: "Instructors cannot purchase their own courses." });
     }
 
     const requireApproval = await isCourseApprovalRequired();
@@ -129,12 +165,13 @@ export async function addToCart(req: Request, res: Response) {
       return res.status(400).json({ message: "This course is currently unavailable for purchase." });
     }
 
-    // Check if already enrolled
-    const isEnrolled = await Enrollment.exists({
+    // AUDIT-62: Only block if active or completed enrollment exists (allow repurchasing cancelled enrollments)
+    const activeEnrollment = await Enrollment.exists({
       student: req.user.id,
       course: course._id,
+      status: { $in: ["active", "completed"] },
     });
-    if (isEnrolled) {
+    if (activeEnrollment) {
       return res.status(400).json({ message: "You are already enrolled in this course." });
     }
 
@@ -183,7 +220,7 @@ export async function addToCart(req: Request, res: Response) {
       populate: { path: "instructor", select: "name" },
     });
 
-    const formattedItems = formatCartItems(cart.items, requireApproval);
+    const formattedItems = formatCartItems(cart.items, requireApproval, req.user.id);
     return res.status(200).json({
       message: "Course added to cart",
       items: formattedItems,
@@ -215,7 +252,7 @@ export async function removeFromCart(req: Request, res: Response) {
     }
 
     cart.items = cart.items.filter(
-      (item) => item.course.toString() !== courseId
+      (item) => item.course && item.course.toString() !== courseId
     );
     await cart.save();
 
@@ -226,7 +263,7 @@ export async function removeFromCart(req: Request, res: Response) {
     });
 
     const requireApproval = await isCourseApprovalRequired();
-    const formattedItems = formatCartItems(cart.items, requireApproval);
+    const formattedItems = formatCartItems(cart.items, requireApproval, req.user.id);
     return res.json({
       message: "Course removed from cart",
       items: formattedItems,
@@ -320,10 +357,11 @@ export async function mergeCart(req: Request, res: Response) {
         enrollments.map((e) => e.course.toString())
       );
 
-      // Verify active/published courses
+      // Verify active/published courses (AUDIT-56: filter out instructor-owned courses)
       const approvalFilter = await getCourseApprovalFilter();
       const validCourses = await Course.find({
         _id: { $in: validCourseIds },
+        instructor: { $ne: new Types.ObjectId(req.user.id) },
         status: "published",
         isActive: { $ne: false },
         ...approvalFilter,
@@ -353,7 +391,7 @@ export async function mergeCart(req: Request, res: Response) {
     });
 
     const requireApproval = await isCourseApprovalRequired();
-    const formattedItems = formatCartItems(cart.items, requireApproval);
+    const formattedItems = formatCartItems(cart.items, requireApproval, req.user.id);
     return res.json({
       message: "Cart merged successfully",
       items: formattedItems,

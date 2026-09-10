@@ -3,12 +3,27 @@ import { isValidObjectId, Types } from "mongoose";
 import CourseFAQ from "../../models/CourseFAQ";
 import Course from "../../models/Course";
 import { createFAQSchema, updateFAQSchema } from "../../validators/faq.validator";
+import { isCourseApprovalRequired, isCoursePubliclyAccessible } from "./shared";
 
 export async function getCourseFAQs(req: Request, res: Response) {
   try {
     const { courseId } = req.params;
     if (!isValidObjectId(courseId)) {
       return res.status(400).json({ message: "Invalid courseId" });
+    }
+
+    // AUDIT-42: Guard draft and unapproved course FAQs from public exposure
+    const course = await Course.findById(courseId).select("status isActive isApproved instructor").lean();
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    const requireApproval = await isCourseApprovalRequired();
+    if (!isCoursePubliclyAccessible(course, requireApproval)) {
+      const isManager = req.user && (req.user.role === "admin" || course.instructor.toString() === req.user.id);
+      if (!isManager) {
+        return res.status(404).json({ message: "Course not found" });
+      }
     }
 
     const faqs = await CourseFAQ.find({ course: courseId }).sort({ order: 1, createdAt: 1 }).lean();
@@ -47,8 +62,9 @@ export async function createCourseFAQ(req: Request, res: Response) {
       });
     }
 
-    const count = await CourseFAQ.countDocuments({ course: courseId });
-    const order = parsed.data.order !== undefined ? parsed.data.order : count + 1;
+    // AUDIT-42: Avoid duplicate order collisions by using max order instead of countDocuments
+    const lastFaq = await CourseFAQ.findOne({ course: courseId }).sort({ order: -1 }).select("order").lean();
+    const order = parsed.data.order !== undefined ? parsed.data.order : ((lastFaq?.order ?? 0) + 1);
 
     const cId = Array.isArray(courseId) ? courseId[0] : courseId;
     const faq = await CourseFAQ.create({
@@ -140,6 +156,12 @@ export async function deleteCourseFAQ(req: Request, res: Response) {
     if (!deleted) {
       return res.status(404).json({ message: "FAQ not found" });
     }
+
+    // AUDIT-42: Re-sequence remaining FAQs to eliminate gaps and order collisions
+    const remainingFaqs = await CourseFAQ.find({ course: courseId }).sort({ order: 1, createdAt: 1 });
+    await Promise.all(
+      remainingFaqs.map((faq, index) => CourseFAQ.updateOne({ _id: faq._id }, { $set: { order: index + 1 } }))
+    );
 
     return res.json({ message: "FAQ deleted successfully" });
   } catch (error) {

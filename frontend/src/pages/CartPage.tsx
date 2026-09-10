@@ -28,7 +28,7 @@ import {
 import { CheckIcon, LockClosedIcon, UserIcon } from '@heroicons/react/20/solid';
 
 export default function CartPage() {
-  const { cart, removeFromCart, clearCart, cartTotal, addToCart } = useCart();
+  const { cart, removeFromCart, clearCart, cartTotal, addToCart, refreshCart } = useCart();
   const { formatAmount, formatPrice } = useCurrency();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -220,6 +220,10 @@ export default function CartPage() {
       clearCart();
       toast.success('Order completed successfully! Welcome to your courses.');
     } catch (err: unknown) {
+      await refreshCart();
+      setCurrentStep('items');
+      setAppliedCoupon(null);
+      setCouponInput('');
       toast.error(getErrorMessage(err, 'Checkout failed. Please try again.'));
     } finally {
       setCheckingOut(false);

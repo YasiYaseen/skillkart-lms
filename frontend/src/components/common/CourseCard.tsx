@@ -79,18 +79,22 @@ export function CourseCard({ course, className = '', showWishlist = true, isEnro
     const isFree = !price || price === 0;
     const inCart = id ? isInCart(String(id)) : false;
 
-    const handleAddToCart = (e: React.MouseEvent) => {
+    const handleAddToCart = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         if (id && !isAlreadyEnrolled) {
-            addToCart({
-                courseId: String(id),
-                title,
-                price,
-                thumbnailUrl: thumbnail,
-                instructorName: instructor,
-            });
-            toast.success(`"${title}" added to your cart!`);
+            try {
+                await addToCart({
+                    courseId: String(id),
+                    title,
+                    price,
+                    thumbnailUrl: thumbnail,
+                    instructorName: instructor,
+                });
+                toast.success(`"${title}" added to your cart!`);
+            } catch {
+                // Handled in CartContext
+            }
         }
     };
 

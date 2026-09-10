@@ -7,6 +7,7 @@ import {
   publishCourse,
   unpublishCourse,
   archiveCourse,
+  unarchiveCourse,
   deleteCourse,
   getCourseRecommendations,
   getLearnerDiscoveryFeed,
@@ -67,9 +68,9 @@ router.delete(
   deleteCourseFAQ
 );
 router.get("/:courseId/reviews", listCourseReviews);
-router.post("/:courseId/reviews", protect, requireOnboardingCompleted, authorize("student"), createCourseReview);
-router.patch("/:courseId/reviews/me", protect, requireOnboardingCompleted, authorize("student"), updateCourseReview);
-router.delete("/:courseId/reviews/me", protect, requireOnboardingCompleted, authorize("student"), deleteCourseReview);
+router.post("/:courseId/reviews", protect, requireOnboardingCompleted, authorize("student", "instructor"), createCourseReview);
+router.patch("/:courseId/reviews/me", protect, requireOnboardingCompleted, authorize("student", "instructor"), updateCourseReview);
+router.delete("/:courseId/reviews/me", protect, requireOnboardingCompleted, authorize("student", "instructor"), deleteCourseReview);
 
 router.post("/", protect, requireOnboardingCompleted, authorize("instructor", "admin"), createCourse);
 router.patch("/:courseId", protect, requireOnboardingCompleted, authorize("instructor", "admin"), updateCourse);
@@ -93,6 +94,13 @@ router.patch(
   requireOnboardingCompleted,
   authorize("instructor", "admin"),
   archiveCourse
+);
+router.patch(
+  "/:courseId/restore",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  unarchiveCourse
 );
 router.delete("/:courseId", protect, requireOnboardingCompleted, authorize("instructor", "admin"), deleteCourse);
 

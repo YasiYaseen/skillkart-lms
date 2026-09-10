@@ -112,6 +112,11 @@ export async function toggleUserStatus(req: Request, res: Response) {
     user.isActive = isActive;
     await user.save();
 
+    // AUDIT-78: When deactivating an instructor, suspend their published courses
+    if (!isActive && user.role === "instructor") {
+      await Course.updateMany({ instructor: user._id, isActive: true }, { $set: { isActive: false } });
+    }
+
     if (req.user) {
       await recordAuditLog({
         adminId: req.user.id,
@@ -168,6 +173,11 @@ export async function updateUserRole(req: Request, res: Response) {
     }
 
     await user.save();
+
+    // AUDIT-78: When demoting an instructor to student, suspend their courses from marketplace
+    if (previousRole === "instructor" && role !== "instructor") {
+      await Course.updateMany({ instructor: user._id, isActive: true }, { $set: { isActive: false } });
+    }
 
     if (req.user) {
       await recordAuditLog({
@@ -351,18 +361,23 @@ export async function updateCourseStatus(req: Request, res: Response) {
 
     if (isActive !== undefined) course.isActive = Boolean(isActive);
     if (isApproved !== undefined) {
-      course.isApproved = Boolean(isApproved);
-      if (course.isApproved) {
+      if (isApproved === null) {
+        course.isApproved = undefined;
         course.rejectionReason = undefined;
-      } else if (typeof rejectionReason === "string" && rejectionReason.trim()) {
-        course.rejectionReason = rejectionReason.trim();
+      } else {
+        course.isApproved = Boolean(isApproved);
+        if (course.isApproved) {
+          course.rejectionReason = undefined;
+        } else if (typeof rejectionReason === "string" && rejectionReason.trim()) {
+          course.rejectionReason = rejectionReason.trim();
+        }
       }
     }
 
     await course.save();
 
     // Trigger instructor notification
-    if (isApproved !== undefined) {
+    if (isApproved !== undefined && isApproved !== null) {
       try {
         if (isApproved) {
           await Notification.create({
@@ -370,7 +385,7 @@ export async function updateCourseStatus(req: Request, res: Response) {
             title: "Course Approved",
             message: `Your course "${course.title}" has been reviewed and approved by administrators.`,
             type: "success",
-            link: `/courses/${course._id}`,
+            link: `/instructor/courses`,
           });
         } else {
           await Notification.create({
@@ -799,6 +814,13 @@ export async function updatePayoutStatus(req: Request, res: Response) {
     const payout = await Payout.findById(payoutId).populate("instructor", "name email");
     if (!payout) {
       return res.status(404).json({ message: "Payout request not found" });
+    }
+
+    // AUDIT-61: Terminal state guard
+    if (payout.status === "completed" || payout.status === "rejected") {
+      return res.status(400).json({
+        message: `Payout #${payout.referenceNumber} is already in a terminal state (${payout.status}) and cannot be modified.`,
+      });
     }
 
     const previousStatus = payout.status;

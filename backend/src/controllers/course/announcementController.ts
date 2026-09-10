@@ -121,7 +121,7 @@ export async function createAnnouncement(req: Request, res: Response) {
           title: "New Announcement",
           message: `"${course.title}" has a new announcement: ${parsed.data.title}`,
           type: "info" as const,
-          link: `/learn/${courseId}`,
+          link: `/learn/${courseId}?tab=announcements`,
         }));
 
         await Notification.insertMany(notifications);

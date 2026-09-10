@@ -77,7 +77,7 @@ export function Assignments() {
     const loadCourses = async () => {
       try {
         setLoadingCourses(true);
-        const res = await api.get('/courses/instructor');
+        const res = await api.get('/courses?mine=true');
         const coursesData = Array.isArray(res.data) ? res.data : res.data.courses || [];
         setCourses(coursesData);
         if (coursesData.length > 0) {
@@ -232,8 +232,8 @@ export function Assignments() {
   const openGradingModal = (submission: StudentSubmission) => {
     setSelectedSubmission(submission);
     setGradeScore(submission.score ?? (submission.assignment?.maxScore || 100));
-    setGradeStatus(submission.status === 'under_review' ? 'graded' : submission.status);
-    setInstructorFeedback(submission.feedback || '');
+    setGradeStatus(submission.status === 'submitted' ? 'under_review' : submission.status);
+    setInstructorFeedback(submission.instructorFeedback || '');
 
     // Init rubric points
     const defaultRubricScores = (submission.assignment?.rubric || []).map((r) => {
@@ -265,7 +265,7 @@ export function Assignments() {
       const updated = await gradeStudentSubmission(selectedSubmission._id, {
         score: Number(gradeScore),
         status: gradeStatus,
-        feedback: instructorFeedback,
+        instructorFeedback: instructorFeedback,
         rubricScores,
       });
 

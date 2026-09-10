@@ -7,6 +7,7 @@ export interface ICertificate extends Document {
   enrollment: Types.ObjectId;
   certificateId: string; // human-readable unique ID for verification
   issuedAt: Date;
+  revokedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +24,7 @@ const CertificateSchema = new Schema<ICertificate>(
       default: () => uuidv4().replace(/-/g, "").substring(0, 16).toUpperCase(),
     },
     issuedAt: { type: Date, default: Date.now },
+    revokedAt: { type: Date, default: undefined },
   },
   { timestamps: true }
 );

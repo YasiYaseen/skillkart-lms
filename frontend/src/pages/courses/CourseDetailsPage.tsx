@@ -842,22 +842,29 @@ function CourseDetailsSkeleton() {
                                                 courseId={courseId}
                                                 price={course.price}
                                                 isPaid={course.price > 0}
+                                                title={course.title}
+                                                thumbnailUrl={course.thumbnail}
+                                                instructorName={course.instructor}
                                                 onEnrolled={() => navigate(`/learn/${courseId}`)}
                                             />
                                         )}
                                         {courseId && !isEnrolled && course.price > 0 && (
                                             <button
-                                                onClick={() => {
-                                                    if (!isInCart(courseId)) {
-                                                        addToCart({
-                                                            courseId,
-                                                            title: course.title,
-                                                            price: course.price,
-                                                            thumbnailUrl: course.thumbnail,
-                                                            instructorName: course.instructor,
-                                                        });
+                                                onClick={async () => {
+                                                    try {
+                                                        if (!isInCart(courseId)) {
+                                                            await addToCart({
+                                                                courseId,
+                                                                title: course.title,
+                                                                price: course.price,
+                                                                thumbnailUrl: course.thumbnail,
+                                                                instructorName: course.instructor,
+                                                            });
+                                                        }
+                                                        navigate('/cart?step=payment');
+                                                    } catch {
+                                                        // Handled in CartContext
                                                     }
-                                                    navigate('/cart?step=payment');
                                                 }}
                                                 className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                                             >
@@ -876,15 +883,19 @@ function CourseDetailsSkeleton() {
                                                 </button>
                                             ) : (
                                                 <button
-                                                    onClick={() => {
-                                                        addToCart({
-                                                            courseId,
-                                                            title: course.title,
-                                                            price: course.price,
-                                                            thumbnailUrl: course.thumbnail,
-                                                            instructorName: course.instructor,
-                                                        });
-                                                        toast.success('Course added to your cart!');
+                                                    onClick={async () => {
+                                                        try {
+                                                            await addToCart({
+                                                                courseId,
+                                                                title: course.title,
+                                                                price: course.price,
+                                                                thumbnailUrl: course.thumbnail,
+                                                                instructorName: course.instructor,
+                                                            });
+                                                            toast.success('Course added to your cart!');
+                                                        } catch {
+                                                            // Handled in CartContext
+                                                        }
                                                     }}
                                                     className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                                 >

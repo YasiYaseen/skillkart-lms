@@ -16,6 +16,12 @@ import Certificate from "../../models/Certificate";
 import Category from "../../models/Category";
 import SystemSettings from "../../models/SystemSettings";
 import CourseFAQ from "../../models/CourseFAQ";
+import Quiz from "../../models/Quiz";
+import QuizAttempt from "../../models/QuizAttempt";
+import Assignment from "../../models/Assignment";
+import AssignmentSubmission from "../../models/AssignmentSubmission";
+import Cart from "../../models/Cart";
+import Wishlist from "../../models/Wishlist";
 import {
   getCourseDurationMinutes,
   isCourseManager,
@@ -335,13 +341,28 @@ export async function getCourseById(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
+    const instructorId =
+      course.instructor && typeof course.instructor === "object" && "_id" in course.instructor
+        ? (course.instructor as { _id: Types.ObjectId | string })._id.toString()
+        : String(course.instructor || "");
+
+    const isManager = req.user ? isCourseManager(req.user.id, req.user.role, instructorId) : false;
+
+    let isEnrolled = false;
+    if (req.user && !isManager) {
+      isEnrolled = !!(await Enrollment.exists({
+        student: req.user.id,
+        course: course._id,
+        status: { $in: ["active", "completed"] },
+      }));
+    }
+
+    const isEnrolledOrManager = isManager || isEnrolled;
+
     const requireApproval = await isCourseApprovalRequired();
     if (!isCoursePubliclyAccessible(course, requireApproval)) {
-      if (!req.user) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      if (!isCourseManager(req.user.id, req.user.role, course.instructor._id.toString())) {
-        return res.status(403).json({ message: "Forbidden" });
+      if (!isEnrolledOrManager) {
+        return res.status(403).json({ message: "Course is not publicly accessible" });
       }
     }
 
@@ -351,19 +372,6 @@ export async function getCourseById(req: Request, res: Response) {
       ? await Lesson.find({ section: { $in: sectionIds } }).sort({ order: 1 }).lean()
       : [];
     const lessonIds = lessons.map((lesson) => lesson._id);
-    let isEnrolledOrManager = false;
-    if (req.user) {
-      if (isCourseManager(req.user.id, req.user.role, course.instructor._id.toString())) {
-        isEnrolledOrManager = true;
-      } else {
-        const enrollment = await Enrollment.findOne({
-          student: req.user.id,
-          course: course._id,
-          status: { $in: ["active", "completed"] },
-        });
-        if (enrollment) isEnrolledOrManager = true;
-      }
-    }
 
     const lessonItems = (lessonIds.length && isEnrolledOrManager)
       ? await LessonItem.find({ lesson: { $in: lessonIds } }).sort({ order: 1 }).lean()
@@ -425,10 +433,41 @@ export async function updateCourse(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const allowed = ["title", "description", "thumbnailUrl", "tags", "whatYouWillLearn", "prerequisites", "level", "isPaid", "price", "status"] as const;
+    const allowed = ["title", "description", "thumbnailUrl", "tags", "whatYouWillLearn", "prerequisites", "level", "isPaid", "price"] as const;
     for (const field of allowed) {
       if (field in parsed.data) {
         (course as unknown as Record<string, unknown>)[field] = parsed.data[field];
+      }
+    }
+
+    if (parsed.data.status && parsed.data.status !== course.status) {
+      if (parsed.data.status === "draft") {
+        course.status = "draft";
+        course.publishedAt = undefined;
+        const settings = await SystemSettings.findOne({ isSingleton: true });
+        const requireCourseApproval = settings?.requireCourseApproval ?? true;
+        if (requireCourseApproval) {
+          course.isApproved = undefined;
+          course.rejectionReason = undefined;
+        }
+      } else if (parsed.data.status === "published") {
+        const hasSection = await Section.exists({ course: course._id });
+        if (!hasSection) {
+          return res.status(400).json({ message: "Cannot publish a course without sections" });
+        }
+        course.status = "published";
+        course.publishedAt = new Date();
+        const settings = await SystemSettings.findOne({ isSingleton: true });
+        const requireCourseApproval = settings?.requireCourseApproval ?? true;
+        if (!requireCourseApproval || req.user.role === "admin") {
+          course.isApproved = true;
+          course.rejectionReason = undefined;
+        } else {
+          course.isApproved = undefined;
+          course.rejectionReason = undefined;
+        }
+      } else {
+        course.status = parsed.data.status;
       }
     }
 
@@ -481,21 +520,31 @@ export async function publishCourse(req: Request, res: Response) {
       return res.status(400).json({ message: "Cannot publish a course without sections" });
     }
 
+    // If the course is already published and approved, return idempotently
+    if (course.status === "published" && course.isApproved === true) {
+      return res.json({ message: "Course is already published", course });
+    }
+
     course.status = "published";
     course.publishedAt = new Date();
 
     const settings = await SystemSettings.findOne({ isSingleton: true });
     const requireCourseApproval = settings?.requireCourseApproval ?? true;
-    if (!requireCourseApproval) {
+    if (!requireCourseApproval || req.user.role === "admin") {
       course.isApproved = true;
       course.rejectionReason = undefined;
-    } else if (course.isApproved === undefined) {
-      // Keep pending admin moderation
+    } else {
+      // Platform requires course approval: whenever publishing from draft or rejected state,
+      // reset isApproved to undefined so it enters the admin moderation queue.
+      course.isApproved = undefined;
+      course.rejectionReason = undefined;
     }
 
     await course.save();
 
-    return res.json({ message: "Course published", course });
+    const message = course.isApproved === true ? "Course published" : "Course submitted for review";
+
+    return res.json({ message, course });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }
@@ -521,8 +570,15 @@ export async function unpublishCourse(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    const settings = await SystemSettings.findOne({ isSingleton: true });
+    const requireCourseApproval = settings?.requireCourseApproval ?? true;
+
     course.status = "draft";
     course.publishedAt = undefined;
+    if (requireCourseApproval) {
+      course.isApproved = undefined;
+      course.rejectionReason = undefined;
+    }
     await course.save();
 
     return res.json({ message: "Course moved to draft", course });
@@ -560,6 +616,40 @@ export async function archiveCourse(req: Request, res: Response) {
   }
 }
 
+export async function unarchiveCourse(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { courseId } = req.params;
+    if (!isValidObjectId(courseId)) {
+      return res.status(400).json({ message: "Invalid course id" });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    if (course.status !== "archived") {
+      return res.status(400).json({ message: "Course is not archived" });
+    }
+
+    course.status = "draft";
+    course.isApproved = undefined;
+    await course.save();
+
+    return res.json({ message: "Course restored to draft", course });
+  } catch {
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
 export async function deleteCourse(req: Request, res: Response) {
   try {
     if (!req.user) {
@@ -591,6 +681,12 @@ export async function deleteCourse(req: Request, res: Response) {
       lessonIds.length ? LessonProgress.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
       lessonIds.length ? LessonItem.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
       lessonIds.length ? Comment.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? Quiz.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? QuizAttempt.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      Assignment.deleteMany({ course: course._id }),
+      AssignmentSubmission.deleteMany({ course: course._id }),
+      Cart.updateMany({}, { $pull: { items: { course: course._id } } }),
+      Wishlist.deleteMany({ course: course._id }),
       Note.deleteMany({ course: course._id }),
       Bookmark.deleteMany({ course: course._id }),
       Announcement.deleteMany({ course: course._id }),

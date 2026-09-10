@@ -10,6 +10,11 @@ import Notification from "../models/Notification";
 import SystemSettings from "../models/SystemSettings";
 import { PaymentService } from "../services/paymentService";
 import { checkoutSchema } from "../validators/orderValidator";
+import {
+  isCourseApprovalRequired,
+  isCoursePubliclyAccessible,
+  getCourseLessonCount,
+} from "./course/shared";
 
 function getParam(param: string | string[] | undefined): string {
   if (!param) return "";
@@ -43,18 +48,93 @@ export async function checkout(req: Request, res: Response) {
 
     const { courseIds, couponCode, paymentMethod, billingDetails } = parsed.data;
 
-    // Filter valid IDs
-    const validCourseIds = courseIds.filter((id) => isValidObjectId(id));
+    // Filter valid IDs and deduplicate
+    const validCourseIds = Array.from(
+      new Set(courseIds.filter((id) => isValidObjectId(id)))
+    );
     if (validCourseIds.length === 0) {
       return res.status(400).json({ message: "No valid courses in checkout cart." });
     }
 
-    const courses = await Course.find({ _id: { $in: validCourseIds } })
-      .select("_id title price isPaid instructor")
+    const requireApproval = await isCourseApprovalRequired();
+    const fetchedCourses = await Course.find({ _id: { $in: validCourseIds } })
+      .select("_id title price isPaid instructor status isActive isApproved")
       .lean();
 
-    if (courses.length === 0) {
-      return res.status(404).json({ message: "Courses not found." });
+    const courseMap = new Map<string, (typeof fetchedCourses)[0]>();
+    for (const c of fetchedCourses) {
+      courseMap.set(c._id.toString(), c);
+    }
+
+    const unpurchasableIds: Types.ObjectId[] = [];
+    const unpurchasableTitles: string[] = [];
+    const purchasableCourses: typeof fetchedCourses = [];
+
+    for (const id of validCourseIds) {
+      const course = courseMap.get(id);
+      if (!course) {
+        unpurchasableIds.push(new Types.ObjectId(id));
+        unpurchasableTitles.push("Unavailable Course");
+      } else if (!isCoursePubliclyAccessible(course, requireApproval)) {
+        unpurchasableIds.push(course._id as Types.ObjectId);
+        unpurchasableTitles.push(course.title || "Unavailable Course");
+      } else {
+        purchasableCourses.push(course);
+      }
+    }
+
+    // If any course is unpurchasable (unpublished, draft, disabled, unapproved, or missing),
+    // reject checkout with 400 Bad Request and automatically prune them from the user's cart in database.
+    if (unpurchasableIds.length > 0) {
+      await Cart.findOneAndUpdate(
+        { student: req.user.id },
+        { $pull: { items: { course: { $in: unpurchasableIds } } } }
+      ).catch(() => {});
+
+      const unpurchasableList = unpurchasableTitles.join(", ");
+      return res.status(400).json({
+        message: `The following course(s) are no longer available for purchase and have been removed from your cart: ${unpurchasableList}. Please review your cart before completing checkout.`,
+        unpurchasableCourses: unpurchasableTitles,
+      });
+    }
+
+    if (purchasableCourses.length === 0) {
+      return res.status(400).json({ message: "No purchasable courses in checkout cart." });
+    }
+
+    const courses = purchasableCourses;
+
+    // AUDIT-21: Reject checkout if any course is authored by the purchasing user
+    const ownedCourses = courses.filter((c) => c.instructor && c.instructor.toString() === req.user!.id);
+    if (ownedCourses.length > 0) {
+      await Cart.findOneAndUpdate(
+        { student: req.user.id },
+        { $pull: { items: { course: { $in: ownedCourses.map((c) => c._id) } } } }
+      ).catch(() => {});
+
+      const ownedTitles = ownedCourses.map((c) => c.title || "Untitled").join(", ");
+      return res.status(400).json({
+        message: `Instructors cannot purchase their own courses: ${ownedTitles}. They have been removed from your cart.`,
+        ownedCourses: ownedTitles.split(", "),
+      });
+    }
+
+    // AUDIT-26: Reject checkout if student is already enrolled in any cart courses
+    const alreadyEnrolledCourses = await Enrollment.find({
+      student: req.user!.id,
+      course: { $in: courses.map((c) => c._id) },
+      status: { $in: ["active", "completed"] },
+    }).select("course");
+    if (alreadyEnrolledCourses.length > 0) {
+      const enrolledIds = new Set(alreadyEnrolledCourses.map((e) => e.course.toString()));
+      const enrolledTitles = courses
+        .filter((c) => enrolledIds.has(c._id.toString()))
+        .map((c) => c.title || "Untitled")
+        .join(", ");
+      return res.status(400).json({
+        message: `You are already enrolled in: ${enrolledTitles}. Please remove these from your cart.`,
+        alreadyEnrolledCourses: enrolledTitles.split(", "),
+      });
     }
 
     const commissionRate = settings?.platformCommissionRate ?? 20;
@@ -273,19 +353,27 @@ export async function checkout(req: Request, res: Response) {
 
     const userId = req.user.id;
 
-    // Auto-enroll student into all purchased courses
-    const enrollmentPromises = courses.map((course) =>
-      Enrollment.findOneAndUpdate(
+    // Auto-enroll student into all purchased courses with accurate totalLessonsCount
+    const enrollmentPromises = courses.map(async (course) => {
+      const totalLessonsCount = await getCourseLessonCount(course._id);
+      return Enrollment.findOneAndUpdate(
         { student: userId, course: course._id },
         {
-          student: userId,
-          course: course._id,
-          status: "active",
-          enrolledAt: new Date(),
+          $set: {
+            student: userId,
+            course: course._id,
+            status: "active",
+            paymentStatus: totalAmount === 0 ? "none" : "paid",
+            totalLessonsCount,
+            enrolledAt: new Date(),
+          },
+          $setOnInsert: {
+            completedLessonIds: [],
+          },
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
-      )
-    );
+      );
+    });
     await Promise.all(enrollmentPromises);
 
     // Clear user's shopping cart in database
@@ -335,7 +423,7 @@ export async function getOrderHistory(req: Request, res: Response) {
     }
 
     const orders = await Order.find({ student: req.user.id })
-      .populate("items.course", "title thumbnail")
+      .populate("items.course", "title thumbnailUrl")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -361,12 +449,12 @@ export async function getOrderReceipt(req: Request, res: Response) {
     if (isValidObjectId(orderId)) {
       order = await Order.findById(orderId)
         .populate("student", "name email")
-        .populate("items.course", "title instructor")
+        .populate("items.course", "title instructor thumbnailUrl")
         .lean();
     } else {
       order = await Order.findOne({ orderNumber: orderId })
         .populate("student", "name email")
-        .populate("items.course", "title instructor")
+        .populate("items.course", "title instructor thumbnailUrl")
         .lean();
     }
 

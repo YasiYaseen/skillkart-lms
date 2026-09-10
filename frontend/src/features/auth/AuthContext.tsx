@@ -22,6 +22,8 @@ interface User {
   instructorRejectionReason?: string;
   instructorApplication?: InstructorApplication;
   avatar?: string;
+  hasPassword?: boolean;
+  googleId?: string;
   headline?: string;
   bio?: string;
   interests?: string[];
@@ -39,6 +41,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -114,8 +117,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const refreshUser = async () => {
+    try {
+      const res = await getOnboardingStatusApi();
+      const serverUser = res.data?.user as User | undefined;
+      if (serverUser) {
+        setUser(serverUser);
+        localStorage.setItem('user', JSON.stringify(serverUser));
+      }
+    } catch {
+      // safe fail
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

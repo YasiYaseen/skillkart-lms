@@ -165,7 +165,7 @@ export async function createLessonComment(req: Request, res: Response) {
               title: "New Reply on Your Comment",
               message: `Someone replied to your comment on lesson "${details.lesson.title}".`,
               type: "info",
-              link: `/learn/${details.course._id}/${lessonId}`,
+              link: `/learn/${details.course._id}/${lessonId}?tab=discussion`,
             });
           }
         } else {
@@ -176,7 +176,7 @@ export async function createLessonComment(req: Request, res: Response) {
               title: "New Question in Lesson",
               message: `A student asked a question on "${details.lesson.title}" in "${details.course.title}".`,
               type: "info",
-              link: `/learn/${details.course._id}/${lessonId}`,
+              link: `/learn/${details.course._id}/${lessonId}?tab=discussion`,
             });
           }
         }

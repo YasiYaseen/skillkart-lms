@@ -17,8 +17,19 @@ import {
   PlusIcon,
   ClipboardDocumentIcon,
   SparklesIcon,
-  XMarkIcon,
 } from '@heroicons/react/20/solid';
+
+export function getCouponEffectiveStatus(coupon: {
+  isActive: boolean;
+  expiresAt?: string | null;
+  timesRedeemed?: number;
+  maxRedemptions?: number;
+}): 'active' | 'expired' | 'exhausted' | 'paused' {
+  if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) return 'expired';
+  if (coupon.maxRedemptions && (coupon.timesRedeemed ?? 0) >= coupon.maxRedemptions) return 'exhausted';
+  if (!coupon.isActive) return 'paused';
+  return 'active';
+}
 
 interface Course {
   _id: string;
@@ -53,10 +64,10 @@ export function Coupons() {
       setLoading(true);
       const [cData, crsRes] = await Promise.all([
         fetchInstructorCoupons(),
-        api.get('/instructor/courses').catch(() => ({ data: { courses: [] } })),
+        api.get('/courses?mine=true').catch(() => ({ data: { courses: [] } })),
       ]);
       setCoupons(cData);
-      setCourses(crsRes.data?.courses || []);
+      setCourses(Array.isArray(crsRes.data) ? crsRes.data : (crsRes.data?.courses || []));
     } catch {
       toast.error('Failed to load coupons or courses');
     } finally {
@@ -82,7 +93,7 @@ export function Coupons() {
     setCode(coupon.code);
     setDiscountType(coupon.discountType);
     setDiscountValue(coupon.discountValue);
-    setCourseId(coupon.applicableCourse || '');
+    setCourseId(typeof coupon.course === 'object' ? coupon.course?._id : (coupon.course || ''));
     setMinPurchaseAmount(coupon.minPurchaseAmount || 0);
     setMaxRedemptions(coupon.maxRedemptions || 0);
     setExpiresAt(coupon.expiresAt ? coupon.expiresAt.split('T')[0] : '');
@@ -157,7 +168,7 @@ export function Coupons() {
   const sampleDiscount = discountType === 'percentage' ? (100 * discountValue) / 100 : Math.min(100, discountValue);
   const sampleFinal = Math.max(0, 100 - sampleDiscount);
 
-  const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesRedeemed || c.timesUsed || 0), 0);
+  const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesRedeemed || 0), 0);
   const activeCouponsCount = coupons.filter((c) => c.isActive).length;
 
   if (loading) {
@@ -303,11 +314,11 @@ export function Coupons() {
                     <td className="px-5 py-4 whitespace-nowrap">
                       <div className="space-y-1">
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {coupon.timesRedeemed || coupon.timesUsed || 0} used
+                          {coupon.timesRedeemed || 0} used
                         </span>
                         {coupon.maxRedemptions && (
                           <div className="text-gray-400 text-[10px]">
-                            {coupon.maxRedemptions - (coupon.timesRedeemed || coupon.timesUsed || 0)} spots left ({coupon.maxRedemptions} max)
+                            {coupon.maxRedemptions - (coupon.timesRedeemed || 0)} spots left ({coupon.maxRedemptions} max)
                           </div>
                         )}
                       </div>
@@ -324,20 +335,40 @@ export function Coupons() {
                       )}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          coupon.isActive
+                      {(() => {
+                        const effStatus = getCouponEffectiveStatus(coupon);
+                        const badgeClass =
+                          effStatus === 'active'
                             ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                        }`}
-                      >
-                        {coupon.isActive ? 'Active' : 'Inactive'}
-                      </span>
+                            : effStatus === 'expired'
+                            ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300'
+                            : effStatus === 'exhausted'
+                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                            : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300';
+                        const label =
+                          effStatus === 'active'
+                            ? 'Active'
+                            : effStatus === 'expired'
+                            ? 'Expired'
+                            : effStatus === 'exhausted'
+                            ? 'Exhausted'
+                            : 'Paused';
+                        return (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
+                            {label}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-4 text-right whitespace-nowrap space-x-2">
                       <button
                         onClick={() => handleToggleActive(coupon)}
-                        className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                        disabled={getCouponEffectiveStatus(coupon) === 'expired' || getCouponEffectiveStatus(coupon) === 'exhausted'}
+                        className={`px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                          getCouponEffectiveStatus(coupon) === 'expired' || getCouponEffectiveStatus(coupon) === 'exhausted'
+                            ? 'opacity-50 cursor-not-allowed'
+                            : 'cursor-pointer'
+                        }`}
                       >
                         {coupon.isActive ? 'Pause' : 'Activate'}
                       </button>

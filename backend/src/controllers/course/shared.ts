@@ -1,3 +1,4 @@
+import { type Types } from "mongoose";
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
 import Enrollment from "../../models/Enrollment";
@@ -42,15 +43,24 @@ export async function getCourseDurationMinutes(courseId: string): Promise<number
 }
 
 /**
+ * Computes the total number of lessons for a course across all sections.
+ */
+export async function getCourseLessonCount(courseId: string | Types.ObjectId): Promise<number> {
+  const sections = await Section.find({ course: courseId }).select("_id").lean();
+  const sectionIds = sections.map((s) => s._id);
+  if (sectionIds.length === 0) {
+    return 0;
+  }
+
+  return Lesson.countDocuments({ section: { $in: sectionIds } });
+}
+
+/**
  * Syncs totalLessonsCount on all enrollments for a course.
  * Call this after any lesson is created or deleted for the course.
  */
 export async function syncEnrollmentLessonCount(courseId: string): Promise<void> {
-  const sections = await Section.find({ course: courseId }).select("_id").lean();
-  const sectionIds = sections.map((s) => s._id);
-  const totalLessons = sectionIds.length
-    ? await Lesson.countDocuments({ section: { $in: sectionIds } })
-    : 0;
-
+  const totalLessons = await getCourseLessonCount(courseId);
   await Enrollment.updateMany({ course: courseId }, { $set: { totalLessonsCount: totalLessons } });
 }
+

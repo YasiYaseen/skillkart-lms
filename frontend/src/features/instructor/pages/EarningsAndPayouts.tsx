@@ -8,7 +8,6 @@ import {
   BuildingLibraryIcon,
   BuildingOfficeIcon,
   CreditCardIcon,
-  CheckCircleIcon,
   AcademicCapIcon,
   ClockIcon,
   BookOpenIcon,
@@ -250,6 +249,9 @@ export function EarningsAndPayouts() {
     totalUnitsSold: 0,
   };
 
+  const payoutShare = (data as any)?.payoutShare ?? (summary as any)?.instructorPayoutShare ?? 80;
+  const platformCut = 100 - payoutShare;
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       {/* Top Header */}
@@ -259,7 +261,7 @@ export function EarningsAndPayouts() {
             Instructor Earnings & Payouts Center
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Track your 80% course revenue take-home, manage payment accounts, and request instant withdrawals.
+            Track your {payoutShare}% course revenue take-home, manage payment accounts, and request instant withdrawals.
           </p>
         </div>
 
@@ -318,11 +320,11 @@ export function EarningsAndPayouts() {
           </p>
         </div>
 
-        {/* Period Net Take-Home (80%) */}
+        {/* Period Net Take-Home */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Net Take-Home (80%)
+              Net Take-Home ({payoutShare}%)
             </span>
             <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs"><AcademicCapIcon className="w-4 h-4" /></span>
           </div>
@@ -401,8 +403,8 @@ export function EarningsAndPayouts() {
                   <th className="px-4 py-3">List Price</th>
                   <th className="px-4 py-3">Units Sold</th>
                   <th className="px-4 py-3">Gross Sales</th>
-                  <th className="px-4 py-3">Platform Cut (20%)</th>
-                  <th className="px-4 py-3">Your Net Earnings (80%)</th>
+                  <th className="px-4 py-3">Platform Cut ({platformCut}%)</th>
+                  <th className="px-4 py-3">Your Net Earnings ({payoutShare}%)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -498,7 +500,7 @@ export function EarningsAndPayouts() {
                     <th className="px-4 py-2.5">Redemptions</th>
                     <th className="px-4 py-2.5">Gross Revenue</th>
                     <th className="px-4 py-2.5">Discounts Given</th>
-                    <th className="px-4 py-2.5">Your Net Earnings (80%)</th>
+                    <th className="px-4 py-2.5">Your Net Earnings ({payoutShare}%)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

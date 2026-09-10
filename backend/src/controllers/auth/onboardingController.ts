@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import User from "../../models/User";
+import SystemSettings from "../../models/SystemSettings";
 
 function normalizeText(value: unknown, maxLen: number): string {
   return String(value ?? "")
@@ -50,7 +51,23 @@ export async function completeOnboarding(req: Request, res: Response) {
     };
 
     if (normalizedRole) {
-      updateData.role = normalizedRole;
+      if (normalizedRole === "instructor") {
+        // AUDIT-71: Respect requireInstructorApproval setting
+        const settings = await SystemSettings.findOne({ isSingleton: true }).lean();
+        const requireApproval = settings?.requireInstructorApproval ?? true;
+        if (requireApproval) {
+          // Don't grant instructor role directly — put into pending moderation
+          updateData.role = "student";
+          updateData.instructorStatus = "pending";
+          updateData.isInstructorApproved = false;
+        } else {
+          updateData.role = "instructor";
+          updateData.instructorStatus = "approved";
+          updateData.isInstructorApproved = true;
+        }
+      } else {
+        updateData.role = normalizedRole;
+      }
     }
 
     const user = await User.findByIdAndUpdate(req.user.id, { $set: updateData }, { new: true });
@@ -64,6 +81,8 @@ export async function completeOnboarding(req: Request, res: Response) {
         email: user.email,
         role: user.role,
         onboardingCompleted: user.onboardingCompleted,
+        instructorStatus: user.instructorStatus,
+        isInstructorApproved: user.isInstructorApproved,
         headline: user.headline,
         bio: user.bio,
         interests: user.interests,

@@ -5,7 +5,15 @@ import { toast } from 'sonner';
 import { Modal } from '../../../components/common';
 import { useCurrency } from '@/context/CurrencyContext';
 
-const getCourseStatusBadge = (course: InstructorCourse) => {
+export const getCourseStatusBadge = (course: InstructorCourse) => {
+    if (course.isActive === false) {
+        return {
+            label: 'Suspended by Admin',
+            className: 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800',
+            tooltip: 'This course has been suspended by platform administrators'
+        };
+    }
+
     if (course.status === 'archived') {
         return {
             label: 'Archived',
@@ -59,6 +67,7 @@ export interface InstructorCourse {
     students: number;
     status: string;
     level: string;
+    isActive?: boolean;
     isApproved?: boolean;
     rejectionReason?: string;
 }
@@ -71,6 +80,7 @@ interface RawInstructorCourse {
     price?: number;
     status: string;
     level?: string;
+    isActive?: boolean;
     isApproved?: boolean;
     rejectionReason?: string;
 }
@@ -83,6 +93,22 @@ function MyCourses() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [togglingId, setTogglingId] = useState<string | null>(null);
+    const [restoringId, setRestoringId] = useState<string | null>(null);
+
+    const handleRestore = async (courseId: string) => {
+        setRestoringId(courseId);
+        try {
+            await api.patch(`/courses/${courseId}/restore`);
+            setCourses((prev) =>
+                prev.map((c) => (c.id === courseId ? { ...c, status: 'draft', isApproved: undefined } : c))
+            );
+            toast.success('Course restored to draft');
+        } catch {
+            toast.error('Failed to restore course');
+        } finally {
+            setRestoringId(null);
+        }
+    };
 
     const fetchCourses = useCallback(async () => {
         try {
@@ -96,6 +122,7 @@ function MyCourses() {
                 students: c.enrollmentCount || 0,
                 status: c.status,
                 level: c.level || 'beginner',
+                isActive: c.isActive,
                 isApproved: c.isApproved,
                 rejectionReason: c.rejectionReason,
             }));
@@ -115,10 +142,16 @@ function MyCourses() {
         setTogglingId(courseId);
         try {
             if (currentStatus === 'published') {
-                await api.patch(`/courses/${courseId}/unpublish`);
-                toast.success('Course moved to draft');
+                const res = await api.patch<{ message?: string; course?: RawInstructorCourse }>(`/courses/${courseId}/unpublish`);
+                const updatedCourse = res.data?.course;
+                toast.success(res.data?.message || 'Course moved to draft');
                 setCourses(prev => prev.map(c =>
-                    c.id === courseId ? { ...c, status: 'draft' } : c
+                    c.id === courseId ? {
+                        ...c,
+                        status: 'draft',
+                        isApproved: updatedCourse ? updatedCourse.isApproved : undefined,
+                        rejectionReason: updatedCourse ? updatedCourse.rejectionReason : undefined,
+                    } : c
                 ));
             } else {
                 const res = await api.patch<{ message?: string; course?: RawInstructorCourse }>(`/courses/${courseId}/publish`);
@@ -129,14 +162,40 @@ function MyCourses() {
                     c.id === courseId
                         ? {
                               ...c,
-                              status: 'published',
-                              isApproved: updatedCourse?.isApproved !== undefined ? updatedCourse.isApproved : c.isApproved,
+                              status: updatedCourse?.status || 'published',
+                              isApproved: updatedCourse ? updatedCourse.isApproved : undefined,
+                              rejectionReason: updatedCourse ? updatedCourse.rejectionReason : undefined,
                           }
                         : c
                 ));
             }
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Action failed';
+            toast.error(msg);
+        } finally {
+            setTogglingId(null);
+        }
+    };
+
+    const handleResubmit = async (courseId: string) => {
+        setTogglingId(courseId);
+        try {
+            const res = await api.patch<{ message?: string; course?: RawInstructorCourse }>(`/courses/${courseId}/publish`);
+            const updatedCourse = res.data?.course;
+            const msg = res.data?.message || 'Course resubmitted for moderation';
+            toast.success(msg);
+            setCourses(prev => prev.map(c =>
+                c.id === courseId
+                    ? {
+                          ...c,
+                          status: 'published',
+                          isApproved: updatedCourse ? updatedCourse.isApproved : undefined,
+                          rejectionReason: updatedCourse ? updatedCourse.rejectionReason : undefined,
+                      }
+                    : c
+            ));
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to resubmit course';
             toast.error(msg);
         } finally {
             setTogglingId(null);
@@ -218,7 +277,16 @@ function MyCourses() {
 
                                 {/* Status & Action */}
                                 <td className="py-4 px-6">
-                                    {course.status === 'published' && course.isApproved === true && (
+                                    {course.isActive === false && (
+                                        <span
+                                            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                                            title="Suspended by Platform Administrator"
+                                        >
+                                            Suspended by Admin
+                                        </span>
+                                    )}
+
+                                    {course.isActive !== false && course.status === 'published' && course.isApproved === true && (
                                         <div className="flex items-center gap-2.5">
                                             <button
                                                 type="button"
@@ -238,7 +306,7 @@ function MyCourses() {
                                         </div>
                                     )}
 
-                                    {course.status === 'published' && course.isApproved === undefined && (
+                                    {course.isActive !== false && course.status === 'published' && course.isApproved === undefined && (
                                         <div className="flex items-center gap-2">
                                             <span
                                                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
@@ -259,7 +327,7 @@ function MyCourses() {
                                         </div>
                                     )}
 
-                                    {course.status === 'draft' && course.isApproved !== false && (
+                                    {course.isActive !== false && course.status === 'draft' && course.isApproved !== false && (
                                         <div className="flex items-center gap-2.5">
                                             <button
                                                 type="button"
@@ -279,7 +347,7 @@ function MyCourses() {
                                         </div>
                                     )}
 
-                                    {(course.isApproved === false || (course.status === 'draft' && course.isApproved === false)) && (
+                                    {course.isActive !== false && course.isApproved === false && (
                                         <div className="flex items-center gap-2">
                                             <span
                                                 className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
@@ -289,8 +357,21 @@ function MyCourses() {
                                             </span>
                                             <button
                                                 type="button"
+                                                onClick={() => handleResubmit(course.id)}
+                                                disabled={togglingId === course.id}
+                                                title="Resubmit this course for moderation review"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
+                                            >
+                                                {togglingId === course.id ? (
+                                                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <span>Resubmit</span>
+                                                )}
+                                            </button>
+                                            <button
+                                                type="button"
                                                 onClick={() => navigate(`/instructor/courses/${course.id}/edit`)}
-                                                className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                className="text-[11px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline decoration-dotted cursor-pointer"
                                             >
                                                 Edit
                                             </button>
@@ -307,6 +388,18 @@ function MyCourses() {
                                 {/* Actions */}
                                 <td className="py-4 px-6">
                                     <div className="flex items-center justify-end gap-2">
+                                        {/* Restore archived course */}
+                                        {course.status === 'archived' && (
+                                            <button
+                                                onClick={() => handleRestore(course.id)}
+                                                disabled={restoringId === course.id}
+                                                title="Restore course to draft"
+                                                className="px-2.5 py-1 text-xs font-medium rounded-lg text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                                            >
+                                                {restoringId === course.id ? 'Restoring...' : 'Restore'}
+                                            </button>
+                                        )}
+
                                         {/* Edit */}
                                         <button
                                             onClick={() => navigate(`/instructor/courses/${course.id}/edit`)}

@@ -347,6 +347,12 @@ export async function submitAssignment(req: Request, res: Response) {
       });
     }
 
+    // AUDIT-12: Block resubmission of already-graded assignments
+    const existingSubmission = await AssignmentSubmission.findOne({ assignment: id, student: req.user.id });
+    if (existingSubmission && existingSubmission.status === "graded") {
+      return res.status(403).json({ message: "This assignment has already been graded and cannot be resubmitted." });
+    }
+
     // Upsert student submission
     const submission = await AssignmentSubmission.findOneAndUpdate(
       { assignment: id, student: req.user.id },
@@ -467,6 +473,19 @@ export async function gradeSubmission(req: Request, res: Response) {
       });
     }
 
+    // AUDIT-70: Validate that rubric points earned do not exceed criterion maximums
+    const assignmentObj = submission.assignment as any;
+    if (parsed.data.rubricScores && Array.isArray(parsed.data.rubricScores) && assignmentObj?.rubric) {
+      for (const rScore of parsed.data.rubricScores) {
+        const criterion = assignmentObj.rubric.find((c: any) => c.criterion === rScore.criterion);
+        if (criterion && rScore.pointsEarned > criterion.maxPoints) {
+          return res.status(400).json({
+            message: `Score for criterion "${rScore.criterion}" (${rScore.pointsEarned}) cannot exceed maximum points (${criterion.maxPoints}).`,
+          });
+        }
+      }
+    }
+
     submission.score = parsed.data.score;
     submission.status = parsed.data.status;
     submission.rubricScores = parsed.data.rubricScores;
@@ -479,13 +498,20 @@ export async function gradeSubmission(req: Request, res: Response) {
     // Notify the student
     setImmediate(async () => {
       try {
-        const assignmentObj = submission.assignment as { title?: string; maxScore?: number } | null;
+        const notifTitle = parsed.data.status === "resubmission_requested"
+          ? "Assignment Revision Requested"
+          : "Assignment Graded";
+        const notifType = parsed.data.status === "resubmission_requested" ? "warning" : "success";
+        const notifMessage = parsed.data.status === "resubmission_requested"
+          ? `Your submission for "${assignmentObj?.title || "assignment"}" requires revision. Please check instructor feedback.`
+          : `Your submission for "${assignmentObj?.title || "assignment"}" was graded: ${parsed.data.score}/${assignmentObj?.maxScore || 100} points.`;
+
         await Notification.create({
           recipient: submission.student,
-          title: "Assignment Graded",
-          message: `Your submission for "${assignmentObj?.title || "assignment"}" was graded: ${parsed.data.score}/${assignmentObj?.maxScore || 100} points.`,
-          type: "success",
-          link: `/learn/${submission.course}`,
+          title: notifTitle,
+          message: notifMessage,
+          type: notifType,
+          link: `/learn/${submission.course}?tab=assignments`,
         });
       } catch {
         // Safe fail

@@ -5,7 +5,13 @@ import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
 import LessonItem from "../../models/LessonItem";
 import LessonProgress from "../../models/LessonProgress";
-import { isCourseManager } from "./shared";
+import Comment from "../../models/Comment";
+import Quiz from "../../models/Quiz";
+import QuizAttempt from "../../models/QuizAttempt";
+import Note from "../../models/Note";
+import Bookmark from "../../models/Bookmark";
+import Enrollment from "../../models/Enrollment";
+import { isCourseManager, syncEnrollmentLessonCount } from "./shared";
 import { createSectionSchema } from "../../validators/content.validator";
 
 export async function createSection(req: Request, res: Response) {
@@ -142,12 +148,38 @@ export async function deleteSection(req: Request, res: Response) {
     const lessons = await Lesson.find({ section: section._id }).select("_id").lean();
     const lessonIds = lessons.map((lesson) => lesson._id);
 
+    // AUDIT-47: Comprehensive section deletion cascade
     await Promise.all([
       lessonIds.length ? LessonProgress.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
       lessonIds.length ? LessonItem.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? Comment.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? Quiz.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? QuizAttempt.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? Note.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? Bookmark.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
       Lesson.deleteMany({ section: section._id }),
     ]);
+
     await Section.deleteOne({ _id: section._id });
+
+    // Clean up dangling prerequisites on sibling sections
+    await Section.updateMany(
+      { course: section.course, prerequisiteSection: section._id },
+      { $unset: { prerequisiteSection: 1 } }
+    );
+
+    // Pull deleted lesson IDs from enrolled students' completed list
+    if (lessonIds.length > 0) {
+      await Enrollment.updateMany(
+        { course: section.course },
+        { $pull: { completedLessonIds: { $in: lessonIds } } }
+      );
+    }
+
+    // Sync totalLessonsCount across all enrollments
+    if (section.course) {
+      await syncEnrollmentLessonCount(section.course.toString());
+    }
 
     return res.json({ message: "Section deleted" });
   } catch {

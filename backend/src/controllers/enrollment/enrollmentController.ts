@@ -17,7 +17,7 @@ import {
   progressUpdateSchema,
   studentsListQuerySchema,
 } from "../../validators/enrollmentValidator";
-import { isCourseApprovalRequired, isCoursePubliclyAccessible } from "../course/shared";
+import { isCourseApprovalRequired, isCoursePubliclyAccessible, getCourseLessonCount } from "../course/shared";
 
 export async function enrollInCourse(req: Request, res: Response) {
   try {
@@ -46,22 +46,27 @@ export async function enrollInCourse(req: Request, res: Response) {
     }
 
     const existing = await Enrollment.findOne({ student: req.user.id, course: courseId });
-    if (existing) {
-      if (existing.status === "active" || existing.status === "completed") {
-        return res.status(200).json({ message: "Already enrolled", enrollment: existing });
-      }
-      if (existing.status === "cancelled") {
-        existing.status = "active";
-        existing.completedLessonIds = [];
-        existing.enrolledAt = new Date();
-        existing.lastAccessedLessonId = undefined;
-        // Recount
-        const sections = await Section.find({ course: courseId }).select("_id").lean();
-        const sectionIds = sections.map((s) => s._id);
-        const totalLessons = sectionIds.length ? await Lesson.countDocuments({ section: { $in: sectionIds } }) : 0;
-        existing.totalLessonsCount = totalLessons;
+    if (existing && (existing.status === "active" || existing.status === "completed")) {
+      return res.status(200).json({ message: "Already enrolled", enrollment: existing });
+    }
 
-        await existing.save();
+    // Direct enrollment is only allowed for free courses. Paid courses must be purchased via checkout.
+    if (course.isPaid || (course.price !== null && course.price !== undefined && course.price > 0)) {
+      return res.status(402).json({
+        message: "This is a paid course. Please complete checkout to enroll.",
+      });
+    }
+
+    if (existing && existing.status === "cancelled") {
+      existing.status = "active";
+      existing.completedLessonIds = [];
+      existing.enrolledAt = new Date();
+      existing.lastAccessedLessonId = undefined;
+      // Recount
+      const totalLessons = await getCourseLessonCount(courseId);
+      existing.totalLessonsCount = totalLessons;
+
+      await existing.save();
 
         // Notify student and instructor on reactivation
         await Notification.create([
@@ -77,18 +82,15 @@ export async function enrollInCourse(req: Request, res: Response) {
             title: "Student Reactivated Enrollment",
             message: `A student has reactivated their enrollment in your course "${course.title}".`,
             type: "info",
-            link: `/instructor/courses/${course._id}/students`,
+            link: `/instructor/students?courseId=${course._id}`,
           }
         ]);
 
         return res.status(200).json({ message: "Enrollment reactivated", enrollment: existing });
       }
-    }
 
     // New enrollment
-    const sections = await Section.find({ course: courseId }).select("_id").lean();
-    const sectionIds = sections.map((s) => s._id);
-    const totalLessonsCount = sectionIds.length ? await Lesson.countDocuments({ section: { $in: sectionIds } }) : 0;
+    const totalLessonsCount = await getCourseLessonCount(courseId);
 
     const enrollment = await Enrollment.create({
       student: req.user.id,
@@ -114,7 +116,7 @@ export async function enrollInCourse(req: Request, res: Response) {
         title: "New Student Enrolled",
         message: `A new student has enrolled in your course "${course.title}".`,
         type: "info",
-        link: `/instructor/courses/${course._id}/students`,
+        link: `/instructor/students?courseId=${course._id}`,
       }
     ]);
 
@@ -175,11 +177,23 @@ export async function getMyEnrollments(req: Request, res: Response) {
 
     const filteredData = data.filter((doc) => doc.course != null);
 
-    // add virtuals to plain JSON representation
-    const result = filteredData.map(doc => {
-      const obj = doc.toJSON({ virtuals: true });
-      return obj;
-    });
+    // add virtuals to plain JSON representation, self-healing totalLessonsCount if missing or 0
+    const result = await Promise.all(
+      filteredData.map(async (doc) => {
+        if ((!doc.totalLessonsCount || doc.totalLessonsCount <= 0) && doc.course) {
+          const courseId = (doc.course as { _id?: Types.ObjectId })._id || doc.course;
+          const totalLessons = await getCourseLessonCount(courseId.toString());
+          if (totalLessons > 0) {
+            doc.totalLessonsCount = totalLessons;
+            await Enrollment.updateOne(
+              { _id: doc._id },
+              { $set: { totalLessonsCount: totalLessons } }
+            ).catch(() => {});
+          }
+        }
+        return doc.toJSON({ virtuals: true });
+      })
+    );
 
     return res.json({ data: result, page, limit, total });
   } catch (error) {
@@ -191,11 +205,19 @@ export async function getMyEnrollments(req: Request, res: Response) {
 export async function getCourseEnrollment(req: Request, res: Response) {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
-    const { courseId } = req.params;
+    const courseId = Array.isArray(req.params.courseId) ? req.params.courseId[0] : req.params.courseId;
     if (!isValidObjectId(courseId)) return res.status(400).json({ message: "Invalid course id" });
 
     const enrollment = await Enrollment.findOne({ student: req.user.id, course: courseId });
     if (!enrollment) return res.status(404).json({ message: "Enrollment not found" });
+
+    if ((!enrollment.totalLessonsCount || enrollment.totalLessonsCount <= 0) && enrollment.course) {
+      const totalLessons = await getCourseLessonCount(enrollment.course);
+      if (totalLessons > 0) {
+        enrollment.totalLessonsCount = totalLessons;
+        await enrollment.save().catch(() => {});
+      }
+    }
 
     return res.json(enrollment.toJSON({ virtuals: true }));
   } catch (error) {
@@ -310,8 +332,15 @@ export async function updateProgress(req: Request, res: Response) {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    // Fallback: If totalLessonsCount is missing or <= 0, dynamically count lessons from sections
+    if (!updated.totalLessonsCount || updated.totalLessonsCount <= 0) {
+      const totalLessons = await getCourseLessonCount(enrollment.course);
+      updated.totalLessonsCount = totalLessons;
+      await updated.save();
+    }
+
     // Guard against impossible state (should never happen due to $addToSet, but safety net)
-    if (updated.completedLessonIds.length > updated.totalLessonsCount) {
+    if (updated.totalLessonsCount > 0 && updated.completedLessonIds.length > updated.totalLessonsCount) {
       return res.status(400).json({ message: "Invalid state: completed lessons exceed total lessons" });
     }
 
@@ -376,6 +405,35 @@ export async function cancelEnrollment(req: Request, res: Response) {
     enrollment.status = "cancelled";
     await enrollment.save();
 
+    // AUDIT-64: Cascade cancellation — clean up progress, revoke certificate, notify student
+    try {
+      // Remove lesson progress for this student in this course
+      const sections = await Section.find({ course: enrollment.course }).select("_id").lean();
+      const sectionIds = sections.map((s) => s._id);
+      if (sectionIds.length > 0) {
+        const lessons = await Lesson.find({ section: { $in: sectionIds } }).select("_id").lean();
+        const lessonIds = lessons.map((l) => l._id);
+        if (lessonIds.length > 0) {
+          await LessonProgress.deleteMany({ user: enrollment.student, lesson: { $in: lessonIds } });
+        }
+      }
+      // Revoke certificate if one was issued
+      await Certificate.findOneAndUpdate(
+        { student: enrollment.student, course: enrollment.course },
+        { $set: { revokedAt: new Date() } }
+      );
+      // Notify student
+      await Notification.create({
+        recipient: enrollment.student,
+        title: "Enrollment Cancelled",
+        message: "Your enrollment in this course has been cancelled.",
+        type: "warning",
+        link: "/my-courses",
+      });
+    } catch (cascadeError) {
+      console.error("cancelEnrollment cascade error:", cascadeError);
+    }
+
     return res.status(200).json({ message: "Enrollment cancelled" });
   } catch (error) {
     console.error(error);
@@ -399,7 +457,16 @@ export async function getCurriculumForCourse(req: Request, res: Response) {
     if (!isCoursePubliclyAccessible(course, requireApproval)) {
       const isManager = req.user && (req.user.role === "admin" || req.user.id === course.instructor.toString());
       if (!isManager) {
-        return res.status(403).json({ message: "Forbidden" });
+        const isEnrolled = req.user
+          ? !!(await Enrollment.exists({
+              student: req.user.id,
+              course: course._id,
+              status: { $in: ["active", "completed"] },
+            }))
+          : false;
+        if (!isEnrolled) {
+          return res.status(403).json({ message: "Course is not publicly accessible" });
+        }
       }
     }
 

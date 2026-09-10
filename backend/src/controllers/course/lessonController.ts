@@ -6,6 +6,11 @@ import Lesson from "../../models/Lesson";
 import LessonItem from "../../models/LessonItem";
 import LessonProgress from "../../models/LessonProgress";
 import Comment from "../../models/Comment";
+import Quiz from "../../models/Quiz";
+import QuizAttempt from "../../models/QuizAttempt";
+import Note from "../../models/Note";
+import Bookmark from "../../models/Bookmark";
+import Enrollment from "../../models/Enrollment";
 import { isCourseManager, syncEnrollmentLessonCount } from "./shared";
 import { createLessonSchema } from "../../validators/content.validator";
 
@@ -161,6 +166,14 @@ export async function deleteLesson(req: Request, res: Response) {
       LessonProgress.deleteMany({ lesson: lessonId }),
       LessonItem.deleteMany({ lesson: lessonId }),
       Comment.deleteMany({ lesson: lessonId }),
+      Quiz.deleteMany({ lesson: lessonId }),
+      QuizAttempt.deleteMany({ lesson: lessonId }),
+      Note.deleteMany({ lesson: lessonId }),
+      Bookmark.deleteMany({ lesson: lessonId }),
+      Enrollment.updateMany(
+        { course: section.course._id },
+        { $pull: { completedLessonIds: lessonId } }
+      ),
     ]);
 
     void syncEnrollmentLessonCount(section.course._id.toString()).catch((err) =>

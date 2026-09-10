@@ -108,9 +108,13 @@ export async function createCourseReview(req: Request, res: Response) {
       });
     }
 
-    const course = await Course.exists({ _id: courseId, status: "published" });
-    if (!course) {
+    const course = await Course.findById(courseId).select("status instructor");
+    if (!course || course.status !== "published") {
       return res.status(404).json({ message: "Course not found" });
+    }
+
+    if (course.instructor.toString() === req.user.id) {
+      return res.status(403).json({ message: "Instructors cannot review their own courses." });
     }
 
     const allowed = await canReviewCourse(courseId, req.user.id);

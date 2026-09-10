@@ -31,7 +31,7 @@ function formatRelativeTime(dateString: string): string {
 }
 
 export default function NotificationBell() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -119,6 +119,10 @@ export default function NotificationBell() {
         }
         setIsOpen(false);
         if (notification.link) {
+            // AUDIT-09: Refresh user auth state when navigating to instructor pages in case role/status just changed
+            if (notification.link.startsWith('/instructor') || notification.title.toLowerCase().includes('instructor')) {
+                await refreshUser();
+            }
             navigate(notification.link);
         }
     };

@@ -17,9 +17,8 @@ import {
   ClipboardDocumentIcon,
   EyeIcon,
   EyeSlashIcon,
-  CheckCircleIcon,
-  XMarkIcon,
 } from '@heroicons/react/20/solid';
+import { getCouponEffectiveStatus } from '@/features/instructor/pages/Coupons';
 
 export function AdminCoupons() {
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
@@ -397,21 +396,41 @@ export function AdminCoupons() {
                       </td>
 
                       <td className="px-5 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            coupon.isActive
+                        {(() => {
+                          const effStatus = getCouponEffectiveStatus(coupon);
+                          const badgeClass =
+                            effStatus === 'active'
                               ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                          }`}
-                        >
-                          {coupon.isActive ? 'Active' : 'Paused'}
-                        </span>
+                              : effStatus === 'expired'
+                              ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300'
+                              : effStatus === 'exhausted'
+                              ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                              : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300';
+                          const label =
+                            effStatus === 'active'
+                              ? 'Active'
+                              : effStatus === 'expired'
+                              ? 'Expired'
+                              : effStatus === 'exhausted'
+                              ? 'Exhausted'
+                              : 'Paused';
+                          return (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
+                              {label}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       <td className="px-5 py-4 text-right whitespace-nowrap space-x-2">
                         <button
                           onClick={() => handleToggleActive(coupon)}
-                          className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                          disabled={getCouponEffectiveStatus(coupon) === 'expired' || getCouponEffectiveStatus(coupon) === 'exhausted'}
+                          className={`px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                            getCouponEffectiveStatus(coupon) === 'expired' || getCouponEffectiveStatus(coupon) === 'exhausted'
+                              ? 'opacity-50 cursor-not-allowed'
+                              : 'cursor-pointer'
+                          }`}
                         >
                           {coupon.isActive ? 'Pause' : 'Activate'}
                         </button>

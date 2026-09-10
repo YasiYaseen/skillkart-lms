@@ -12,6 +12,7 @@ import Notification from "../../models/Notification";
 import User from "../../models/User";
 import { sendCertificateEmail } from "../../services/emailService";
 import { recordUserActivity } from "../../services/streakService";
+import { getCourseLessonCount } from "./shared";
 
 
 async function getCourseFromLessonId(lessonId: string) {
@@ -169,6 +170,11 @@ export async function updateLessonProgress(req: Request, res: Response) {
       console.error("Failed to update learning streak:", err)
     );
 
+    // Fallback: If totalLessonsCount is missing or <= 0, dynamically count lessons from sections
+    if (!enrollment.totalLessonsCount || enrollment.totalLessonsCount <= 0) {
+      enrollment.totalLessonsCount = await getCourseLessonCount(course._id);
+    }
+
     // Auto-complete course status transitions
     const isFullyComplete =
       enrollment.totalLessonsCount > 0 &&
@@ -222,8 +228,12 @@ export async function updateLessonProgress(req: Request, res: Response) {
           console.error("[EMAIL] Error fetching user for certificate email:", err);
         });
     } else if (!isFullyComplete && enrollment.status === "completed") {
-      enrollment.status = "active";
-      enrollment.completedAt = undefined;
+      // AUDIT-41: Preserve completed status and completedAt milestone if a certificate was already issued
+      const hasCertificate = await Certificate.exists({ student: req.user.id, course: course._id });
+      if (!hasCertificate) {
+        enrollment.status = "active";
+        enrollment.completedAt = undefined;
+      }
       await enrollment.save();
     } else {
       await enrollment.save();
@@ -279,11 +289,17 @@ export async function getMyCourseProgress(req: Request, res: Response) {
     const completedCount = completedLessonIds.length;
     const progressPercentage = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
 
+    if ((!enrollment.totalLessonsCount || enrollment.totalLessonsCount <= 0) && totalLessons > 0) {
+      enrollment.totalLessonsCount = totalLessons;
+      await enrollment.save().catch(() => {});
+    }
+
     return res.json({
       completedLessonIds,
       totalLessons,
       completedCount,
       progressPercentage,
+      isCompleted: enrollment.status === "completed",
       lastLessonId: enrollment.lastAccessedLessonId,
     });
   } catch (error) {

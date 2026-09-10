@@ -77,3 +77,25 @@ export async function optionalProtect(req: Request, res: Response, next: NextFun
     return next();
   }
 }
+
+// AUDIT-48: Guard mutation endpoints during platform maintenance mode
+export async function ensureNotMaintenance(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    // Admins bypass maintenance mode
+    if (req.user?.role === "admin") {
+      next();
+      return;
+    }
+    const SystemSettings = (await import("../models/SystemSettings")).default;
+    const settings = await SystemSettings.findOne({ isSingleton: true }).select("maintenanceMode maintenanceMessage").lean();
+    if (settings?.maintenanceMode) {
+      res.status(503).json({
+        message: settings.maintenanceMessage || "Platform is currently under maintenance. Please try again later.",
+      });
+      return;
+    }
+    next();
+  } catch {
+    next();
+  }
+}

@@ -82,6 +82,9 @@ interface ViewerCourse {
     sections?: ViewerSection[];
     lessons?: ViewerLesson[];
     lessonItems?: ViewerLessonItem[];
+    status?: 'draft' | 'published' | 'archived' | string;
+    isActive?: boolean;
+    isApproved?: boolean;
 }
 
 function LessonViewer() {
@@ -114,8 +117,11 @@ function LessonViewer() {
                 setSections(c.sections || []);
                 setLessons(c.lessons || []);
                 setItems(c.lessonItems || []);
-            } catch {
-                toast.error('Failed to load course content');
+            } catch (err: unknown) {
+                const message =
+                    (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                    'Failed to load course content';
+                toast.error(message);
             } finally {
                 setLoading(false);
             }
@@ -246,8 +252,24 @@ function LessonViewer() {
     if (!course) return <div className="text-center py-20 text-xs text-rose-500">Course not found</div>;
 
     return (
-        <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-slate-900">
-            {/* Mobile Header / Toggle Bar */}
+        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-slate-900">
+            {/* Status Banner for Enrolled Learners when course is unpublished or disabled */}
+            {course && (course.status === 'draft' || course.isActive === false) && (
+                <div className="bg-amber-50 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-800/60 px-4 py-2 text-xs text-amber-800 dark:text-amber-200 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wide">
+                            {course.isActive === false ? 'Catalog Inactive' : 'Unpublished'}
+                        </span>
+                        <span>
+                            {course.isActive === false
+                                ? 'This course is temporarily unlisted from the public catalog, but you retain full access to all curriculum and lessons.'
+                                : 'This course is currently unpublished for curriculum updates by the instructor. As an enrolled student, your access is fully preserved.'}
+                        </span>
+                    </div>
+                </div>
+            )}
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                {/* Mobile Header / Toggle Bar */}
             <div className="md:hidden flex items-center justify-between p-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                 <button
                     onClick={() => setShowMobileSidebar(!showMobileSidebar)}
@@ -605,6 +627,7 @@ function LessonViewer() {
                     </div>
                 )}
 
+            </div>
             </div>
 
             {/* Course Completion Modal Overlay */}

@@ -27,6 +27,7 @@ interface CartContextType {
   removeFromCart: (courseId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   isInCart: (courseId: string) => boolean;
+  refreshCart: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -172,6 +173,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Rollback optimistic update
         setCart((prev) => prev.filter((i) => i.courseId !== item.courseId));
         toast.error(getErrorMessage(err, 'Failed to add course to cart'));
+        throw err;
       }
     }
   };
@@ -207,6 +209,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return cart.some((i) => i.courseId === courseId);
   };
 
+  const refreshCart = async () => {
+    if (token && user) {
+      try {
+        const serverItems = await fetchBackendCart();
+        setCart(deduplicateCartItems(serverItems));
+      } catch (err) {
+        console.error('Failed to refresh cart:', err);
+      }
+    } else {
+      const guestItems = readGuestStorage();
+      setCart(guestItems);
+    }
+  };
+
   const cartTotal = cart.reduce(
     (sum, item) => sum + (typeof item.price === 'number' ? item.price : 0),
     0
@@ -223,6 +239,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         removeFromCart,
         clearCart,
         isInCart,
+        refreshCart,
       }}
     >
       {children}

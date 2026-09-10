@@ -83,11 +83,35 @@ export async function getQuiz(req: Request, res: Response) {
     const quiz = await Quiz.findOne({ lesson: lessonId }).lean();
     if (!quiz) return res.status(404).json({ message: "No quiz for this lesson" });
 
-    // Strip correctAnswer before sending
-    const safeQuestions = quiz.questions.map(({ question, options }) => ({
-      question,
-      options,
-    }));
+    // AUDIT-28: Return correctAnswer for course instructor or admin so the quiz editor can prefill it
+    let isManager = false;
+    if (req.user) {
+      const lesson = await Lesson.findById(lessonId).select("section");
+      if (lesson) {
+        const section = await Section.findById(lesson.section).select("course");
+        if (section) {
+          const course = await Course.findById(section.course).select("instructor");
+          if (course) {
+            isManager = isCourseManager(req.user.id, req.user.role, course.instructor.toString());
+          }
+        }
+      }
+    }
+
+    // Strip correctAnswer before sending to students
+    const safeQuestions = quiz.questions.map((q) => {
+      if (isManager) {
+        return {
+          question: q.question,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+        };
+      }
+      return {
+        question: q.question,
+        options: q.options,
+      };
+    });
 
     // Also send latest attempt for this user so frontend can show state
     const latestAttempt = await QuizAttempt.findOne(
@@ -107,6 +131,40 @@ export async function getQuiz(req: Request, res: Response) {
       latestAttempt: latestAttempt ?? null,
       totalAttempts,
     });
+  } catch {
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+// DELETE /api/lessons/:lessonId/quiz (instructor/admin only)
+export async function deleteQuiz(req: Request, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+    const lessonId = normalizeParam(req.params.lessonId);
+    if (!lessonId || !isValidObjectId(lessonId)) {
+      return res.status(400).json({ message: "Invalid lesson id" });
+    }
+
+    const lesson = await Lesson.findById(lessonId);
+    if (!lesson) return res.status(404).json({ message: "Lesson not found" });
+
+    const section = await Section.findById(lesson.section);
+    if (!section) return res.status(404).json({ message: "Section not found" });
+
+    const course = await Course.findById(section.course);
+    if (!course) return res.status(404).json({ message: "Course not found" });
+
+    if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
+      return res.status(403).json({ message: "Forbidden: You do not own this course" });
+    }
+
+    const quiz = await Quiz.findOneAndDelete({ lesson: lessonId });
+    if (!quiz) return res.status(404).json({ message: "No quiz for this lesson" });
+
+    await QuizAttempt.deleteMany({ lesson: lessonId });
+
+    return res.json({ message: "Quiz deleted successfully" });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }

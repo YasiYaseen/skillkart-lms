@@ -55,11 +55,12 @@ EnrollmentSchema.index({ student: 1, course: 1 }, { unique: true });
 
 // Virtuals — never stored, always computed
 EnrollmentSchema.virtual("completedLessonsCount").get(function () {
-  return this.completedLessonIds.length;
+  return this.completedLessonIds ? this.completedLessonIds.length : 0;
 });
 EnrollmentSchema.virtual("progressPercentage").get(function () {
-  if (this.totalLessonsCount === 0) return 0;
-  return Math.round((this.completedLessonIds.length / this.totalLessonsCount) * 100);
+  if (!this.totalLessonsCount || this.totalLessonsCount <= 0) return 0;
+  const completed = this.completedLessonIds ? this.completedLessonIds.length : 0;
+  return Math.min(100, Math.max(0, Math.round((completed / this.totalLessonsCount) * 100)));
 });
 
 export default model<IEnrollment>("Enrollment", EnrollmentSchema);
