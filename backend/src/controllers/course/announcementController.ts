@@ -17,7 +17,7 @@ function getCourseIdParam(req: Request): string {
 
 /** Returns the course if it exists AND the requesting user is the instructor (or admin). */
 async function getCourseOwnedByUser(courseId: string, userId: string, role: string) {
-  const course = await Course.findById(courseId).select("_id title instructor");
+  const course = await Course.findById(courseId).select("_id title instructor").lean();
   if (!course) return null;
   if (role !== "admin" && course.instructor.toString() !== userId) return null;
   return course;

@@ -64,6 +64,7 @@ export function CourseModeration() {
       setCourses((prev) =>
         prev.map((c) => (c._id === courseId ? { ...c, ...res.data.course } : c))
       );
+      window.dispatchEvent(new CustomEvent('admin-badges-refresh'));
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to update course status";
       toast.error(msg);
@@ -101,12 +102,19 @@ export function CourseModeration() {
         course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.instructor?.name?.toLowerCase().includes(searchQuery.toLowerCase());
 
+      const isPending = course.status === "published" && course.isApproved === undefined;
+      const isApproved = course.status === "published" && course.isApproved === true;
+      const isRejected = course.isApproved === false;
+      const isDraft = course.status === "draft";
+      const isDisabled = course.isActive === false;
+
       const matchesStatus =
         statusFilter === "all" ||
-        (statusFilter === "pending" && course.isApproved === undefined) ||
-        (statusFilter === "approved" && course.isApproved === true) ||
-        (statusFilter === "rejected" && course.isApproved === false) ||
-        (statusFilter === "disabled" && course.isActive === false);
+        (statusFilter === "pending" && isPending) ||
+        (statusFilter === "approved" && isApproved) ||
+        (statusFilter === "rejected" && isRejected) ||
+        (statusFilter === "draft" && isDraft) ||
+        (statusFilter === "disabled" && isDisabled);
 
       return matchesSearch && matchesStatus;
     });
@@ -165,9 +173,10 @@ export function CourseModeration() {
             className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="all">All Moderation States</option>
-            <option value="pending">Pending Review</option>
+            <option value="pending">Pending Review (Published)</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
+            <option value="draft">Draft / Unsubmitted</option>
             <option value="disabled">Disabled</option>
           </select>
         </div>
@@ -225,40 +234,56 @@ export function CourseModeration() {
                   </td>
                   <td className="px-5 py-3.5 whitespace-nowrap">
                     <div className="flex flex-col gap-1 items-start">
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
-                        course.isApproved === true
-                          ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                          : course.isApproved === false
-                          ? "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
-                          : "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
-                      }`}>
-                        {course.isApproved === true ? "Approved" : course.isApproved === false ? "Rejected" : "Pending Review"}
-                      </span>
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-medium border ${
-                        course.isActive !== false
-                          ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
-                      }`}>
-                        {course.isActive !== false ? "Active" : "Disabled"}
-                      </span>
+                      {course.status === 'draft' ? (
+                        <span className={`inline-flex px-2.5 py-0.5 rounded-md text-xs font-semibold border ${
+                          course.isApproved === false
+                            ? "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                        }`}>
+                          {course.isApproved === false ? "Needs Revisions (Draft)" : "Draft (Unsubmitted)"}
+                        </span>
+                      ) : (
+                        <span className={`inline-flex px-2.5 py-0.5 rounded-md text-xs font-semibold border ${
+                          course.isApproved === true
+                            ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                            : course.isApproved === false
+                            ? "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                            : "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                        }`}>
+                          {course.isApproved === true ? "Approved" : course.isApproved === false ? "Rejected" : "Pending Review"}
+                        </span>
+                      )}
+                      {course.isActive === false && (
+                        <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-medium border bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800">
+                          Disabled by Admin
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-5 py-3.5 whitespace-nowrap text-right space-x-1.5">
-                    {course.isApproved !== true && (
-                      <button
-                        onClick={() => handleUpdateStatus(course._id, { isApproved: true })}
-                        className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
-                      >
-                        Approve
-                      </button>
-                    )}
-                    {course.isApproved !== false && (
-                      <button
-                        onClick={() => handleOpenRejectModal(course)}
-                        className="text-xs font-semibold px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition-colors cursor-pointer"
-                      >
-                        Reject
-                      </button>
+                    {course.status === 'published' ? (
+                      <>
+                        {course.isApproved !== true && (
+                          <button
+                            onClick={() => handleUpdateStatus(course._id, { isApproved: true })}
+                            className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {course.isApproved !== false && (
+                          <button
+                            onClick={() => handleOpenRejectModal(course)}
+                            className="text-xs font-semibold px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition-colors cursor-pointer"
+                          >
+                            Reject
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 italic pr-1">
+                        Unsubmitted
+                      </span>
                     )}
                     <button
                       onClick={() => handleUpdateStatus(course._id, { isActive: course.isActive === false })}

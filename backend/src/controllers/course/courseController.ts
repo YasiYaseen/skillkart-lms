@@ -65,17 +65,22 @@ export async function createCourse(req: Request, res: Response) {
       });
     }
 
+    const [catDoc, settings] = await Promise.all([
+      data.category && !isValidObjectId(data.category)
+        ? Category.findOne({ slug: data.category }).select("_id").lean()
+        : null,
+      SystemSettings.findOne({ isSingleton: true }).select("requireCourseApproval").lean(),
+    ]);
+
     let categoryId: Types.ObjectId | undefined = undefined;
     if (data.category) {
       if (isValidObjectId(data.category)) {
         categoryId = new Types.ObjectId(data.category);
-      } else {
-        const catDoc = await Category.findOne({ slug: data.category });
-        if (catDoc) categoryId = catDoc._id as Types.ObjectId;
+      } else if (catDoc) {
+        categoryId = catDoc._id as Types.ObjectId;
       }
     }
 
-    const settings = await SystemSettings.findOne({ isSingleton: true });
     const requireCourseApproval = settings?.requireCourseApproval ?? true;
 
     const course = await Course.create({
@@ -406,7 +411,12 @@ export async function updateCourse(req: Request, res: Response) {
       });
     }
 
-    const course = await Course.findById(courseId);
+    const [course, catDoc] = await Promise.all([
+      Course.findById(courseId),
+      req.body.category && !isValidObjectId(req.body.category)
+        ? Category.findOne({ slug: req.body.category }).select("_id").lean()
+        : null,
+    ]);
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
@@ -427,9 +437,8 @@ export async function updateCourse(req: Request, res: Response) {
         course.category = undefined;
       } else if (isValidObjectId(req.body.category)) {
         course.category = new Types.ObjectId(req.body.category);
-      } else {
-        const catDoc = await Category.findOne({ slug: req.body.category });
-        if (catDoc) course.category = catDoc._id as Types.ObjectId;
+      } else if (catDoc) {
+        course.category = catDoc._id as Types.ObjectId;
       }
     }
 

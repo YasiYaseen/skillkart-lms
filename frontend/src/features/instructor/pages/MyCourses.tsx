@@ -5,10 +5,50 @@ import { toast } from 'sonner';
 import { Modal } from '../../../components/common';
 import { useCurrency } from '@/context/CurrencyContext';
 
-const STATUS_BADGE: Record<string, string> = {
-    published: 'bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
-    draft: 'bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800',
-    archived: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
+const getCourseStatusBadge = (course: InstructorCourse) => {
+    if (course.status === 'archived') {
+        return {
+            label: 'Archived',
+            className: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700',
+            tooltip: 'This course is archived'
+        };
+    }
+
+    if (course.status === 'published') {
+        if (course.isApproved === true) {
+            return {
+                label: 'Live',
+                className: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
+                tooltip: 'Live and publicly accessible to students'
+            };
+        }
+        if (course.isApproved === false) {
+            return {
+                label: 'Rejected',
+                className: 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800',
+                tooltip: course.rejectionReason ? `Rejected by moderation: ${course.rejectionReason}` : 'Submission rejected by moderation'
+            };
+        }
+        return {
+            label: 'Pending Review',
+            className: 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
+            tooltip: 'Submitted for publication — pending administrator review before going live to students'
+        };
+    }
+
+    if (course.isApproved === false) {
+        return {
+            label: 'Needs Changes',
+            className: 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800',
+            tooltip: course.rejectionReason ? `Needs changes: ${course.rejectionReason}` : 'Course rejected by admin, update and resubmit'
+        };
+    }
+
+    return {
+        label: 'Draft',
+        className: 'bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800',
+        tooltip: 'Draft — work in progress'
+    };
 };
 
 export interface InstructorCourse {
@@ -77,15 +117,24 @@ function MyCourses() {
             if (currentStatus === 'published') {
                 await api.patch(`/courses/${courseId}/unpublish`);
                 toast.success('Course moved to draft');
+                setCourses(prev => prev.map(c =>
+                    c.id === courseId ? { ...c, status: 'draft' } : c
+                ));
             } else {
-                await api.patch(`/courses/${courseId}/publish`);
-                toast.success('Course published!');
+                const res = await api.patch<{ message?: string; course?: RawInstructorCourse }>(`/courses/${courseId}/publish`);
+                const updatedCourse = res.data?.course;
+                const msg = res.data?.message || 'Course submitted for review';
+                toast.success(msg);
+                setCourses(prev => prev.map(c =>
+                    c.id === courseId
+                        ? {
+                              ...c,
+                              status: 'published',
+                              isApproved: updatedCourse?.isApproved !== undefined ? updatedCourse.isApproved : c.isApproved,
+                          }
+                        : c
+                ));
             }
-            setCourses(prev => prev.map(c =>
-                c.id === courseId
-                    ? { ...c, status: currentStatus === 'published' ? 'draft' : 'published' }
-                    : c
-            ));
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Action failed';
             toast.error(msg);
@@ -167,33 +216,92 @@ function MyCourses() {
                                 {/* Students */}
                                 <td className="py-4 px-6 text-gray-600 dark:text-gray-300">{course.students}</td>
 
-                                {/* Status toggle */}
+                                {/* Status & Action */}
                                 <td className="py-4 px-6">
-                                    <div className="flex items-center gap-2.5">
-                                        <button
-                                            onClick={() => togglePublish(course.id, course.status)}
-                                            disabled={togglingId === course.id}
-                                            title={course.status === 'published' ? 'Unpublish' : 'Publish'}
-                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 ${
-                                                course.status === 'published' ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'
-                                            }`}
-                                        >
-                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                                                course.status === 'published' ? 'translate-x-4' : 'translate-x-0.5'
-                                            }`} />
-                                        </button>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[course.status] || STATUS_BADGE.draft}`}>
-                                            {course.status === 'published' ? 'Live' : course.status === 'archived' ? 'Archived' : 'Draft'}
-                                        </span>
-                                        {course.isApproved === false && (
-                                            <span
-                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
-                                                title={course.rejectionReason ? `Reason: ${course.rejectionReason}` : 'Submission rejected by moderation'}
+                                    {course.status === 'published' && course.isApproved === true && (
+                                        <div className="flex items-center gap-2.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => togglePublish(course.id, course.status)}
+                                                disabled={togglingId === course.id}
+                                                title="Course is live. Click to unpublish to Draft."
+                                                className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 cursor-pointer shadow-2xs"
                                             >
-                                                Rejected
+                                                <span className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs translate-x-4 transition-transform" />
+                                            </button>
+                                            <span
+                                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                                title="Live and publicly accessible to students"
+                                            >
+                                                Live
                                             </span>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
+
+                                    {course.status === 'published' && course.isApproved === undefined && (
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                                                title="Course has been submitted and is waiting for administrator approval before going live to students"
+                                            >
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                Under Review
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => togglePublish(course.id, 'published')}
+                                                disabled={togglingId === course.id}
+                                                title="Withdraw submission back to Draft to make changes"
+                                                className="text-[11px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 underline decoration-dotted cursor-pointer"
+                                            >
+                                                Withdraw
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {course.status === 'draft' && course.isApproved !== false && (
+                                        <div className="flex items-center gap-2.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => togglePublish(course.id, course.status)}
+                                                disabled={togglingId === course.id}
+                                                title="Click to publish and submit for review"
+                                                className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 disabled:opacity-50 cursor-pointer shadow-2xs"
+                                            >
+                                                <span className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs translate-x-0.5 transition-transform" />
+                                            </button>
+                                            <span
+                                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800"
+                                                title="Draft — offline and work in progress"
+                                            >
+                                                Draft
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {(course.isApproved === false || (course.status === 'draft' && course.isApproved === false)) && (
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                                                title={course.rejectionReason ? `Reason: ${course.rejectionReason}` : 'Moderation rejected this submission. Edit and resubmit.'}
+                                            >
+                                                Needs Changes
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate(`/instructor/courses/${course.id}/edit`)}
+                                                className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                            >
+                                                Edit
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {course.status === 'archived' && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                                            Archived
+                                        </span>
+                                    )}
                                 </td>
 
                                 {/* Actions */}

@@ -133,32 +133,81 @@ export function AdminLayout() {
     const navigate = useNavigate();
     const { logout } = useAuth();
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-    const [pendingCount, setPendingCount] = useState(0);
+    const [badges, setBadges] = useState<{
+        instructorReviews: number;
+        courseModeration: number;
+        payouts: number;
+    }>({ instructorReviews: 0, courseModeration: 0, payouts: 0 });
 
-    // Fetch pending instructor count on mount and every 60 seconds
+    // Fetch pending badge counts on mount, route change, and every 30 seconds
     useEffect(() => {
         let cancelled = false;
-        const fetchCount = async () => {
+        const fetchBadges = async () => {
             try {
-                const res = await api.get<{ count: number }>('/admin/instructor-reviews');
-                if (!cancelled) setPendingCount(res.data.count ?? 0);
+                const res = await api.get<{
+                    badges: {
+                        instructorReviews?: number;
+                        courseModeration?: number;
+                        payouts?: number;
+                    };
+                }>('/admin/sidebar-badges');
+                if (!cancelled && res.data?.badges) {
+                    setBadges({
+                        instructorReviews: res.data.badges.instructorReviews ?? 0,
+                        courseModeration: res.data.badges.courseModeration ?? 0,
+                        payouts: res.data.badges.payouts ?? 0,
+                    });
+                }
             } catch {
-                // silently ignore — sidebar badge is non-critical
+                // Fallback to individual endpoints
+                try {
+                    const [instRes, courseRes] = await Promise.allSettled([
+                        api.get<{ count: number }>('/admin/instructor-reviews'),
+                        api.get<{ courses: Array<{ status?: string; isApproved?: boolean }> }>('/admin/courses'),
+                    ]);
+                    if (!cancelled) {
+                        const instCount = instRes.status === 'fulfilled' ? (instRes.value.data.count ?? 0) : 0;
+                        const courseCount =
+                            courseRes.status === 'fulfilled'
+                                ? (courseRes.value.data.courses || []).filter((c) => c.status === 'published' && c.isApproved === undefined).length
+                                : 0;
+                        setBadges((prev) => ({
+                            ...prev,
+                            instructorReviews: instCount,
+                            courseModeration: courseCount,
+                        }));
+                    }
+                } catch {
+                    // silently ignore
+                }
             }
         };
-        fetchCount();
-        const interval = setInterval(fetchCount, 60_000);
+
+        fetchBadges();
+        const interval = setInterval(fetchBadges, 30_000);
+
+        const handleRefresh = () => fetchBadges();
+        window.addEventListener('admin-badges-refresh', handleRefresh);
+
         return () => {
             cancelled = true;
             clearInterval(interval);
+            window.removeEventListener('admin-badges-refresh', handleRefresh);
         };
-    }, []);
+    }, [location.pathname]);
 
-    // Build nav items, injecting live badge count for Instructor Reviews
-    const NAV_ITEMS: NavItem[] = BASE_NAV_ITEMS.map((item) => ({
-        ...item,
-        badge: item.path === '/admin/instructor-reviews' && pendingCount > 0 ? pendingCount : undefined,
-    }));
+    // Build nav items, injecting live badge counts
+    const NAV_ITEMS: NavItem[] = BASE_NAV_ITEMS.map((item) => {
+        let badge: number | undefined;
+        if (item.path === '/admin/instructor-reviews' && badges.instructorReviews > 0) {
+            badge = badges.instructorReviews;
+        } else if (item.path === '/admin/courses' && badges.courseModeration > 0) {
+            badge = badges.courseModeration;
+        } else if (item.path === '/admin/payouts' && badges.payouts > 0) {
+            badge = badges.payouts;
+        }
+        return { ...item, badge };
+    });
 
     // Auto close mobile drawer on route change
     useEffect(() => {

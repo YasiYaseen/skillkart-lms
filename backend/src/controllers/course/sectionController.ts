@@ -19,7 +19,7 @@ export async function createSection(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid course id" });
     }
 
-    const course = await Course.findById(courseId);
+    const course = await Course.findById(courseId).select("instructor").lean();
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
@@ -37,24 +37,28 @@ export async function createSection(req: Request, res: Response) {
     }
     const { title, order, isLocked, prerequisiteSectionId } = parsed.data;
 
-    let resolvedOrder = Number(order);
-    if (!resolvedOrder || resolvedOrder < 1) {
-      const lastSection = await Section.findOne({ course: course._id }).sort({ order: -1 }).select("order");
-      resolvedOrder = lastSection ? lastSection.order + 1 : 1;
-    }
-
     if (prerequisiteSectionId && !isValidObjectId(prerequisiteSectionId)) {
       return res.status(400).json({ message: "Invalid prerequisite section id" });
     }
 
-    if (prerequisiteSectionId) {
-      const prerequisiteExists = await Section.exists({
-        _id: prerequisiteSectionId,
-        course: course._id,
-      });
-      if (!prerequisiteExists) {
-        return res.status(400).json({ message: "Prerequisite section must belong to this course" });
-      }
+    let resolvedOrder = Number(order);
+    const needOrder = !resolvedOrder || resolvedOrder < 1;
+
+    const [lastSection, prerequisiteExists] = await Promise.all([
+      needOrder
+        ? Section.findOne({ course: course._id }).sort({ order: -1 }).select("order").lean()
+        : null,
+      prerequisiteSectionId
+        ? Section.exists({ _id: prerequisiteSectionId, course: course._id })
+        : Promise.resolve(true),
+    ]);
+
+    if (prerequisiteSectionId && !prerequisiteExists) {
+      return res.status(400).json({ message: "Prerequisite section must belong to this course" });
+    }
+
+    if (needOrder) {
+      resolvedOrder = lastSection ? lastSection.order + 1 : 1;
     }
 
     const section = await Section.create({
@@ -87,7 +91,7 @@ export async function updateSection(req: Request, res: Response) {
       return res.status(404).json({ message: "Section not found" });
     }
 
-    const course = await Course.findById(section.course);
+    const course = await Course.findById(section.course).select("instructor").lean();
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }

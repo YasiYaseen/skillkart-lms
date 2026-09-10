@@ -588,22 +588,27 @@ function EditCourse() {
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Course</h1>
-                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold capitalize ${
+                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
                                 courseStatus === 'published'
-                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                                    ? isApproved === true
+                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                        : isApproved === false
+                                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                        : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                                    : isApproved === false
+                                    ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800'
                             }`}>
-                                {courseStatus}
+                                {courseStatus === 'published'
+                                    ? isApproved === true
+                                        ? 'Live'
+                                        : isApproved === false
+                                        ? 'Rejected'
+                                        : 'Pending Review'
+                                    : isApproved === false
+                                    ? 'Needs Changes'
+                                    : 'Draft'}
                             </span>
-                            {isApproved !== undefined && (
-                                <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
-                                    isApproved
-                                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                }`}>
-                                    {isApproved ? 'Approved' : 'Rejected'}
-                                </span>
-                            )}
                         </div>
                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                             Manage course landing info, curriculum sections, lessons, assessments, and FAQs.
@@ -645,6 +650,21 @@ function EditCourse() {
                         )}
                         <p className="mt-2 text-[11px] text-rose-600 dark:text-rose-400">
                             You can edit your content, save changes, and submit again once the issues have been addressed.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Course Moderation Pending Banner */}
+            {courseStatus === 'published' && isApproved === undefined && (
+                <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 flex items-start gap-3 shadow-xs">
+                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 shrink-0">
+                        <ClockIcon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0 text-xs">
+                        <p className="font-bold text-sm text-amber-950 dark:text-amber-100">Course Under Administrator Review</p>
+                        <p className="mt-0.5 text-amber-700 dark:text-amber-300">
+                            This course has been submitted for publication and is currently awaiting approval by the platform moderation team. It will go live and become visible to students once approved.
                         </p>
                     </div>
                 </div>

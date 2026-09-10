@@ -52,6 +52,30 @@ export async function getStats(req: Request, res: Response) {
   }
 }
 
+export async function getAdminSidebarBadges(req: Request, res: Response) {
+  try {
+    const [pendingInstructors, pendingCourses, pendingPayouts] = await Promise.all([
+      User.countDocuments({ instructorStatus: "pending" }),
+      Course.countDocuments({
+        status: "published",
+        $or: [{ isApproved: { $exists: false } }, { isApproved: null }],
+      }),
+      Payout.countDocuments({ status: "pending" }),
+    ]);
+
+    return res.json({
+      badges: {
+        instructorReviews: pendingInstructors,
+        courseModeration: pendingCourses,
+        payouts: pendingPayouts,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching admin sidebar badges:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
 export async function getUsers(req: Request, res: Response) {
   try {
     const users = await User.find().select("-password").sort({ createdAt: -1 }).lean();

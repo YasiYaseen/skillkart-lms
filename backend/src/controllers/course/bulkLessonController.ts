@@ -17,12 +17,16 @@ export async function bulkUploadLessons(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid sectionId" });
     }
 
-    const section = await Section.findById(sectionId);
+    const section = await Section.findById(sectionId)
+      .select("course")
+      .populate<{ course: { _id: Types.ObjectId; instructor: Types.ObjectId } }>("course", "instructor")
+      .lean();
+
     if (!section) {
       return res.status(404).json({ message: "Section not found" });
     }
 
-    const course = await Course.findById(section.course);
+    const course = section.course;
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
@@ -37,11 +41,14 @@ export async function bulkUploadLessons(req: Request, res: Response) {
     }
 
     // Get current max order in this section
-    const existingLessons = await Lesson.find({ section: sectionId }).sort({ order: -1 }).limit(1);
+    const existingLessons = await Lesson.find({ section: sectionId }).sort({ order: -1 }).limit(1).select("order").lean();
     let currentOrder = existingLessons.length > 0 ? existingLessons[0].order : 0;
 
-    const createdLessons = [];
+    const lessonsToInsert: Array<Record<string, unknown>> = [];
     const failedRows: Array<{ row: number; error: string; data: unknown }> = [];
+
+    const sId = Array.isArray(sectionId) ? sectionId[0] : sectionId;
+    const sectionObjectId = new Types.ObjectId(sId);
 
     for (let i = 0; i < rawLessons.length; i++) {
       const rowNum = i + 1;
@@ -67,9 +74,8 @@ export async function bulkUploadLessons(req: Request, res: Response) {
       else if (rawType === "assignment") safeType = "assignment";
       else safeType = "video";
 
-      const sId = Array.isArray(sectionId) ? sectionId[0] : sectionId;
-      const created = await Lesson.create({
-        section: new Types.ObjectId(sId),
+      lessonsToInsert.push({
+        section: sectionObjectId,
         title: lessonData.title,
         type: safeType,
         durationMinutes: lessonData.durationMinutes,
@@ -77,12 +83,14 @@ export async function bulkUploadLessons(req: Request, res: Response) {
         isMandatory: lessonData.isMandatory,
         order: lessonData.order || currentOrder,
       });
-
-      createdLessons.push(created);
     }
 
+    const createdLessons = lessonsToInsert.length > 0 ? await Lesson.insertMany(lessonsToInsert) : [];
+
     if (createdLessons.length > 0) {
-      await syncEnrollmentLessonCount(course._id.toString());
+      void syncEnrollmentLessonCount(course._id.toString()).catch((err) =>
+        console.error("syncEnrollmentLessonCount error:", err)
+      );
     }
 
     return res.status(201).json({

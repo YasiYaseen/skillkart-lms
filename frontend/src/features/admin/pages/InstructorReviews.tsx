@@ -136,6 +136,7 @@ export function InstructorReviews() {
       );
       toast.success(res.data.message ?? `${label}d ${res.data.processed} application(s)`);
       await fetchPending();
+      window.dispatchEvent(new CustomEvent('admin-badges-refresh'));
     } catch {
       toast.error(`Failed to ${action} applications`);
     } finally {

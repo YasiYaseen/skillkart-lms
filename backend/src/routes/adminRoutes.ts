@@ -3,6 +3,7 @@ import { protect } from "../middleware/authMiddleware";
 import { authorize } from "../middleware/roleMiddleware";
 import {
   getStats,
+  getAdminSidebarBadges,
   getUsers,
   toggleUserStatus,
   updateUserRole,
@@ -39,6 +40,7 @@ router.post("/generate-courses", generateAdminCourses);
 router.post("/course-generator/generate", generateAdminCourses);
 
 router.get("/stats", getStats);
+router.get("/sidebar-badges", getAdminSidebarBadges);
 
 router.get("/financial-reports", getFinancialReports);
 router.get("/financial-reports/export-csv", exportFinancialsCsv);

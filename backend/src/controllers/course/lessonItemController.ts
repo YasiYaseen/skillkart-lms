@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import Course from "../../models/Course";
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
@@ -18,17 +18,28 @@ export async function createLessonItem(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid lesson id" });
     }
 
-    const lesson = await Lesson.findById(lessonId);
+    const lesson = await Lesson.findById(lessonId)
+      .select("section")
+      .populate<{ section: { _id: Types.ObjectId; course: { _id: Types.ObjectId; instructor: Types.ObjectId } } }>({
+        path: "section",
+        select: "course",
+        populate: {
+          path: "course",
+          select: "instructor",
+        },
+      })
+      .lean();
+
     if (!lesson) {
       return res.status(404).json({ message: "Lesson not found" });
     }
 
-    const section = await Section.findById(lesson.section);
+    const section = lesson.section;
     if (!section) {
       return res.status(404).json({ message: "Section not found" });
     }
 
-    const course = await Course.findById(section.course);
+    const course = section.course;
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
@@ -48,7 +59,7 @@ export async function createLessonItem(req: Request, res: Response) {
 
     let resolvedOrder = Number(order);
     if (!resolvedOrder || resolvedOrder < 1) {
-      const lastItem = await LessonItem.findOne({ lesson: lesson._id }).sort({ order: -1 }).select("order");
+      const lastItem = await LessonItem.findOne({ lesson: lesson._id }).sort({ order: -1 }).select("order").lean();
       resolvedOrder = lastItem ? lastItem.order + 1 : 1;
     }
 
@@ -76,17 +87,28 @@ export async function deleteLessonItem(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid id" });
     }
 
-    const lesson = await Lesson.findById(lessonId);
+    const lesson = await Lesson.findById(lessonId)
+      .select("section")
+      .populate<{ section: { _id: Types.ObjectId; course: { _id: Types.ObjectId; instructor: Types.ObjectId } } }>({
+        path: "section",
+        select: "course",
+        populate: {
+          path: "course",
+          select: "instructor",
+        },
+      })
+      .lean();
+
     if (!lesson) {
       return res.status(404).json({ message: "Lesson not found" });
     }
 
-    const section = await Section.findById(lesson.section);
+    const section = lesson.section;
     if (!section) {
       return res.status(404).json({ message: "Section not found" });
     }
 
-    const course = await Course.findById(section.course);
+    const course = section.course;
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }

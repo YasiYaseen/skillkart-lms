@@ -30,7 +30,7 @@ export async function createCourseFAQ(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid courseId" });
     }
 
-    const course = await Course.findById(courseId);
+    const course = await Course.findById(courseId).select("instructor").lean();
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
@@ -79,7 +79,7 @@ export async function updateCourseFAQ(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid ID parameter" });
     }
 
-    const course = await Course.findById(courseId);
+    const course = await Course.findById(courseId).select("instructor").lean();
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
@@ -127,7 +127,7 @@ export async function deleteCourseFAQ(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid ID parameter" });
     }
 
-    const course = await Course.findById(courseId);
+    const course = await Course.findById(courseId).select("instructor").lean();
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }

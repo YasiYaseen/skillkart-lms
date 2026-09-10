@@ -1,8 +1,11 @@
 import type { Request, Response } from "express";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import Course from "../../models/Course";
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
+import LessonItem from "../../models/LessonItem";
+import LessonProgress from "../../models/LessonProgress";
+import Comment from "../../models/Comment";
 import { isCourseManager, syncEnrollmentLessonCount } from "./shared";
 import { createLessonSchema } from "../../validators/content.validator";
 
@@ -17,12 +20,24 @@ export async function createLesson(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid section id" });
     }
 
-    const section = await Section.findById(sectionId);
+    const parsed = createLessonSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
+
+    const section = await Section.findById(sectionId)
+      .select("course")
+      .populate<{ course: { _id: Types.ObjectId; instructor: Types.ObjectId } }>("course", "instructor")
+      .lean();
+
     if (!section) {
       return res.status(404).json({ message: "Section not found" });
     }
 
-    const course = await Course.findById(section.course);
+    const course = section.course;
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
@@ -31,18 +46,11 @@ export async function createLesson(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const parsed = createLessonSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: "Validation failed",
-        errors: parsed.error.flatten().fieldErrors,
-      });
-    }
     const { title, type, order, durationMinutes, isPreview, isMandatory } = parsed.data;
 
     let resolvedOrder = Number(order);
     if (!resolvedOrder || resolvedOrder < 1) {
-      const lastLesson = await Lesson.findOne({ section: section._id }).sort({ order: -1 }).select("order");
+      const lastLesson = await Lesson.findOne({ section: section._id }).sort({ order: -1 }).select("order").lean();
       resolvedOrder = lastLesson ? lastLesson.order + 1 : 1;
     }
 
@@ -56,7 +64,9 @@ export async function createLesson(req: Request, res: Response) {
       isMandatory: isMandatory !== false,
     });
 
-    await syncEnrollmentLessonCount(course._id.toString());
+    void syncEnrollmentLessonCount(course._id.toString()).catch((err) =>
+      console.error("syncEnrollmentLessonCount error:", err)
+    );
 
     return res.status(201).json({ message: "Lesson created", lesson });
   } catch (error: any) {
@@ -82,17 +92,20 @@ export async function updateLesson(req: Request, res: Response) {
       return res.status(404).json({ message: "Lesson not found" });
     }
 
-    const section = await Section.findById(lesson.section);
+    const section = await Section.findById(lesson.section)
+      .select("course")
+      .populate<{ course: { _id: Types.ObjectId; instructor: Types.ObjectId } }>("course", "instructor")
+      .lean();
+
     if (!section) {
       return res.status(404).json({ message: "Section not found" });
     }
 
-    const course = await Course.findById(section.course);
-    if (!course) {
+    if (!section.course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
+    if (!isCourseManager(req.user.id, req.user.role, section.course.instructor.toString())) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
@@ -121,27 +134,38 @@ export async function deleteLesson(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid lesson id" });
     }
 
-    const lesson = await Lesson.findById(lessonId);
+    const lesson = await Lesson.findById(lessonId).select("section").lean();
     if (!lesson) {
       return res.status(404).json({ message: "Lesson not found" });
     }
 
-    const section = await Section.findById(lesson.section);
+    const section = await Section.findById(lesson.section)
+      .select("course")
+      .populate<{ course: { _id: Types.ObjectId; instructor: Types.ObjectId } }>("course", "instructor")
+      .lean();
+
     if (!section) {
       return res.status(404).json({ message: "Section not found" });
     }
 
-    const course = await Course.findById(section.course);
-    if (!course) {
+    if (!section.course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
+    if (!isCourseManager(req.user.id, req.user.role, section.course.instructor.toString())) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    await Lesson.findByIdAndDelete(lessonId);
-    await syncEnrollmentLessonCount(course._id.toString());
+    await Promise.all([
+      Lesson.deleteOne({ _id: lessonId }),
+      LessonProgress.deleteMany({ lesson: lessonId }),
+      LessonItem.deleteMany({ lesson: lessonId }),
+      Comment.deleteMany({ lesson: lessonId }),
+    ]);
+
+    void syncEnrollmentLessonCount(section.course._id.toString()).catch((err) =>
+      console.error("syncEnrollmentLessonCount error:", err)
+    );
 
     return res.json({ message: "Lesson deleted successfully" });
   } catch {
