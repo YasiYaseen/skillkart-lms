@@ -28,7 +28,7 @@ This skill explains how the Platform System Configuration subsystem works in the
 3. **Admin Endpoints:**
    - `GET /api/admin/settings`: Protected by `protect, authorize('admin')`. Returns all configuration options.
    - `PUT /api/admin/settings`: Validates inputs with Zod, applies updates, and logs an immutable entry in the `AuditLog`.
-   - `POST /api/admin/settings/test-email`: Runs a simulated diagnostic SMTP dispatch test with latency, deliverability status, and handshake feedback.
+   - `POST /api/admin/settings/test-email`: Runs a live RFC-compliant SMTP handshake test via `sendDiagnosticEmail` in `emailService.ts`, measuring actual network roundtrip latency and dispatching a real test email (delivers directly to inbox when `SMTP_USER`/`SMTP_PASS` are configured in `.env`, or generates an Ethereal sandbox preview link when in dev mode). Shows live connection/authentication errors in the admin terminal console.
 
 ### Access Policies & Auto-Approval Toggles:
 - `requireInstructorApproval` (boolean): When true, student-to-instructor applications require manual review in `/admin/instructor-reviews`. When false, applicants are promoted to instructors automatically upon submission.
@@ -71,6 +71,7 @@ await settings.save();
 ## Integration Points
 
 - `auditService.ts` — logs `SYSTEM_SETTINGS_UPDATED` action on every modification.
+- `emailService.ts` — powers the live SMTP diagnostic test roundtrip via `sendDiagnosticEmail`.
 - `Header.tsx` — polls `/api/settings/public` to display the global maintenance banner if active.
 - `instructorEarningsController.ts` — uses commission rates and withdrawal threshold rules.
 

@@ -4,6 +4,11 @@ import Cart from "../models/Cart";
 import Course, { type ICourse } from "../models/Course";
 import Enrollment from "../models/Enrollment";
 import { addToCartSchema, mergeCartSchema } from "../validators/cartValidator";
+import {
+  isCourseApprovalRequired,
+  getCourseApprovalFilter,
+  isCoursePubliclyAccessible,
+} from "./course/shared";
 
 interface PopulatedCourseDoc {
   _id: Types.ObjectId;
@@ -29,7 +34,10 @@ interface FormattedCartItem {
   addedAt: Date;
 }
 
-function formatCartItems(items: Array<{ course: any; addedAt: Date }>): FormattedCartItem[] {
+function formatCartItems(
+  items: Array<{ course: any; addedAt: Date }>,
+  requireApproval: boolean
+): FormattedCartItem[] {
   const seen = new Set<string>();
   const result: FormattedCartItem[] = [];
 
@@ -38,9 +46,7 @@ function formatCartItems(items: Array<{ course: any; addedAt: Date }>): Formatte
     if (
       course &&
       course._id &&
-      course.status === "published" &&
-      course.isActive !== false &&
-      course.isApproved !== false
+      isCoursePubliclyAccessible(course, requireApproval)
     ) {
       const idStr = course._id.toString();
       if (!seen.has(idStr)) {
@@ -80,7 +86,8 @@ export async function getCart(req: Request, res: Response) {
       return res.json({ items: [] });
     }
 
-    const formattedItems = formatCartItems(cart.items);
+    const requireApproval = await isCourseApprovalRequired();
+    const formattedItems = formatCartItems(cart.items, requireApproval);
     return res.json({ items: formattedItems });
   } catch (error) {
     console.error("Error in getCart:", error);
@@ -117,7 +124,8 @@ export async function addToCart(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    if (course.status !== "published" || course.isActive === false || course.isApproved === false) {
+    const requireApproval = await isCourseApprovalRequired();
+    if (!isCoursePubliclyAccessible(course, requireApproval)) {
       return res.status(400).json({ message: "This course is currently unavailable for purchase." });
     }
 
@@ -175,7 +183,7 @@ export async function addToCart(req: Request, res: Response) {
       populate: { path: "instructor", select: "name" },
     });
 
-    const formattedItems = formatCartItems(cart.items);
+    const formattedItems = formatCartItems(cart.items, requireApproval);
     return res.status(200).json({
       message: "Course added to cart",
       items: formattedItems,
@@ -217,7 +225,8 @@ export async function removeFromCart(req: Request, res: Response) {
       populate: { path: "instructor", select: "name" },
     });
 
-    const formattedItems = formatCartItems(cart.items);
+    const requireApproval = await isCourseApprovalRequired();
+    const formattedItems = formatCartItems(cart.items, requireApproval);
     return res.json({
       message: "Course removed from cart",
       items: formattedItems,
@@ -312,11 +321,12 @@ export async function mergeCart(req: Request, res: Response) {
       );
 
       // Verify active/published courses
+      const approvalFilter = await getCourseApprovalFilter();
       const validCourses = await Course.find({
         _id: { $in: validCourseIds },
         status: "published",
         isActive: { $ne: false },
-        isApproved: { $ne: false },
+        ...approvalFilter,
       }).select("_id").lean();
 
       for (const course of validCourses) {
@@ -342,7 +352,8 @@ export async function mergeCart(req: Request, res: Response) {
       populate: { path: "instructor", select: "name" },
     });
 
-    const formattedItems = formatCartItems(cart.items);
+    const requireApproval = await isCourseApprovalRequired();
+    const formattedItems = formatCartItems(cart.items, requireApproval);
     return res.json({
       message: "Cart merged successfully",
       items: formattedItems,

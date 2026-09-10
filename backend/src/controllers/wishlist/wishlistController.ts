@@ -5,6 +5,7 @@ import Course from "../../models/Course";
 import Review from "../../models/Review";
 import Enrollment from "../../models/Enrollment";
 import { addToWishlistSchema } from "../../validators/wishlistValidator";
+import { isCourseApprovalRequired, isCoursePubliclyAccessible } from "../course/shared";
 
 async function getCourseRatingSummary(courseId: string) {
   const [summary] = await Review.aggregate<{ averageRating: number; reviewCount: number }>([
@@ -128,7 +129,8 @@ export async function addToWishlist(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    if (course.status !== "published" || course.isActive === false || course.isApproved === false) {
+    const requireApproval = await isCourseApprovalRequired();
+    if (!isCoursePubliclyAccessible(course, requireApproval)) {
       return res.status(400).json({ message: "Cannot wishlist unavailable course" });
     }
 

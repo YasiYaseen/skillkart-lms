@@ -17,6 +17,7 @@ import {
   progressUpdateSchema,
   studentsListQuerySchema,
 } from "../../validators/enrollmentValidator";
+import { isCourseApprovalRequired, isCoursePubliclyAccessible } from "../course/shared";
 
 export async function enrollInCourse(req: Request, res: Response) {
   try {
@@ -36,7 +37,8 @@ export async function enrollInCourse(req: Request, res: Response) {
     if (course.status === "archived") {
       return res.status(400).json({ message: "Cannot enroll in an archived course" });
     }
-    if (course.status !== "published") {
+    const requireApproval = await isCourseApprovalRequired();
+    if (!isCoursePubliclyAccessible(course, requireApproval)) {
       return res.status(400).json({ message: "Course is not open for enrollment" });
     }
     if (course.instructor.toString() === req.user.id) {
@@ -393,7 +395,8 @@ export async function getCurriculumForCourse(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    if (course.status !== "published" || course.isActive === false || course.isApproved === false) {
+    const requireApproval = await isCourseApprovalRequired();
+    if (!isCoursePubliclyAccessible(course, requireApproval)) {
       const isManager = req.user && (req.user.role === "admin" || req.user.id === course.instructor.toString());
       if (!isManager) {
         return res.status(403).json({ message: "Forbidden" });

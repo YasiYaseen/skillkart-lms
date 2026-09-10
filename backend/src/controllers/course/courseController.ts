@@ -15,7 +15,13 @@ import Comment from "../../models/Comment";
 import Certificate from "../../models/Certificate";
 import Category from "../../models/Category";
 import SystemSettings from "../../models/SystemSettings";
-import { getCourseDurationMinutes, isCourseManager } from "./shared";
+import {
+  getCourseDurationMinutes,
+  isCourseManager,
+  isCourseApprovalRequired,
+  getCourseApprovalFilter,
+  isCoursePubliclyAccessible,
+} from "./shared";
 import { createCourseSchema, updateCourseSchema } from "../../validators/course.validator";
 
 
@@ -123,9 +129,10 @@ export async function getCourses(req: Request, res: Response) {
         filter.instructor = req.user.id;
       }
     } else {
+      const approvalFilter = await getCourseApprovalFilter();
       filter.status = "published";
       filter.isActive = { $ne: false };
-      filter.isApproved = { $ne: false };
+      Object.assign(filter, approvalFilter);
     }
 
     if (level) {
@@ -209,10 +216,11 @@ export async function getCourses(req: Request, res: Response) {
       .lean();
 
     // All distinct platform tags
+    const approvalFilter = await getCourseApprovalFilter();
     const allPublishedCourses = await Course.find({
       status: "published",
       isActive: { $ne: false },
-      isApproved: { $ne: false },
+      ...approvalFilter,
     }).select("tags").lean();
 
     const allPlatformTagSet = new Set<string>();
@@ -321,7 +329,8 @@ export async function getCourseById(req: Request, res: Response) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    if (course.status !== "published" || course.isActive === false || course.isApproved === false) {
+    const requireApproval = await isCourseApprovalRequired();
+    if (!isCoursePubliclyAccessible(course, requireApproval)) {
       if (!req.user) {
         return res.status(403).json({ message: "Forbidden" });
       }
@@ -587,10 +596,11 @@ export async function deleteCourse(req: Request, res: Response) {
 
 export async function getCourseRecommendations(req: Request, res: Response) {
   try {
+    const approvalFilter = await getCourseApprovalFilter();
     const filter: Record<string, unknown> = {
       status: "published",
       isActive: { $ne: false },
-      isApproved: { $ne: false },
+      ...approvalFilter,
     };
 
     let userInterests: string[] = [];
@@ -667,10 +677,11 @@ export async function getCourseRecommendations(req: Request, res: Response) {
 
 export async function getLearnerDiscoveryFeed(req: Request, res: Response) {
   try {
+    const approvalFilter = await getCourseApprovalFilter();
     const filter: Record<string, unknown> = {
       status: "published",
       isActive: { $ne: false },
-      isApproved: { $ne: false },
+      ...approvalFilter,
     };
 
     const courses = await Course.find(filter)

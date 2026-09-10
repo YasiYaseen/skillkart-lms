@@ -1,4 +1,4 @@
-﻿---
+---
 name: skillkart-email-notifications
 description: Email notification service for SkillKart — welcome emails, enrollment confirmations, certificate awards, and non-blocking transports.
 ---
@@ -16,14 +16,16 @@ Instructions on how to trigger and manage outbound transactional emails in the S
   - `backend/src/controllers/auth/authController.ts` & `googleAuthController.ts` (Welcome Email)
   - `backend/src/controllers/enrollment/enrollmentController.ts` (Enrollment Confirmation)
   - `backend/src/controllers/certificate/certificateController.ts` & `progressController.ts` (Certificate Awarded)
+  - `backend/src/controllers/admin/adminSettingsController.ts` (SMTP Live Diagnostics & Handshake Verification)
 
 ---
 
 ## How It Works
 
-1. **Transporter Configuration**: If `SMTP_HOST`, `SMTP_USER`, and `SMTP_PASS` environment variables are present, Nodemailer connects to the configured SMTP server. In dev/test mode without credentials, an Ethereal test account is automatically provisioned and email preview URLs are logged to the console.
-2. **Branded HTML Templates**: Responsive email layouts with dark headers, SkillKart branding, typography, styled cards, and call-to-action buttons.
-3. **Non-Blocking Architecture**: All email functions handle errors internally and never reject or throw uncaught exceptions into the main HTTP request/response pipeline.
+1. **Transporter Configuration**: If `SMTP_HOST`, `SMTP_USER`, and `SMTP_PASS` environment variables are present, Nodemailer connects to the configured SMTP server. In dev/test mode without credentials, an Ethereal test account is automatically provisioned and email preview URLs are logged to the console / returned in diagnostics.
+2. **Live SMTP Diagnostics**: The `sendDiagnosticEmail` service performs a genuine end-to-end SMTP handshake test, measures transport latency in milliseconds, sends a styled diagnostic test email to the requested recipient, and reports either direct delivery confirmation or an Ethereal sandbox preview link. If connection or authentication fails, it catches and bubbles the exact error up to the Admin Diagnostics UI.
+3. **Branded HTML Templates**: Responsive email layouts with dark headers, SkillKart branding, typography, styled cards, and call-to-action buttons.
+4. **Non-Blocking Architecture**: Background notification email functions handle errors internally and never reject or throw uncaught exceptions into the main HTTP request/response pipeline.
 
 ---
 
@@ -50,6 +52,13 @@ sendWelcomeEmail(user.email, user.name).catch((err) => {
 sendEnrollmentEmail(student.email, student.name, course.title, course._id.toString()).catch((err) => {
   console.error("[EMAIL] Enrollment email failed:", err);
 });
+
+// Live SMTP diagnostics roundtrip
+const diagnostic = await sendDiagnosticEmail({
+  targetEmail: "admin@skillkart.com",
+  hostOverride: "smtp.gmail.com",
+  portOverride: 587,
+});
 ```
 
 ---
@@ -60,6 +69,7 @@ sendEnrollmentEmail(student.email, student.name, course.title, course._id.toStri
 - `googleAuthController.ts`: Sends welcome email on first-time Google OAuth sign-in.
 - `enrollmentController.ts`: Sends enrollment confirmation email.
 - `progressController.ts` & `certificateController.ts`: Sends certificate notification with verification URL on course completion.
+- `adminSettingsController.ts`: Dispatches real SMTP test emails and evaluates roundtrip latency/diagnostics.
 
 ---
 

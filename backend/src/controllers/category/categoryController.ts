@@ -3,6 +3,7 @@ import { isValidObjectId, Types } from "mongoose";
 import { z } from "zod";
 import Category from "../../models/Category";
 import Course from "../../models/Course";
+import { getCourseApprovalFilter } from "../course/shared";
 
 const categorySchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(60),
@@ -23,10 +24,11 @@ export async function getPublicCategories(req: Request, res: Response) {
   try {
     const categories = await Category.find({ isActive: true }).sort({ order: 1, createdAt: 1 }).lean();
 
+    const approvalFilter = await getCourseApprovalFilter();
     const publishedCourses = await Course.find({
       status: "published",
       isActive: { $ne: false },
-      isApproved: { $ne: false },
+      ...approvalFilter,
     }).select("title description tags").lean();
 
     const enriched = categories.map((cat) => {
