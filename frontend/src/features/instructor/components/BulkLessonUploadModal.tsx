@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { XMarkIcon, PlusIcon, TrashIcon, ArrowUpTrayIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PlusIcon, TrashIcon, ArrowUpTrayIcon, DocumentTextIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from 'sonner';
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/utils/errorUtils";
 
 export interface BulkLessonDraft {
   title: string;
-  type: "video" | "text" | "quiz" | "pdf" | "link";
   durationMinutes: number;
   isPreview: boolean;
   isMandatory: boolean;
@@ -30,8 +29,8 @@ export function BulkLessonUploadModal({
   const [mode, setMode] = useState<"table" | "csv">("table");
   const [csvText, setCsvText] = useState("");
   const [lessons, setLessons] = useState<BulkLessonDraft[]>([
-    { title: "", type: "video", durationMinutes: 10, isPreview: false, isMandatory: true },
-    { title: "", type: "video", durationMinutes: 15, isPreview: false, isMandatory: true },
+    { title: "", durationMinutes: 10, isPreview: false, isMandatory: true },
+    { title: "", durationMinutes: 15, isPreview: false, isMandatory: true },
   ]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,7 +39,7 @@ export function BulkLessonUploadModal({
   const addRow = () => {
     setLessons((prev) => [
       ...prev,
-      { title: "", type: "video", durationMinutes: 10, isPreview: false, isMandatory: true },
+      { title: "", durationMinutes: 10, isPreview: false, isMandatory: true },
     ]);
   };
 
@@ -72,14 +71,11 @@ export function BulkLessonUploadModal({
       const parts = line.split(",").map((p) => p.trim());
       if (parts.length >= 1 && parts[0]) {
         const title = parts[0];
-        const typeRaw = parts[1]?.toLowerCase() as "video" | "text" | "quiz" | "pdf" | "link";
-        const type = ["video", "text", "quiz", "pdf", "link"].includes(typeRaw) ? typeRaw : "video";
-        const durationMinutes = Number(parts[2]) > 0 ? Number(parts[2]) : 10;
-        const isPreview = parts[3]?.toLowerCase() === "true";
+        const durationMinutes = Number(parts[1]) > 0 ? Number(parts[1]) : 10;
+        const isPreview = parts[2]?.toLowerCase() === "true";
 
         parsed.push({
           title,
-          type,
           durationMinutes,
           isPreview,
           isMandatory: true,
@@ -173,7 +169,17 @@ export function BulkLessonUploadModal({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+          <div className="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 rounded-xl p-3.5 text-xs text-indigo-950 dark:text-indigo-200 flex items-start gap-2.5">
+            <InformationCircleIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400 mt-0.5 shrink-0" />
+            <div className="space-y-0.5">
+              <span className="font-semibold text-indigo-950 dark:text-indigo-100">Curriculum Outline Creator:</span>
+              <p className="text-indigo-900/80 dark:text-indigo-300">
+                Bulk upload quickly creates your lesson titles and durations. Once created, you can add any content items (videos, text notes, PDFs, or links) to each lesson using <strong>+ Add Content</strong>.
+              </p>
+            </div>
+          </div>
+
           {mode === "csv" ? (
             <div className="space-y-4">
               <div>
@@ -181,12 +187,12 @@ export function BulkLessonUploadModal({
                   Paste Lesson CSV lines (one lesson per line):
                 </label>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  Format: <code>Title, Type (video|text|quiz|pdf|link), Duration (mins), IsPreview (true|false)</code>
+                  Format: <code>Title, Duration (mins), IsPreview (true|false)</code>
                 </div>
                 <textarea
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
-                  placeholder={`Introduction to Functions, video, 12, true\nAdvanced Closures, video, 20, false\nKnowledge Check 1, quiz, 10, false`}
+                  placeholder={`Introduction to Components, 10, true\nState and Props Deep Dive, 15, false\nPractice Exercise, 20, false`}
                   rows={8}
                   className="w-full font-mono text-xs p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                 />
@@ -194,7 +200,7 @@ export function BulkLessonUploadModal({
               <button
                 type="button"
                 onClick={parseCsvText}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer"
               >
                 Parse & Populate Table
               </button>
@@ -205,14 +211,13 @@ export function BulkLessonUploadModal({
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 font-semibold">
-                      <th className="py-2 px-2">#</th>
-                      <th className="py-2 px-2 min-w-[200px]">
+                      <th className="py-2 px-2 w-10">#</th>
+                      <th className="py-2 px-2 min-w-[280px]">
                         Lesson Title <span className="text-red-500">*</span>
                       </th>
-                      <th className="py-2 px-2 min-w-[110px]">Type</th>
-                      <th className="py-2 px-2 min-w-[90px]">Duration (m)</th>
-                      <th className="py-2 px-2 text-center">Preview?</th>
-                      <th className="py-2 px-2 text-center">Action</th>
+                      <th className="py-2 px-2 min-w-[120px]">Duration (mins)</th>
+                      <th className="py-2 px-2 text-center w-20">Preview?</th>
+                      <th className="py-2 px-2 text-center w-16">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -227,21 +232,6 @@ export function BulkLessonUploadModal({
                             placeholder="e.g. Setting up Environment"
                             className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                           />
-                        </td>
-                        <td className="py-2.5 px-2">
-                          <select
-                            value={lesson.type}
-                            onChange={(e) =>
-                              updateRow(idx, "type", e.target.value as BulkLessonDraft["type"])
-                            }
-                            className="w-full px-2 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white capitalize"
-                          >
-                            <option value="video">Video</option>
-                            <option value="text">Article / Text</option>
-                            <option value="quiz">Quiz</option>
-                            <option value="pdf">PDF Document</option>
-                            <option value="link">External Link</option>
-                          </select>
                         </td>
                         <td className="py-2.5 px-2">
                           <input

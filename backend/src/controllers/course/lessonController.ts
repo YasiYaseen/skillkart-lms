@@ -59,8 +59,10 @@ export async function createLesson(req: Request, res: Response) {
     await syncEnrollmentLessonCount(course._id.toString());
 
     return res.status(201).json({ message: "Lesson created", lesson });
-  } catch {
-    return res.status(500).json({ message: "Server error" });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error?.message || "Server error"
+    });
   }
 }
 

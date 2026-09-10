@@ -135,12 +135,14 @@ export async function deleteSection(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const lessons = await Lesson.find({ section: section._id }).select("_id");
+    const lessons = await Lesson.find({ section: section._id }).select("_id").lean();
     const lessonIds = lessons.map((lesson) => lesson._id);
 
-    await LessonProgress.deleteMany({ lesson: { $in: lessonIds } });
-    await LessonItem.deleteMany({ lesson: { $in: lessonIds } });
-    await Lesson.deleteMany({ section: section._id });
+    await Promise.all([
+      lessonIds.length ? LessonProgress.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? LessonItem.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      Lesson.deleteMany({ section: section._id }),
+    ]);
     await Section.deleteOne({ _id: section._id });
 
     return res.json({ message: "Section deleted" });

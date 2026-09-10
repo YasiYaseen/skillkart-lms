@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { FileUpload } from '@components/common';
 import CourseFAQEditor from '../components/CourseFAQEditor';
 import { QuizEditorModal } from '../components/QuizEditorModal';
-import { BulkLessonUploadModal } from '../components/BulkLessonUploadModal';
 import { useCurrency } from '@/context/CurrencyContext';
 import { getErrorMessage } from '@/utils/errorUtils';
 import { resolveMediaUrl } from '@/utils/mediaUtils';
@@ -19,7 +18,15 @@ import {
     TrashIcon,
     ChevronUpIcon,
     ChevronDownIcon,
+    ClockIcon,
+    PlusIcon,
 } from '@heroicons/react/20/solid';
+
+export interface DraftLessonItem {
+    id: string;
+    type: 'video' | 'pdf' | 'text' | 'link';
+    content: string;
+}
 
 export interface CourseLessonItem {
     _id: string;
@@ -132,7 +139,10 @@ function EditCourse() {
 
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
     const [newLessonTitle, setNewLessonTitle] = useState('');
-    const [newLessonDuration, setNewLessonDuration] = useState<number>(10);
+    const [newLessonDuration, setNewLessonDuration] = useState<number | string>(10);
+    const [draftItems, setDraftItems] = useState<DraftLessonItem[]>([
+        { id: '1', type: 'video', content: '' },
+    ]);
     const [addingLesson, setAddingLesson] = useState(false);
 
     const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
@@ -145,8 +155,6 @@ function EditCourse() {
     const [addingItem, setAddingItem] = useState(false);
 
     const [quizLessonId, setQuizLessonId] = useState<string | null>(null);
-    const [bulkUploadSectionId, setBulkUploadSectionId] = useState<string | null>(null);
-    const [bulkUploadSectionTitle, setBulkUploadSectionTitle] = useState('');
 
     const fetchCourseData = useCallback(async () => {
         if (!courseId) return;
@@ -368,27 +376,64 @@ function EditCourse() {
         }
     };
 
-    const handleAddLesson = async (e: React.FormEvent, sectionId: string) => {
+    const handleAddLesson = async (e: React.FormEvent, sectionId: string, addAnother = false) => {
         e.preventDefault();
-        if (!newLessonTitle.trim()) return;
+        const trimmedTitle = newLessonTitle.trim();
+        if (!trimmedTitle) {
+            toast.error('Please enter a lesson title');
+            return;
+        }
         setAddingLesson(true);
         try {
             const sec = sections.find((s) => s._id === sectionId);
             if (!sec) return;
             const res = await api.post(`/sections/${sectionId}/lessons`, {
-                title: newLessonTitle.trim(),
+                title: trimmedTitle,
                 durationMinutes: Number(newLessonDuration) || 10,
                 order: sec.lessons.length + 1,
             });
+
+            const createdLesson = res.data.lesson;
+            const items: CourseLessonItem[] = [];
+
+            // Attach all valid draft items
+            const validDraftItems = draftItems.filter((it) => it.content.trim());
+            for (let i = 0; i < validDraftItems.length; i++) {
+                const draft = validDraftItems[i];
+                try {
+                    const contentPayload =
+                        draft.type === 'text'
+                            ? { text: draft.content.trim() }
+                            : { url: draft.content.trim() };
+
+                    const itemRes = await api.post(`/lessons/${createdLesson._id}/items`, {
+                        type: draft.type,
+                        content: contentPayload,
+                        order: i + 1,
+                    });
+                    const item = itemRes.data.lessonItem || itemRes.data.item;
+                    if (item) items.push(item);
+                } catch {
+                    toast.error(`Attached ${items.length} items, but failed on item ${i + 1}`);
+                }
+            }
+
             const updatedSection: CourseSection = {
                 ...sec,
-                lessons: [...sec.lessons, { ...res.data.lesson, items: [] }],
+                lessons: [...sec.lessons, { ...createdLesson, items }],
             };
             setSections(sections.map((s) => (s._id === sectionId ? updatedSection : s)));
             setNewLessonTitle('');
             setNewLessonDuration(10);
-            setActiveSectionId(null);
-            toast.success('Lesson added');
+            setDraftItems([{ id: String(Date.now()), type: 'video', content: '' }]);
+            if (!addAnother) {
+                setActiveSectionId(null);
+            }
+            toast.success(
+                items.length > 0
+                    ? `Lesson saved with ${items.length} content item${items.length > 1 ? 's' : ''}!`
+                    : 'Lesson added'
+            );
         } catch {
             toast.error('Failed to add lesson');
         } finally {
@@ -485,6 +530,30 @@ function EditCourse() {
             toast.error('Failed to add content item');
         } finally {
             setAddingItem(false);
+        }
+    };
+
+    const handleDeleteItem = async (sectionId: string, lessonId: string, itemId: string) => {
+        try {
+            await api.delete(`/lessons/${lessonId}/items/${itemId}`);
+            setSections((prev) =>
+                prev.map((sec) => {
+                    if (sec._id !== sectionId) return sec;
+                    return {
+                        ...sec,
+                        lessons: sec.lessons.map((les) => {
+                            if (les._id !== lessonId) return les;
+                            return {
+                                ...les,
+                                items: (les.items || []).filter((it) => it._id !== itemId),
+                            };
+                        }),
+                    };
+                })
+            );
+            toast.success('Content item removed');
+        } catch {
+            toast.error('Failed to remove content item');
         }
     };
 
@@ -1038,18 +1107,6 @@ function EditCourse() {
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => {
-                                                    setBulkUploadSectionId(section._id);
-                                                    setBulkUploadSectionTitle(section.title);
-                                                }}
-                                                className="text-xs font-semibold px-2.5 py-1.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1 border border-blue-200 dark:border-blue-800 shadow-2xs cursor-pointer"
-                                                title="Bulk add lessons via CSV or table"
-                                            >
-                                                <ArrowUpTrayIcon className="w-3.5 h-3.5" />
-                                                <span>Bulk Upload</span>
-                                            </button>
-                                            <button
-                                                type="button"
                                                 onClick={() => setActiveSectionId(activeSectionId === section._id ? null : section._id)}
                                                 className="text-xs font-semibold px-2.5 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-500 transition-colors cursor-pointer shadow-2xs"
                                             >
@@ -1067,41 +1124,175 @@ function EditCourse() {
                                     </div>
 
                                     {activeSectionId === section._id && (
-                                        <form onSubmit={(e) => handleAddLesson(e, section._id)} className="p-4 bg-blue-50/40 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900/40 flex flex-wrap items-center gap-3">
-                                            <input
-                                                type="text"
-                                                placeholder="Lesson title..."
-                                                value={newLessonTitle}
-                                                onChange={(e) => setNewLessonTitle(e.target.value)}
-                                                required
-                                                className="flex-1 min-w-[200px] px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                            />
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-xs text-slate-500 dark:text-slate-400">Duration (mins):</span>
+                                        <div className="p-4 bg-blue-50/40 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900/40 space-y-4">
+                                            {/* Row 1: Title & Duration */}
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                                                 <input
-                                                    type="number"
-                                                    min="1"
-                                                    max="300"
-                                                    value={newLessonDuration}
-                                                    onChange={(e) => setNewLessonDuration(Number(e.target.value))}
-                                                    className="w-20 px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                                    type="text"
+                                                    autoFocus
+                                                    placeholder="Lesson title (e.g. Introduction & Setup)..."
+                                                    value={newLessonTitle}
+                                                    onChange={(e) => setNewLessonTitle(e.target.value)}
+                                                    className="flex-1 min-w-[220px] bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                 />
+                                                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 shrink-0">
+                                                    <ClockIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Duration:</span>
+                                                    <input
+                                                        type="number"
+                                                        required
+                                                        min="1"
+                                                        max="600"
+                                                        placeholder="10"
+                                                        value={newLessonDuration}
+                                                        onChange={(e) => setNewLessonDuration(e.target.value)}
+                                                        className="w-12 bg-transparent text-slate-900 dark:text-white text-sm font-medium focus:outline-none text-center"
+                                                    />
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400">mins</span>
+                                                </div>
                                             </div>
-                                            <button
-                                                type="submit"
-                                                disabled={addingLesson || !newLessonTitle.trim()}
-                                                className="px-3.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 disabled:opacity-50 shadow-2xs cursor-pointer"
-                                            >
-                                                {addingLesson ? 'Adding...' : 'Save Lesson'}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setActiveSectionId(null)}
-                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </form>
+
+                                            {/* Row 2: Content Items (Support 1 or multiple attachments!) */}
+                                            <div className="space-y-3 pt-2 border-t border-blue-100 dark:border-blue-900/40">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                        Lesson Content ({draftItems.filter((i) => i.content.trim()).length} attached)
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setDraftItems((prev) => [
+                                                                ...prev,
+                                                                { id: String(Date.now()), type: 'video', content: '' },
+                                                            ])
+                                                        }
+                                                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                        <PlusIcon className="w-3.5 h-3.5" />
+                                                        <span>+ Add Another Content</span>
+                                                    </button>
+                                                </div>
+
+                                                <div className="space-y-2.5">
+                                                    {draftItems.map((item, idx) => (
+                                                        <div
+                                                            key={item.id}
+                                                            className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2 shadow-2xs"
+                                                        >
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[11px] font-mono text-slate-400 font-bold">
+                                                                        #{idx + 1}
+                                                                    </span>
+                                                                    <select
+                                                                        value={item.type}
+                                                                        onChange={(e) => {
+                                                                            const newType = e.target.value as DraftLessonItem['type'];
+                                                                            setDraftItems((prev) =>
+                                                                                prev.map((it) =>
+                                                                                    it.id === item.id ? { ...it, type: newType } : it
+                                                                                )
+                                                                            );
+                                                                        }}
+                                                                        className="border border-slate-300 dark:border-slate-600 rounded-md px-2 py-1 text-xs bg-white dark:bg-slate-700 text-slate-900 dark:text-white cursor-pointer"
+                                                                    >
+                                                                        <option value="video">🎥 Video URL</option>
+                                                                        <option value="pdf">📄 PDF Document</option>
+                                                                        <option value="link">🔗 External Link</option>
+                                                                        <option value="text">📝 Article / Notes</option>
+                                                                    </select>
+                                                                </div>
+
+                                                                {draftItems.length > 1 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            setDraftItems((prev) => prev.filter((it) => it.id !== item.id))
+                                                                        }
+                                                                        className="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors cursor-pointer"
+                                                                        title="Remove this content item"
+                                                                    >
+                                                                        <TrashIcon className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {item.type === 'text' ? (
+                                                                <textarea
+                                                                    rows={2}
+                                                                    placeholder="Write article notes or markdown content..."
+                                                                    value={item.content}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        setDraftItems((prev) =>
+                                                                            prev.map((it) =>
+                                                                                it.id === item.id ? { ...it, content: val } : it
+                                                                            )
+                                                                        );
+                                                                    }}
+                                                                    className="w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                                                                />
+                                                            ) : (
+                                                                <input
+                                                                    type="url"
+                                                                    placeholder={
+                                                                        item.type === 'video'
+                                                                            ? 'Paste video URL (YouTube, Vimeo, etc.)...'
+                                                                            : item.type === 'pdf'
+                                                                            ? 'Paste PDF URL (https://.../document.pdf)...'
+                                                                            : 'Paste external link URL (https://...)...'
+                                                                    }
+                                                                    value={item.content}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        setDraftItems((prev) =>
+                                                                            prev.map((it) =>
+                                                                                it.id === item.id ? { ...it, content: val } : it
+                                                                            )
+                                                                        );
+                                                                    }}
+                                                                    className="w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Row 3: Action Buttons */}
+                                            <div className="flex items-center justify-between pt-1">
+                                                <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                                                    {draftItems.filter((i) => i.content.trim()).length === 0
+                                                        ? 'Leave blank to create an outline lesson (content can be added later)'
+                                                        : `Will create lesson with ${draftItems.filter((i) => i.content.trim()).length} attached item(s)`}
+                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setActiveSectionId(null)}
+                                                        className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={addingLesson || !newLessonTitle.trim()}
+                                                        onClick={(e) => handleAddLesson(e, section._id, true)}
+                                                        className="bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-xs px-3.5 py-1.5 rounded-lg font-medium transition disabled:opacity-50 cursor-pointer shadow-2xs"
+                                                    >
+                                                        Save & Add Next
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={addingLesson || !newLessonTitle.trim()}
+                                                        onClick={(e) => handleAddLesson(e, section._id, false)}
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1.5 rounded-lg font-semibold transition disabled:opacity-50 cursor-pointer shadow-xs"
+                                                    >
+                                                        {addingLesson ? 'Saving...' : 'Save Lesson'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     )}
 
                                     <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -1219,15 +1410,23 @@ function EditCourse() {
                                                 {lesson.items && lesson.items.length > 0 && (
                                                     <div className="pl-6 space-y-1.5">
                                                         {lesson.items.map((item) => (
-                                                            <div key={item._id} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-700/60">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-semibold uppercase text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                                            <div key={item._id} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-700/60 group">
+                                                                <div className="flex items-center gap-2 truncate min-w-0">
+                                                                    <span className="font-semibold uppercase text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shrink-0">
                                                                         {item.type}
                                                                     </span>
                                                                     <span className="text-gray-700 dark:text-gray-300 truncate max-w-sm">
                                                                         {item.content.url || item.content.text || 'Attached item'}
                                                                     </span>
                                                                 </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteItem(section._id, lesson._id, item._id)}
+                                                                    className="text-gray-400 hover:text-rose-600 p-1 transition-colors cursor-pointer shrink-0 ml-2"
+                                                                    title="Delete this content item"
+                                                                >
+                                                                    <TrashIcon className="w-3.5 h-3.5" />
+                                                                </button>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -1364,19 +1563,6 @@ function EditCourse() {
                 onClose={() => setQuizLessonId(null)}
                 lessonId={quizLessonId}
             />
-
-            {bulkUploadSectionId && (
-                <BulkLessonUploadModal
-                    isOpen={Boolean(bulkUploadSectionId)}
-                    onClose={() => setBulkUploadSectionId(null)}
-                    sectionId={bulkUploadSectionId}
-                    sectionTitle={bulkUploadSectionTitle}
-                    onSuccess={() => {
-                        fetchCourseData();
-                        setBulkUploadSectionId(null);
-                    }}
-                />
-            )}
         </div>
     );
 }

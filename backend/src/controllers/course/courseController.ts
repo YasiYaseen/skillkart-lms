@@ -15,6 +15,7 @@ import Comment from "../../models/Comment";
 import Certificate from "../../models/Certificate";
 import Category from "../../models/Category";
 import SystemSettings from "../../models/SystemSettings";
+import CourseFAQ from "../../models/CourseFAQ";
 import {
   getCourseDurationMinutes,
   isCourseManager,
@@ -570,22 +571,27 @@ export async function deleteCourse(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const sections = await Section.find({ course: course._id }).select("_id");
+    const sections = await Section.find({ course: course._id }).select("_id").lean();
     const sectionIds = sections.map((section) => section._id);
-    const lessons = sectionIds.length ? await Lesson.find({ section: { $in: sectionIds } }).select("_id") : [];
+    const lessons = sectionIds.length
+      ? await Lesson.find({ section: { $in: sectionIds } }).select("_id").lean()
+      : [];
     const lessonIds = lessons.map((lesson) => lesson._id);
 
-    await LessonProgress.deleteMany({ lesson: { $in: lessonIds } });
-    await LessonItem.deleteMany({ lesson: { $in: lessonIds } });
-    await Comment.deleteMany({ lesson: { $in: lessonIds } });
-    await Note.deleteMany({ course: course._id });
-    await Bookmark.deleteMany({ course: course._id });
-    await Announcement.deleteMany({ course: course._id });
-    await Certificate.deleteMany({ course: course._id });
-    await Lesson.deleteMany({ section: { $in: sectionIds } });
-    await Section.deleteMany({ course: course._id });
-    await Enrollment.deleteMany({ course: course._id });
-    await Review.deleteMany({ course: course._id });
+    await Promise.all([
+      lessonIds.length ? LessonProgress.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? LessonItem.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      lessonIds.length ? Comment.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
+      Note.deleteMany({ course: course._id }),
+      Bookmark.deleteMany({ course: course._id }),
+      Announcement.deleteMany({ course: course._id }),
+      Certificate.deleteMany({ course: course._id }),
+      CourseFAQ.deleteMany({ course: course._id }),
+      sectionIds.length ? Lesson.deleteMany({ section: { $in: sectionIds } }) : Promise.resolve(),
+      Section.deleteMany({ course: course._id }),
+      Enrollment.deleteMany({ course: course._id }),
+      Review.deleteMany({ course: course._id }),
+    ]);
     await Course.deleteOne({ _id: course._id });
 
     return res.json({ message: "Course deleted" });

@@ -60,11 +60,18 @@ export async function bulkUploadLessons(req: Request, res: Response) {
       currentOrder += 1;
       const lessonData = parsed.data;
 
+      const rawType = (lessonData.type || "video").toLowerCase();
+      let safeType: "video" | "article" | "quiz" | "assignment" = "video";
+      if (rawType === "quiz") safeType = "quiz";
+      else if (rawType === "article" || rawType === "text" || rawType === "pdf") safeType = "article";
+      else if (rawType === "assignment") safeType = "assignment";
+      else safeType = "video";
+
       const sId = Array.isArray(sectionId) ? sectionId[0] : sectionId;
       const created = await Lesson.create({
         section: new Types.ObjectId(sId),
         title: lessonData.title,
-        type: lessonData.type,
+        type: safeType,
         durationMinutes: lessonData.durationMinutes,
         isPreview: lessonData.isPreview,
         isMandatory: lessonData.isMandatory,

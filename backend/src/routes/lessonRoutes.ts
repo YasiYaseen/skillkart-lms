@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { updateLesson, deleteLesson } from "../controllers/course/lessonController";
-import { createLessonItem } from "../controllers/course/lessonItemController";
+import { createLessonItem, deleteLessonItem } from "../controllers/course/lessonItemController";
 import { updateLessonProgress } from "../controllers/course/progressController";
 import {
   getLessonComments,
@@ -24,6 +24,7 @@ const router = Router();
 router.patch("/:lessonId", protect, requireOnboardingCompleted, authorize("instructor", "admin"), updateLesson);
 router.delete("/:lessonId", protect, requireOnboardingCompleted, authorize("instructor", "admin"), deleteLesson);
 router.post("/:lessonId/items", protect, requireOnboardingCompleted, authorize("instructor", "admin"), createLessonItem);
+router.delete("/:lessonId/items/:itemId", protect, requireOnboardingCompleted, authorize("instructor", "admin"), deleteLessonItem);
 router.post(
   "/:lessonId/progress",
   protect,

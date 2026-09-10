@@ -13,6 +13,7 @@ const router = Router();
 
 // Public route: get active categories with live counts
 router.get("/", getPublicCategories);
+router.get("/public", getPublicCategories);
 
 // Admin-only management routes
 router.get("/admin/all", protect, authorize("admin"), getAdminCategories);

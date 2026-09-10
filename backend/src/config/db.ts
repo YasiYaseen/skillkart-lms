@@ -5,7 +5,9 @@ const connectDB = async (): Promise<void> => {
     if (!process.env.MONGO_URI) {
       throw new Error("MONGO_URI is not defined");
     }
-    await connect(process.env.MONGO_URI);
+    await connect(process.env.MONGO_URI, {
+      writeConcern: { w: 1 },
+    });
     console.log("MongoDB connected");
   } catch (err) {
     console.error(err);

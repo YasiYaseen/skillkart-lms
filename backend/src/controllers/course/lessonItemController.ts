@@ -64,3 +64,44 @@ export async function createLessonItem(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function deleteLessonItem(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { lessonId, itemId } = req.params;
+    if (!isValidObjectId(lessonId) || !isValidObjectId(itemId)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const lesson = await Lesson.findById(lessonId);
+    if (!lesson) {
+      return res.status(404).json({ message: "Lesson not found" });
+    }
+
+    const section = await Section.findById(lesson.section);
+    if (!section) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
+    const course = await Course.findById(section.course);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const deleted = await LessonItem.findOneAndDelete({ _id: itemId, lesson: lesson._id });
+    if (!deleted) {
+      return res.status(404).json({ message: "Lesson item not found" });
+    }
+
+    return res.status(200).json({ message: "Lesson item deleted" });
+  } catch {
+    return res.status(500).json({ message: "Server error" });
+  }
+}
