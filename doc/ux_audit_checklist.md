@@ -32,6 +32,7 @@ P0 (Critical / Blocker):
   [x] AUDIT-103: Asynchronous Gateway Checkout Auto-Enrollment Vulnerability
   [x] AUDIT-105: Google OAuth Suspended User Bypass Permits Inactive Accounts to Log In and Obtain Active Session
   [ ] AUDIT-110: Student Lesson Progress Auto-Restores Revoked Certificates Overriding Admin Disciplinary Revocation
+  [ ] AUDIT-117: Cross-Instructor Course Coupon Exploitation & Unauthorized Revenue Deduction
 
 P1 (High):
   [x] AUDIT-06: Phantom API Route `/courses/instructor` Breaks Assignments & Gradebook
@@ -76,6 +77,9 @@ P1 (High):
   [ ] AUDIT-112: Bulk Instructor Review Nuclear Fallback Processes Entire Platform Pending Queue When Selection is Empty
   [ ] AUDIT-113: Student Unenroll Modal Misleading Progress Retention Promise Contradicts Permanent Deletion
   [ ] AUDIT-114: Missing Lesson Item Update Route & Controller Deadlocks Content Modification
+  [ ] AUDIT-118: Cross-Instructor Student Submissions Leak & Data Privacy Breach via Unscoped Course Query
+  [ ] AUDIT-119: LessonViewer Query Parameter Stripping Destroys Notification Deep-Linking Context
+  [ ] AUDIT-122: Desynchronized Enrollment Completion Lifecycle on Curriculum Additions and Deletions
 
 P2 (Medium):
   [ ] AUDIT-11: 0% Progress Invariant Violation Across All Students in Instructor Analytics
@@ -130,6 +134,10 @@ P2 (Medium):
   [ ] AUDIT-109: Course Generator Incomplete Instructor Lifecycle Flags Cause Multi-Role State Desynchronization
   [ ] AUDIT-115: Admin Financial Reports Ledger Unconditionally Renders Emerald Badges for Failed and Refunded Transactions
   [ ] AUDIT-116: Hardcoded Dollar Currency Formatting in Course Catalog and Cart Promo Badges Bypasses System Currency
+  [ ] AUDIT-120: Instructor Minimum Payout Threshold Desynchronization & Hardcoded Currency UI
+  [ ] AUDIT-121: Instructor Self-Course Wishlisting Allowed Leading to Dead-End "Move to Cart" Rejections
+  [ ] AUDIT-123: Course Schema Field Mismatch in Notes and Bookmarks User Feeds Discarding Thumbnails
+  [ ] AUDIT-124: Unhandled Course Category Dissociation on Admin Category Deletion
 
 P3 (Low / Polish):
   [ ] AUDIT-17: Category Deletion and Inactivation Leaves Dangling References & Broken Catalog Filters
@@ -3623,8 +3631,348 @@ P3 (Low / Polish):
 
 ---
 
+#### AUDIT-117: Cross-Instructor Course Coupon Exploitation & Unauthorized Revenue Deduction
+- **Category**: Security Vulnerability & Multi-Role Financial Exploitation
+- **Priority**: `P0 — Critical`
+- **Impacted Roles**: Instructor, Admin, Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/couponController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/couponController.ts#L331-L405,L410-L534)
+  - [`backend/src/controllers/orderController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/orderController.ts#L181-L218)
+  - [`frontend/src/features/instructor/pages/Coupons.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/Coupons.tsx#L140-L210)
+- **Description**:
+  In `couponController.ts`, instructors have permission to create and update coupons for courses (`scope: "single_course"`).
+  However, in `createCoupon` (lines 331–405) and `updateCoupon` (lines 410–534):
+  1. The controller extracts `courseId` from `req.body`:
+     ```typescript
+     if (scope === "single_course") {
+       if (!courseId || !isValidObjectId(courseId)) {
+         return res.status(400).json({ message: "Valid courseId is required for single_course coupons" });
+       }
+       couponData.course = new Types.ObjectId(courseId as string);
+     }
+     ```
+  2. The controller **completely fails to verify that the requesting instructor owns the course** (`course.instructor.toString() === req.user.id`). Any instructor can pass the `_id` of any other instructor's course when creating or updating a coupon.
+  3. In `orderController.ts:checkout` (lines 181–218), when a student checks out with a single-course coupon, the discount is funded directly by the instructor who authored the target course:
+     ```typescript
+     if (isSingleCourse && isTargetCourse) {
+       itemDiscount = calculateDiscount(item.price);
+       item.discount = itemDiscount;
+       item.finalPrice = item.price - itemDiscount;
+       // Instructor payout is derived from final discounted price!
+       item.instructorPayout = Math.round(item.finalPrice * (liveInstructorShare / 100) * 100) / 100;
+     }
+     ```
+  4. As a result, Instructor A can create a 90% off coupon targeting Instructor B's popular $200 course. When students purchase Instructor B's course using this coupon, Instructor B absorbs the full $180 discount and receives a payout of only $16 (80% of $20) instead of $160 (80% of $200). Instructor A can slash peer instructors' earnings and manipulate marketplace prices without authorization.
+- **Reproduction Steps**:
+  1. Log in as Instructor A.
+  2. Send `POST /api/coupons` with payload:
+     ```json
+     {
+       "code": "EXPLOIT90",
+       "discountType": "percentage",
+       "discountValue": 90,
+       "scope": "single_course",
+       "courseId": "<COURSE_ID_OWNED_BY_INSTRUCTOR_B>",
+       "expiresAt": "2028-01-01"
+     }
+     ```
+  3. Observe that the API returns `201 Created` without validating course ownership.
+  4. As a student, add Instructor B's $200 course to the cart and apply coupon `EXPLOIT90`.
+  5. Complete checkout.
+  6. In MongoDB, inspect the created `Order` record: `item.instructorPayout` is slashed to 80% of $20 ($16.00). Instructor B's earnings ledger reflects an unauthorized 90% revenue cut.
+- **Remediation**:
+  - In `couponController.ts:createCoupon` and `updateCoupon`, add strict course ownership validation:
+    ```typescript
+    if (scope === "single_course") {
+      const course = await Course.findById(courseId);
+      if (!course) {
+        return res.status(404).json({ message: "Referenced course not found" });
+      }
+      if (req.user.role !== "admin" && course.instructor.toString() !== req.user.id) {
+        return res.status(403).json({ message: "You can only create coupons for courses you instruct." });
+      }
+      couponData.course = course._id;
+    }
+    ```
+  - In `frontend/src/features/instructor/pages/Coupons.tsx`, ensure the course selection dropdown only allows choosing courses authored by the authenticated instructor.
 
 ---
+
+#### AUDIT-118: Cross-Instructor Student Submissions Leak & Data Privacy Breach via Unscoped Course Query
+- **Category**: Multi-Role Data Isolation Bypass & Student Privacy Breach
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Instructor, Student, Admin
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/assignmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/assignmentController.ts#L408-L440)
+  - [`frontend/src/features/instructor/pages/Assignments.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/Assignments.tsx#L85-L130)
+- **Description**:
+  In `assignmentController.ts:getInstructorSubmissions` (lines 408–440), the endpoint retrieves assignment submissions for instructor grading:
+  ```typescript
+  const instructorCourses = await Course.find({ instructor: req.user.id }).select("_id").lean();
+  const courseIds = instructorCourses.map((c) => c._id);
+  const courseFilter: Record<string, unknown> = {
+    course: { $in: courseIds },
+  };
+
+  if (courseId && isValidObjectId(courseId as string)) {
+    courseFilter.course = courseId; // Critical Vulnerability: unconditionally overwrites courseFilter!
+  }
+  ```
+  1. If `courseId` is provided as a query parameter (e.g., `GET /api/assignments/instructor/submissions?courseId=<VICTIM_COURSE_ID>`), the controller assigns `courseFilter.course = courseId` without checking if `courseId` is in `courseIds`.
+  2. The `$in: courseIds` ownership constraint is completely destroyed.
+  3. Mongoose executes `AssignmentSubmission.find(courseFilter)` populated with `student` (`name`, `email`, `avatar`), `assignment`, and `course`.
+  4. Any instructor on the platform can inspect any other instructor's students, assignment submissions, proprietary deliverables, uploaded student zip/pdf files, private repository links, student personal notes, and internal grading records.
+- **Reproduction Steps**:
+  1. Log in as Instructor A.
+  2. Obtain the `_id` of a course created by Instructor B (readily available from public `/courses` catalog).
+  3. Send `GET /api/assignments/instructor/submissions?courseId=<INSTRUCTOR_B_COURSE_ID>` with Instructor A's authorization token.
+  4. Observe `200 OK` returning an array of student submissions for Instructor B's course, including student emails, names, uploaded files, and grades.
+- **Remediation**:
+  - In `assignmentController.ts:getInstructorSubmissions`, validate that `courseId` belongs to the requesting instructor before scoping the query:
+    ```typescript
+    if (courseId && isValidObjectId(courseId as string)) {
+      if (req.user.role !== "admin" && !courseIds.some((id) => id.toString() === courseId)) {
+        return res.status(403).json({ message: "Access denied to this course's submissions." });
+      }
+      courseFilter.course = courseId;
+    }
+    ```
+
+---
+
+#### AUDIT-119: LessonViewer Query Parameter Stripping Destroys Notification Deep-Linking Context
+- **Category**: State Synchronization & Navigation Workflow Desynchronization
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Student, Instructor
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/features/student/pages/LessonViewer.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/student/pages/LessonViewer.tsx#L105,L175-L195,L440-L488)
+  - [`backend/src/controllers/course/commentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/commentController.ts#L168,L179)
+  - [`backend/src/controllers/assignmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/assignmentController.ts#L514)
+  - [`backend/src/controllers/course/announcementController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/announcementController.ts#L124)
+- **Description**:
+  When interactions occur across the platform, backend controllers dispatch in-app notifications containing targeted deep-link URLs with query parameters:
+  - Discussions: `link: /learn/${courseId}/${lessonId}?tab=discussion`
+  - Announcements: `link: /learn/${courseId}?tab=announcements`
+  - Assignments / Grades: `link: /learn/${courseId}?tab=assignments`
+  However, `LessonViewer.tsx` has two critical architectural defects that break this workflow:
+  1. **Tab State Ignores Query Parameters**: In `LessonViewer.tsx:105`, active tab state is defined as `const [activeTab, setActiveTab] = useState<'lesson' | 'notes' | 'discussion' | 'announcements' | 'assignments'>('lesson');`. It does not read `useSearchParams` or `window.location.search`. The active tab is statically forced to `'lesson'`.
+  2. **Redirect Strips Query String**: When navigating to `/learn/:courseId?tab=assignments`, the viewer redirect effect (lines 175–193) executes:
+     `navigate('/learn/' + courseId + '/' + p.lastLessonId, { replace: true });` or `navigate('/learn/' + courseId + '/' + lessons[0]._id, { replace: true });`.
+     Because `location.search` is omitted from the path, the query string `?tab=assignments` is permanently stripped from the browser URL.
+  3. Consequently, whenever a student or instructor clicks a notification about a discussion reply, a new assignment grade, or an instructor announcement, they are dropped onto the video player without tab context.
+- **Reproduction Steps**:
+  1. As an instructor, post an announcement or grade an assignment for a student.
+  2. Log in as the student and open the notifications dropdown.
+  3. Click the notification: *"Your assignment has been graded"*.
+  4. Notice the browser redirects from `/learn/:courseId?tab=assignments` to `/learn/:courseId/:firstLessonId`.
+  5. The query parameter `?tab=assignments` is lost, and the UI displays the `'lesson'` video player instead of opening the Assignments or Announcements tab.
+- **Remediation**:
+  - In `LessonViewer.tsx`:
+    - Import `useSearchParams` from `react-router-dom`.
+    - Initialize `activeTab` from `searchParams.get('tab')` if it matches one of the valid sub-tabs.
+    - Synchronize `activeTab` with `searchParams` whenever tab changes occur.
+    - When executing redirects from `/learn/:courseId`, preserve `location.search`:
+      ```typescript
+      navigate(`/learn/${courseId}/${targetLessonId}${location.search}`, { replace: true });
+      ```
+
+---
+
+#### AUDIT-120: Instructor Minimum Payout Threshold Desynchronization & Hardcoded Currency UI
+- **Category**: Configuration Desynchronization & Hardcoded UI Validation
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Instructor, Admin
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/features/instructor/pages/EarningsAndPayouts.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/EarningsAndPayouts.tsx#L687-L697)
+  - [`backend/src/controllers/instructor/instructorEarningsController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/instructor/instructorEarningsController.ts#L328-L350)
+  - [`backend/src/controllers/admin/adminSettingsController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminSettingsController.ts)
+- **Description**:
+  In `EarningsAndPayouts.tsx:689`, the "Request Payout" modal input hardcodes HTML5 minimum validation and placeholder text:
+  ```tsx
+  <input
+    type="number"
+    step="0.01"
+    min="50"
+    max={summary.availableBalance}
+    value={withdrawAmount}
+    onChange={(e) => setWithdrawAmount(e.target.value)}
+    placeholder="50.00"
+    required
+    ...
+  />
+  ```
+  However, in `SystemSettings`, `minPayoutThreshold` is an admin-configurable dynamic setting:
+  1. If an admin lowers the platform threshold to $25 via Admin Settings, instructors are blocked by browser client validation from requesting withdrawals under $50.
+  2. If an admin raises the platform threshold to $100, the client permits submitting $50, which is then rejected by the server (`withdrawAmount < minThreshold`) with a 400 error toast, leaving the user confused.
+  3. Furthermore, when the platform's primary currency is configured as EUR, GBP, JPY, or INR, the hardcoded number `50` is evaluated literally. For Japanese Yen (where 50 JPY is ~0.33 USD) or Indian Rupees (50 INR is ~0.60 USD), the threshold does not reflect proper currency scale.
+- **Reproduction Steps**:
+  1. As Admin, navigate to `/admin/settings` and configure `minPayoutThreshold: 25`.
+  2. Log in as an Instructor with an available balance of $40.
+  3. Open `/instructor/earnings` and click "Request Payout".
+  4. Enter `40.00` and click Submit.
+  5. The browser displays an HTML5 form validation tooltip: *"Value must be greater than or equal to 50"*, blocking the instructor despite meeting the platform's actual $25 requirement.
+- **Remediation**:
+  - Return `minPayoutThreshold` in `GET /api/instructor/earnings` summary response or expose it through public settings.
+  - In `EarningsAndPayouts.tsx`, dynamically bind `min={summary.minPayoutThreshold || 50}` and render the dynamic threshold in helper text: `Min withdrawal: {formatAmount(minThreshold)}`.
+
+---
+
+#### AUDIT-121: Instructor Self-Course Wishlisting Allowed Leading to Dead-End "Move to Cart" Rejections
+- **Category**: Multi-Role Inconsistency & Defective E-Commerce Transition
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Instructor, Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/wishlist/wishlistController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/wishlist/wishlistController.ts#L108-L150)
+  - [`frontend/src/features/wishlist/pages/WishlistPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/wishlist/pages/WishlistPage.tsx#L163-L182)
+  - [`backend/src/controllers/cart/cartController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/cart/cartController.ts#L60-L80)
+- **Description**:
+  In `wishlistController.ts:addToWishlist` (lines 108–150), the endpoint checks if the student is already enrolled in the target course:
+  ```typescript
+  const enrollment = await Enrollment.findOne({ student: req.user.id, course: courseId, status: { $in: ["active", "completed"] } });
+  if (enrollment) return res.status(400).json({ message: "You are already enrolled in this course" });
+  ```
+  However, it **never checks whether the requesting user is the instructor of the course** (`course.instructor.toString() === req.user.id`).
+  1. An instructor browsing courses (or testing their own course) can add their own course to their wishlist.
+  2. When the instructor navigates to `/wishlist`, `WishlistPage.tsx:163-182` renders a primary "Add to Cart" button for the wishlisted course.
+  3. Clicking "Add to Cart" sends `POST /api/cart/items`.
+  4. In `cartController.ts:addToCart`, the backend rejects with `400 Bad Request: Instructors cannot purchase their own courses`.
+  5. The instructor receives an unexpected error toast, and the course remains stuck in the wishlist with no way to purchase or advance.
+- **Reproduction Steps**:
+  1. Log in as an Instructor who authored Course A.
+  2. Navigate to `/courses` and click the heart icon on Course A to add it to the wishlist.
+  3. Navigate to `/wishlist`.
+  4. Observe Course A displayed with an active "Add to Cart" button.
+  5. Click "Add to Cart".
+  6. Observe error toast: *"Instructors cannot purchase their own courses"*.
+- **Remediation**:
+  - In `wishlistController.ts:addToWishlist`, reject instructors wishlisting their own courses:
+    ```typescript
+    if (course.instructor.toString() === req.user.id) {
+      return res.status(400).json({ message: "You cannot wishlist your own course." });
+    }
+    ```
+  - In `WishlistPage.tsx`, if `course.instructor?._id === user._id`, replace the "Add to Cart" button with a link to "Manage in Studio" (`/instructor/courses/:id/edit`).
+
+---
+
+#### AUDIT-122: Desynchronized Enrollment Completion Lifecycle on Curriculum Additions and Deletions
+- **Category**: State Synchronization & Lifecycle Inconsistency
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Student, Instructor, Admin
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/course/shared.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/shared.ts#L60-L67)
+  - [`backend/src/controllers/course/lessonController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/lessonController.ts#L72-L75,L173-L182)
+  - [`backend/src/controllers/course/progressController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/progressController.ts#L178-L215)
+- **Description**:
+  When an instructor creates a new lesson in an existing course (`lessonController.ts:createLesson`), the system calls `syncEnrollmentLessonCount(courseId)`.
+  In `shared.ts:62-65`:
+  ```typescript
+  export async function syncEnrollmentLessonCount(courseId: string): Promise<void> {
+    const totalLessons = await getCourseLessonCount(courseId);
+    await Enrollment.updateMany({ course: courseId }, { $set: { totalLessonsCount: totalLessons } });
+  }
+  ```
+  This implementation causes two severe state synchronization discrepancies:
+  1. **Impossible Progress Display for Completed Students**:
+     If a student previously finished all 5 lessons of a course, their enrollment has `status: "completed"` and `completedLessonIds.length === 5`.
+     When the instructor adds a 6th lesson, `syncEnrollmentLessonCount` sets `totalLessonsCount = 6`.
+     The student's enrollment status remains `"completed"`, but their calculated progress is `5 / 6 = 83%`.
+     On the student dashboard and admin roster, the enrollment displays an impossible contradiction: *"83% Incomplete"* paired with a green *"Completed"* badge.
+  2. **Locked Out of Completion Upon Lesson Deletion**:
+     If a course had 6 lessons and a student completed 5, the student's status is `"active"` (83%).
+     If the instructor deletes the 6th lesson, `syncEnrollmentLessonCount` reduces `totalLessonsCount` to 5.
+     The student has now completed 5/5 lessons (100%).
+     However, `syncEnrollmentLessonCount` never promotes the enrollment to `status: "completed"` or auto-issues the completion certificate.
+     The student is locked in `"active"` status at 100% completion indefinitely unless they trigger an update on an existing lesson.
+- **Reproduction Steps**:
+  1. Complete all lessons of Course A (e.g. 3/3 lessons). Enrollment status is "completed".
+  2. Log in as the instructor and add Lesson 4 to Course A.
+  3. Return to Student dashboard `/my-learning`.
+  4. Observe that Course A displays "75%" progress, but retains the green "Completed" status badge.
+- **Remediation**:
+  - In `shared.ts:syncEnrollmentLessonCount`:
+    - Check for enrollments where `completedLessonIds.length < totalLessons` and `status === "completed"`, and demote them back to `status: "active"` (while retaining certificate records if policy allows).
+    - Check for active enrollments where `completedLessonIds.length >= totalLessons && totalLessons > 0`, promote them to `status: "completed"`, and auto-issue certificates.
+
+---
+
+#### AUDIT-123: Course Schema Field Mismatch in Notes and Bookmarks User Feeds Discarding Thumbnails
+- **Category**: Data Integrity & Contract Inconsistency
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/course/noteController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/noteController.ts#L253-L270)
+  - [`backend/src/controllers/course/bookmarkController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/bookmarkController.ts#L161-L178)
+  - [`backend/src/models/Course.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Course.ts#L48-L51)
+- **Description**:
+  In `getAllUserNotes` (`noteController.ts:260`) and `getAllUserBookmarks` (`bookmarkController.ts:168`), the queries populate course metadata using explicit field selection:
+  ```typescript
+  // noteController.ts:260
+  const notes = await Note.find({ user: req.user.id })
+    .populate("course", "title thumbnail")
+    ...
+  // bookmarkController.ts:168
+  const bookmarks = await Bookmark.find({ user: req.user.id })
+    .populate("course", "title thumbnail")
+    ...
+  ```
+  However, in `Course.ts:48-51`, the schema defines the thumbnail property as `thumbnailUrl`:
+  ```typescript
+  thumbnailUrl: {
+    type: String,
+    trim: true,
+  }
+  ```
+  Because Mongoose field projection strictly excludes non-requested attributes, querying for the non-existent field `thumbnail` causes Mongoose to drop `thumbnailUrl`. Any consumer or UI component expecting the course cover image in the study feed receives `undefined`, producing broken image placeholders.
+- **Reproduction Steps**:
+  1. As a student, create a note or bookmark in a course that has a thumbnail image.
+  2. Send `GET /api/me/notes` or `GET /api/me/bookmarks`.
+  3. Inspect the returned JSON payload: `course` object has `_id` and `title`, but `thumbnail` is `undefined` and `thumbnailUrl` is missing.
+- **Remediation**:
+  - In `noteController.ts:260` and `bookmarkController.ts:168`, change `.populate("course", "title thumbnail")` to `.populate("course", "title thumbnailUrl")`.
+
+---
+
+#### AUDIT-124: Unhandled Course Category Dissociation on Admin Category Deletion
+- **Category**: Referential Integrity & Orphaned Foreign Keys
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Admin, Instructor, Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/category/categoryController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/category/categoryController.ts#L188-L207)
+  - [`backend/src/models/Course.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Course.ts#L52-L56)
+  - [`frontend/src/features/admin/pages/CategoryManagement.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/CategoryManagement.tsx)
+- **Description**:
+  In `categoryController.ts:deleteCategory` (lines 188–207), an administrator can delete an existing category:
+  ```typescript
+  const category = await Category.findByIdAndDelete(categoryId);
+  if (!category) {
+    return res.status(404).json({ message: "Category not found" });
+  }
+  return res.json({ message: "Category deleted successfully" });
+  ```
+  1. The controller executes deletion without checking whether any courses are actively assigned to that category (`Course.countDocuments({ category: categoryId })`).
+  2. Furthermore, it fails to perform a cascade unset on existing courses (`Course.updateMany({ category: categoryId }, { $unset: { category: 1 } })`).
+  3. As a result, all courses that were assigned to the deleted category retain a dangling `category: ObjectId(...)` pointing to a non-existent document.
+  4. When instructors open the course in the Studio editor, the category select dropdown displays blank or invalid values. In the course catalog, filtering by category behaves erratically, and catalog aggregations encounter broken references.
+- **Reproduction Steps**:
+  1. Create a Category "Cloud Computing" and assign Course X to it.
+  2. As Admin, navigate to `/admin/categories` and delete "Cloud Computing".
+  3. Inspect Course X in MongoDB: `course.category` still contains the `_id` of the deleted category.
+  4. Open Course X in `/instructor/courses/:id/edit`: the category dropdown fails to match the assigned ID.
+- **Remediation**:
+  - In `categoryController.ts:deleteCategory`, check if any courses are assigned to the category. If courses exist, either reject deletion with a warning (`"Cannot delete category with active courses; please reassign courses first"`) or atomically unset the reference:
+    ```typescript
+    await Course.updateMany({ category: categoryId }, { $unset: { category: 1 } });
+    ```
+  - In `CategoryManagement.tsx`, display a confirmation modal warning the admin of how many courses will be affected.
 
 ## Action Plan & Verification Matrix
 
@@ -3745,5 +4093,14 @@ P3 (Low / Polish):
 | 113 | AUDIT-114 | Implement `updateLessonItem` in `lessonItemController.ts` and bind PUT route in `lessonRoutes.ts` | Send `PUT /api/lessons/:lessonId/items/:itemId` with updated title/content; verify 200 OK and verify lesson item updates without order mutation. |
 | 114 | AUDIT-115 | Apply semantic badge color mapping (`failed` -> rose, `refunded` -> amber, `completed` -> emerald) in `FinancialReports.tsx` | View Financial Reports transactions ledger with failed or refunded orders; verify red and amber badges render instead of deceptive green pills. |
 | 115 | AUDIT-116 | Replace hardcoded `$` string templates with `formatAmount(course.price)` from `useCurrency()` in `CourseList.tsx` and `CartPage.tsx` | Change system primary currency to EUR (€) in admin settings; verify CourseList card prices and Cart promo discount badges render with `€`. |
+| 116 | AUDIT-117 | Enforce course ownership verification in `couponController.ts:createCoupon` & `updateCoupon` | As instructor, attempt creating coupon for another instructor's course; verify 403 Forbidden rejection preventing revenue deduction theft. |
+| 117 | AUDIT-118 | Check course ownership against `courseIds` before applying `courseFilter.course` in `assignmentController.ts:getInstructorSubmissions` | Send query with another instructor's `courseId`; verify 403 Access Denied preventing student submission and personal info leakage. |
+| 118 | AUDIT-119 | Bind `useSearchParams` to `activeTab` and preserve `location.search` during redirects in `LessonViewer.tsx` | Click notification with `?tab=assignments` or `?tab=announcements`; verify player redirects while preserving search query and directly activates the target tab. |
+| 119 | AUDIT-120 | Bind `min` to dynamic `minPayoutThreshold` from earnings response and format currency in `EarningsAndPayouts.tsx` | Change threshold in settings to $25 and currency to EUR; verify withdrawal input allows $25 and displays min helper in euros. |
+| 120 | AUDIT-121 | Guard `wishlistController.ts:addToWishlist` against instructor's own courses & replace action in `WishlistPage.tsx` | Instructor attempts wishlisting own course; verify 400 rejection preventing trapped "Add to Cart" error. |
+| 121 | AUDIT-122 | Handle completed status demotion on lesson creation and auto-completion on deletion in `shared.ts:syncEnrollmentLessonCount` | Complete course, add new lesson; verify enrollment status demotes to active. Delete lesson when student has all remaining lessons completed; verify auto-completion. |
+| 122 | AUDIT-123 | Correct field projection from `thumbnail` to `thumbnailUrl` in `noteController.ts` and `bookmarkController.ts` | Retrieve user notes and bookmarks; verify populated `course` object includes valid `thumbnailUrl` string instead of undefined. |
+| 123 | AUDIT-124 | Check for active courses and unset `category` on `Course` documents in `categoryController.ts:deleteCategory` | Delete category with associated courses; verify orphaned category references are cleanly unset from courses and catalog remains consistent. |
+
 
 
