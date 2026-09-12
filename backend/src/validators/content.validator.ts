@@ -69,3 +69,19 @@ export const createLessonItemSchema = z.object({
   ),
   order: z.number().int().min(1).optional(),
 });
+
+// ── Lesson Progress ───────────────────────────────────────────────────────────
+export const progressUpdateSchema = z.object({
+  /** Whether the student wants to mark this lesson complete */
+  completed: z.boolean().optional(),
+  /** 0-100 progress percentage (completion also triggered when >= 100) */
+  progressPercentage: z.number().min(0).max(100).optional(),
+  /** ISO date string of the last watched timestamp */
+  lastWatchedAt: z.string().datetime({ offset: true }).optional(),
+  /**
+   * Cumulative seconds of video content the student has watched.
+   * Reported by the frontend player every ~10 seconds.
+   * Used server-side to enforce the 80% video watch gate.
+   */
+  watchedSeconds: z.number().int().min(0).optional(),
+});

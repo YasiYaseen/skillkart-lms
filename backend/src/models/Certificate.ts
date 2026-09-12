@@ -7,6 +7,11 @@ export interface ICertificate extends Document {
   enrollment: Types.ObjectId;
   certificateId: string; // human-readable unique ID for verification
   issuedAt: Date;
+  /**
+   * If set, the certificate is held and not publicly verifiable until this timestamp.
+   * Used by the enrollment-to-certificate time lock to prevent instant certificate generation.
+   */
+  heldUntil?: Date;
   revokedAt?: Date;
   revocationReason?: string;
   isDisciplinaryRevocation?: boolean;
@@ -27,6 +32,7 @@ const CertificateSchema = new Schema<ICertificate>(
       default: () => uuidv4().replace(/-/g, "").substring(0, 16).toUpperCase(),
     },
     issuedAt: { type: Date, default: Date.now },
+    heldUntil: { type: Date, default: undefined },
     revokedAt: { type: Date, default: undefined },
     revocationReason: { type: String, default: undefined },
     isDisciplinaryRevocation: { type: Boolean, default: false },

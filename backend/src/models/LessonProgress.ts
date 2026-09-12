@@ -5,6 +5,8 @@ export interface ILessonProgress extends Document {
   lesson: Types.ObjectId;
   completed: boolean;
   progressPercentage: number;
+  /** Server-verified seconds of video the student has actually watched. Used for the 80% watch gate. */
+  watchedSeconds: number;
   lastWatchedAt?: Date;
   completedAt?: Date;
   createdAt: Date;
@@ -33,6 +35,11 @@ const LessonProgressSchema = new Schema<ILessonProgress>(
       type: Number,
       min: 0,
       max: 100,
+      default: 0,
+    },
+    watchedSeconds: {
+      type: Number,
+      min: 0,
       default: 0,
     },
     lastWatchedAt: {

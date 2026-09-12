@@ -77,6 +77,14 @@ Improvements to existing implemented features to improve UX quality, data integr
 | Notifications Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#12-notifications) |
 | Certificates Strengthening | Done | [docs/features/strengthening/feature-strengthening-plan.md](features/strengthening/feature-strengthening-plan.md#13-certificates) |
 
+## Integrity & Anti-Cheat
+
+Features that protect the credibility of course completions and certificates.
+
+| Feature | Status | Doc |
+| --- | --- | --- |
+| Instant Completion Glitch Fix | Done | [docs/features/security/instant-completion-glitch-fix.md](features/security/instant-completion-glitch-fix.md) |
+
 ## Nice-To-Have Features
 
 Polish features for the final stage if time allows.

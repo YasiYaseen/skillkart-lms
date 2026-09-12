@@ -19,3 +19,13 @@ description: E-Commerce Shopping Cart, Coupon Discounts, Order History, and Plug
   - `/purchase-history` (`PurchaseHistoryPage.tsx`): Transaction log and printable/PDF invoice receipt modal (`window.print()`).
 - **Instructor Front-End:**
   - `/instructor/coupons` (`Coupons.tsx`): Create percentage/$ discounts, toggle active state, and view redemption metrics.
+
+---
+
+## Checkout & Auto-Enrollment Invariants
+
+- **Confirmed Payment Gating:** Course auto-enrollment only executes on confirmed payment (`paymentStatus: "completed" | "paid"`). Asynchronous gateways activate enrollments via payment webhook (`/api/orders/webhook`) upon clearance (AUDIT-103).
+- **Course Status Guard:** Checkout rejects draft, unapproved, or disabled courses (AUDIT-03).
+- **Self-Purchase Prevention:** Instructors cannot add or purchase their own courses (AUDIT-21).
+- **Lesson Count Sync:** `activateOrderEnrollments` sets dynamic `totalLessonsCount` from live course lessons to prevent progress deadlocks (AUDIT-04).
+

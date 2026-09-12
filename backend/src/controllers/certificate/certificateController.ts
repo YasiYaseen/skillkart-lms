@@ -25,6 +25,8 @@ export async function getMyCertificates(req: Request, res: Response) {
       isRevoked: Boolean(cert.revokedAt),
       revocationReason: cert.revocationReason || null,
       isDisciplinaryRevocation: Boolean(cert.isDisciplinaryRevocation),
+      isHeld: cert.heldUntil ? cert.heldUntil > new Date() : false,
+      heldUntil: cert.heldUntil || null,
     }));
 
     return res.json({ certificates: formatted });
@@ -52,6 +54,15 @@ export async function getCertificateById(req: Request, res: Response) {
 
     if (!certificate) {
       return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    // Guard 3: Certificate time-lock check.
+    // If heldUntil is in the future, the certificate is not yet publicly verifiable.
+    if (certificate.heldUntil && certificate.heldUntil > new Date()) {
+      return res.status(423).json({
+        message: "This certificate is pending its verification hold and is not yet publicly verifiable",
+        heldUntil: certificate.heldUntil,
+      });
     }
 
     const isRevoked = Boolean(certificate.revokedAt);

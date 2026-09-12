@@ -1,4 +1,4 @@
-﻿---
+---
 name: skillkart-audit-logs
 description: Admin audit logging and security event monitoring in SkillKart.
 ---
@@ -24,7 +24,7 @@ Guidelines for logging, querying, and displaying security and administrative act
 1. Whenever an admin modifies critical platform entities (e.g. toggling user active status, approving/rejecting/unpublishing a course, modifying enrollments), `logAdminAction(...)` is called with:
    - `adminId`: Admin's user ID.
    - `action`: Specific string (e.g. `USER_ACTIVATED`, `USER_DEACTIVATED`, `COURSE_MODERATED`).
-   - `targetType`: Entity type (`'user' | 'course' | 'enrollment' | 'system'`).
+   - `targetType`: Entity type (`'user' | 'course' | 'enrollment' | 'system' | 'payout' | 'certificate'`).
    - `targetId`: Target entity ID.
    - `targetName`: Readable target entity name or title.
    - `details`: Key-value payload snapshot of the change.

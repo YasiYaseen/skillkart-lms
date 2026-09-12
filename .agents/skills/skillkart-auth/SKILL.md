@@ -118,7 +118,8 @@ The backend calls the Google userinfo endpoint, finds or creates the user, and r
 
 ## Disabled Accounts
 
-- If `user.isActive === false`, `protect` middleware returns `401` and login returns `403`.
+- If `user.isActive === false`, `protect` middleware returns `401 Unauthorized`.
+- Both credential login (`/api/auth/login`) and Google OAuth (`/api/auth/google`) reject deactivated accounts with `403 Forbidden` (`"Your account has been deactivated. Please contact support."`).
 - Admins toggle `isActive` via the admin dashboard.
 
 ---

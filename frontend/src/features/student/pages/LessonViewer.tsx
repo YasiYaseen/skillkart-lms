@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -106,6 +106,15 @@ function LessonViewer() {
     const [showCompletionModal, setShowCompletionModal] = useState(false);
     const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
+    // Video watch-time tracking (Guard 1 — 80% watch threshold)
+    /** Set when the last lesson completion resulted in a certificate time-lock (Guard 3) */
+    const [certificateHeldUntil, setCertificateHeldUntil] = useState<Date | null>(null);
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const watchReportTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    /** Cumulative watched seconds — use ref (not state) to avoid stale closures in callbacks */
+    const watchedSecondsRef = useRef(0);
+
+
     // Fetch course structure only once per course visit
     useEffect(() => {
         const fetchCourse = async () => {
@@ -194,7 +203,41 @@ function LessonViewer() {
 
     useEffect(() => {
         setQuizPassed(false);
+        // Reset watch time tracking when navigating to a different lesson
+        watchedSecondsRef.current = 0;
+        setCertificateHeldUntil(null);
+        // Clear any running reporter
+        if (watchReportTimerRef.current) {
+            clearInterval(watchReportTimerRef.current);
+            watchReportTimerRef.current = null;
+        }
     }, [lessonId]);
+
+    // YouTube IFrame API postMessage listener for embedded video time tracking
+    useEffect(() => {
+        let ytInterval: ReturnType<typeof setInterval> | null = null;
+
+        const handleYouTubeMessage = (event: MessageEvent) => {
+            try {
+                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                // YouTube IFrame API fires 'infoDelivery' with currentTime
+                if (data?.event === 'infoDelivery' && typeof data?.info?.currentTime === 'number') {
+                    const current = Math.floor(data.info.currentTime);
+                    if (current > watchedSecondsRef.current) {
+                        watchedSecondsRef.current = current;
+                    }
+                }
+            } catch {
+                // Not a JSON message or not from YouTube — ignore
+            }
+        };
+
+        window.addEventListener('message', handleYouTubeMessage);
+        return () => {
+            window.removeEventListener('message', handleYouTubeMessage);
+            if (ytInterval) clearInterval(ytInterval);
+        };
+    }, []);
 
     const activeLesson = lessons.find(l => l._id === lessonId);
     const activeItems = activeLesson ? items.filter(i => i.lesson === activeLesson._id) : [];
@@ -208,8 +251,16 @@ function LessonViewer() {
 
     const handleProgress = async () => {
         try {
-            await api.post(`/lessons/${lessonId}/progress`, { completed: true });
-            
+            const res = await api.post(`/lessons/${lessonId}/progress`, {
+                completed: true,
+                watchedSeconds: watchedSecondsRef.current,
+            });
+
+            // Guard 3: certificate hold UX
+            if (res.data.certificateHeldUntil) {
+                setCertificateHeldUntil(new Date(res.data.certificateHeldUntil));
+            }
+
             const progRes = await api.get(`/me/courses/${courseId}/progress`);
             const p = progRes.data;
             setCompletedLessonIds(p.completedLessonIds || []);
@@ -224,9 +275,34 @@ function LessonViewer() {
                 }
             }
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to save progress');
+            const status = error?.response?.status;
+            const message = error?.response?.data?.message;
+
+            if (status === 403 && error?.response?.data?.watchThresholdSeconds !== undefined) {
+                // Guard 1: video watch threshold — friendly, not alarming
+                const needed = error.response.data.watchThresholdSeconds as number;
+                const have = error.response.data.watchedSeconds as number;
+                const remaining = Math.max(0, Math.ceil((needed - have) / 60));
+                toast.info(
+                    remaining > 0
+                        ? `Watch at least ${remaining} more minute${remaining !== 1 ? 's' : ''} of the video first.`
+                        : 'Watch more of the video before marking it complete.',
+                    { duration: 4000 }
+                );
+            } else if (status === 429) {
+                // Guard 2: cooldown — friendly pacing message
+                const retryAfterMs = (error?.response?.data?.retryAfterMs as number) ?? 30_000;
+                const retrySeconds = Math.ceil(retryAfterMs / 1000);
+                toast.info(
+                    `Great progress! Continue in ${retrySeconds}s — there's no rush.`,
+                    { duration: retryAfterMs }
+                );
+            } else {
+                toast.error(message || 'Failed to save progress');
+            }
         }
     };
+
 
     const handleToggleBookmark = async () => {
         if (!lessonId || togglingBookmark) return;
@@ -558,13 +634,28 @@ function LessonViewer() {
                                                             {embedUrl.includes('youtube.com') || embedUrl.includes('player.vimeo.com') ? (
                                                                 <iframe
                                                                     className="w-full h-full"
-                                                                    src={embedUrl}
+                                                                    src={
+                                                                        // Add enablejsapi=1 so YouTube fires postMessage events for time tracking
+                                                                        embedUrl.includes('youtube.com')
+                                                                            ? `${embedUrl}${embedUrl.includes('?') ? '&' : '?'}enablejsapi=1`
+                                                                            : embedUrl
+                                                                    }
                                                                     title="Video player"
                                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                                     allowFullScreen>
                                                                 </iframe>
                                                             ) : (
-                                                                <video controls className="w-full h-full">
+                                                                <video
+                                                                    ref={videoRef}
+                                                                    controls
+                                                                    className="w-full h-full"
+                                                                    onTimeUpdate={(e) => {
+                                                                        const current = Math.floor((e.target as HTMLVideoElement).currentTime);
+                                                                        if (current > watchedSecondsRef.current) {
+                                                                            watchedSecondsRef.current = current;
+                                                                        }
+                                                                    }}
+                                                                >
                                                                     <source src={resolveMediaUrl(rawUrl)} />
                                                                 </video>
                                                             )}
@@ -671,6 +762,22 @@ function LessonViewer() {
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                                 You've mastered <strong className="text-slate-900 dark:text-white">{course?.title}</strong>. Your verifiable certificate has been issued.
                             </p>
+                            {/* Guard 3: certificate hold notice */}
+                            {certificateHeldUntil && (
+                                <div className="mt-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg px-4 py-3 text-left">
+                                    <p className="text-xs text-amber-800 dark:text-amber-300 font-semibold mb-0.5">
+                                        🔒 Certificate sharing unlocks soon
+                                    </p>
+                                    <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                                        You can view and download your certificate now. The public verification link will be shareable on{' '}
+                                        <strong>
+                                            {certificateHeldUntil.toLocaleDateString(undefined, {
+                                                month: 'long', day: 'numeric', year: 'numeric'
+                                            })}
+                                        </strong>.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-2 pt-2">
                             <Link
@@ -678,7 +785,7 @@ function LessonViewer() {
                                 className="inline-flex items-center justify-center gap-1.5 w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors shadow-2xs text-xs"
                             >
                                 <AcademicCapIcon className="w-4 h-4" />
-                                <span>View & Download Certificate</span>
+                                <span>View &amp; Download Certificate</span>
                             </Link>
                             <Link
                                 to={`/courses/${courseId}`}
@@ -692,7 +799,7 @@ function LessonViewer() {
                                 onClick={() => setShowCompletionModal(false)}
                                 className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 mt-2 font-medium cursor-pointer"
                             >
-                                Close & Keep Exploring
+                                Close &amp; Keep Exploring
                             </button>
                         </div>
                     </div>

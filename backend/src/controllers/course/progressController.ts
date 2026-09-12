@@ -113,14 +113,77 @@ export async function updateLessonProgress(req: Request, res: Response) {
       completed,
       progressPercentage,
       lastWatchedAt,
+      watchedSeconds,
     }: {
       completed?: boolean;
       progressPercentage?: number;
       lastWatchedAt?: string;
+      watchedSeconds?: number;
     } = req.body;
 
     const clampedProgress = Math.max(0, Math.min(100, Number(progressPercentage ?? 0)));
+    const incomingWatchedSeconds = typeof watchedSeconds === "number" && watchedSeconds >= 0 ? Math.floor(watchedSeconds) : undefined;
+
     let wantsComplete = typeof completed === "boolean" ? completed : clampedProgress >= 100;
+
+    // ── Guard 1: 80% video watch threshold ───────────────────────────────────
+    // For video-type lessons with a declared duration, require the student to have
+    // watched at least 80% of the video before marking it complete.
+    if (wantsComplete && lesson.type === "video" && lesson.durationMinutes > 0) {
+      const requiredSeconds = Math.floor(lesson.durationMinutes * 60 * 0.8);
+
+      // Use the greater of the incoming value or what we already have stored
+      const existingProgress = await LessonProgress.findOne(
+        { user: req.user.id, lesson: lesson._id },
+        { watchedSeconds: 1 }
+      ).lean();
+
+      const effectiveWatchedSeconds = Math.max(
+        incomingWatchedSeconds ?? 0,
+        existingProgress?.watchedSeconds ?? 0
+      );
+
+      if (effectiveWatchedSeconds < requiredSeconds) {
+        return res.status(403).json({
+          message: "Watch at least 80% of the video before marking it complete",
+          watchThresholdSeconds: requiredSeconds,
+          watchedSeconds: effectiveWatchedSeconds,
+        });
+      }
+    }
+
+    // ── Guard 2: Per-lesson completion cooldown (30 seconds) ─────────────────
+    // Prevent batch-clicking all lessons by requiring at least 30 seconds between
+    // each lesson completion across the entire course enrollment.
+    if (wantsComplete) {
+      const cooldownMs = 30_000; // 30 seconds
+      const cutoff = new Date(Date.now() - cooldownMs);
+
+      // Find the most recently completed lesson in this enrollment (any lesson, not just this one)
+      // Exclude the current lesson so re-marking an already-completed lesson is not rate-limited.
+      const eligibleCompletedIds = enrollment.completedLessonIds.filter(
+        (id) => id.toString() !== lesson._id.toString()
+      );
+
+      const recentCompletion = eligibleCompletedIds.length
+        ? await LessonProgress.findOne(
+            {
+              user: req.user.id,
+              lesson: { $in: eligibleCompletedIds },
+              completedAt: { $gte: cutoff },
+            },
+            { completedAt: 1 }
+          ).lean()
+        : null;
+
+      if (recentCompletion?.completedAt) {
+        const retryAfterMs = cooldownMs - (Date.now() - recentCompletion.completedAt.getTime());
+        return res.status(429).json({
+          message: "Take a moment before marking the next lesson complete",
+          retryAfterMs: Math.max(0, Math.round(retryAfterMs)),
+        });
+      }
+    }
 
     if (wantsComplete) {
       const quiz = await Quiz.findOne({ lesson: lesson._id }).lean();
@@ -140,16 +203,44 @@ export async function updateLessonProgress(req: Request, res: Response) {
 
     const isCompleted = wantsComplete;
 
+    // Build the update payload — only increment watchedSeconds, never decrease it
+    const updatePayload: Record<string, unknown> = {
+      user: req.user.id,
+      lesson: lesson._id,
+      completed: isCompleted,
+      progressPercentage: clampedProgress,
+      lastWatchedAt: lastWatchedAt ? new Date(lastWatchedAt) : new Date(),
+      completedAt: isCompleted ? new Date() : undefined,
+    };
+    if (incomingWatchedSeconds !== undefined) {
+      updatePayload.watchedSeconds = incomingWatchedSeconds;
+    }
+
     const progress = await LessonProgress.findOneAndUpdate(
       { user: req.user.id, lesson: lesson._id },
-      {
-        user: req.user.id,
-        lesson: lesson._id,
-        completed: isCompleted,
-        progressPercentage: clampedProgress,
-        lastWatchedAt: lastWatchedAt ? new Date(lastWatchedAt) : new Date(),
-        completedAt: isCompleted ? new Date() : undefined,
-      },
+      incomingWatchedSeconds !== undefined
+        ? {
+            // Use $max so watchedSeconds only ever increases (prevents rewind cheats)
+            $set: {
+              user: req.user.id,
+              lesson: lesson._id,
+              completed: isCompleted,
+              progressPercentage: clampedProgress,
+              lastWatchedAt: lastWatchedAt ? new Date(lastWatchedAt) : new Date(),
+              completedAt: isCompleted ? new Date() : undefined,
+            },
+            $max: { watchedSeconds: incomingWatchedSeconds },
+          }
+        : {
+            $set: {
+              user: req.user.id,
+              lesson: lesson._id,
+              completed: isCompleted,
+              progressPercentage: clampedProgress,
+              lastWatchedAt: lastWatchedAt ? new Date(lastWatchedAt) : new Date(),
+              completedAt: isCompleted ? new Date() : undefined,
+            },
+          },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
@@ -179,6 +270,9 @@ export async function updateLessonProgress(req: Request, res: Response) {
     const isFullyComplete =
       enrollment.totalLessonsCount > 0 &&
       enrollment.completedLessonIds.length >= enrollment.totalLessonsCount;
+
+    // Track whether a certificate hold was applied (returned to frontend for UX)
+    let certificateHeldUntil: Date | null = null;
 
     if (isFullyComplete && enrollment.status !== "completed") {
       enrollment.status = "completed";
@@ -211,11 +305,38 @@ export async function updateLessonProgress(req: Request, res: Response) {
           }
         }
       } else {
+        // ── Guard 3: Enrollment-to-certificate time lock ───────────────────
+        // Compute the course's declared total duration. If the student completed
+        // the course in less than 30% of its declared duration, hold the certificate
+        // until that minimum time has elapsed. The cert is created immediately but
+        // won't be publicly verifiable until heldUntil passes.
+        const enrollmentAgeMs = enrollment.completedAt.getTime() - enrollment.enrolledAt.getTime();
+
+        // Sum durationMinutes across all lessons in the course
+        const allSections = await Section.find({ course: course._id }).select("_id").lean();
+        const sectionIds = allSections.map((s) => s._id);
+        const allLessons = sectionIds.length
+          ? await Lesson.find({ section: { $in: sectionIds } }).select("durationMinutes").lean()
+          : [];
+        const totalCourseDurationMs =
+          allLessons.reduce((sum, l) => sum + (l.durationMinutes || 0), 0) * 60 * 1000;
+
+        // Minimum required: 30% of declared duration, but only if course has declared duration
+        const minimumRequiredMs =
+          totalCourseDurationMs > 0 ? Math.floor(totalCourseDurationMs * 0.3) : 0;
+
+        let heldUntilDate: Date | undefined;
+        if (minimumRequiredMs > 0 && enrollmentAgeMs < minimumRequiredMs) {
+          heldUntilDate = new Date(enrollment.enrolledAt.getTime() + minimumRequiredMs);
+          certificateHeldUntil = heldUntilDate;
+        }
+
         certDoc = await Certificate.create({
           student: req.user.id,
           course: course._id,
           enrollment: enrollment._id,
           issuedAt: enrollment.completedAt,
+          ...(heldUntilDate ? { heldUntil: heldUntilDate } : {}),
         });
       }
 
@@ -270,12 +391,14 @@ export async function updateLessonProgress(req: Request, res: Response) {
       message: "Progress updated",
       progress,
       courseProgress: snapshot,
+      ...(certificateHeldUntil ? { certificateHeldUntil } : {}),
     });
   } catch (error) {
     console.error("Error in updateLessonProgress:", error);
     return res.status(500).json({ message: "Server error" });
   }
 }
+
 
 export async function getMyCourseProgress(req: Request, res: Response) {
   try {
