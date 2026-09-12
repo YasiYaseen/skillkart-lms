@@ -28,6 +28,8 @@ P0 (Critical / Blocker):
   [x] AUDIT-21: Instructor Self-Purchase & Cart Auto-Enrollment Revenue Loophole
   [x] AUDIT-71: Onboarding Role Selection Bypasses Instructor Moderation Workflow & Auto-Approval Policy
   [x] AUDIT-89: Empty Lesson Course Publication Allows White Screen of Death Crash in Student Viewer
+  [ ] AUDIT-98: Revoked Certificate Verification Security Bypass and Permanent Re-issuance Lockout
+  [ ] AUDIT-103: Asynchronous Gateway Checkout Auto-Enrollment Vulnerability
 
 P1 (High):
   [x] AUDIT-06: Phantom API Route `/courses/instructor` Breaks Assignments & Gradebook
@@ -36,7 +38,7 @@ P1 (High):
   [x] AUDIT-09: Role Promotion Client-State Desync Bounces Approved Instructors to Homepage
   [x] AUDIT-10: Expired and Exhausted Coupons Render Active Green Badges and Pause Controls
   [x] AUDIT-22: Dead-End Route Desync on Approved Instructor Notification Link
-  [ ] AUDIT-23: Public Instructor Profile Route 404 Endpoint Mismatch
+  [x] AUDIT-23: Public Instructor Profile Route 404 Endpoint Mismatch
   [ ] AUDIT-24: Permanent Course Archival Lifecycle Deadlock (Missing Unarchive Transition)
   [ ] AUDIT-25: Dangling Quiz, Attempt, and Assignment Entities on Course and Lesson Deletions
   [ ] AUDIT-26: Duplicate Order Checkout & Self-Enrollment Corrupts Student Records
@@ -63,6 +65,9 @@ P1 (High):
   [ ] AUDIT-85: Admin Enrollment Oversight Table Drops Progress Percentage via Virtual Stripping & Lacks Server Pagination
   [ ] AUDIT-88: Category Filter Silently Overwritten by Search Queries and Unescaped Regex Crash
   [ ] AUDIT-90: Quiz Completion Gate Desynchronization on Non-Quiz Lesson Types and Initial Page Load
+  [ ] AUDIT-95: Paginated Reviews Break User Review Editing (409 Conflict) and Rating Breakdown Distribution Math
+  [ ] AUDIT-96: Admin and Instructor Review Moderation Void for Defamatory Content
+  [ ] AUDIT-102: System Settings Singleton Race Condition and Missing Upsert Guard in Admin Settings
 
 P2 (Medium):
   [ ] AUDIT-11: 0% Progress Invariant Violation Across All Students in Instructor Analytics
@@ -108,6 +113,11 @@ P2 (Medium):
   [ ] AUDIT-92: Marketplace Course Listing Inflates Student Counts and Desynchronizes with Course Details
   [ ] AUDIT-93: Admin Course Disablement Operates Silently Without Instructor Notification or Appeal Path
   [ ] AUDIT-94: Course Deletion Wipes Active Student Enrollments and Earned Certificates Without Pre-Check or Notice
+  [ ] AUDIT-97: Deep-Link Announcement Notifications Tab Context Lost on Viewer Navigation
+  [ ] AUDIT-99: Course Details Page Redundant Dual Checkout CTAs & Free Course Carting Paradox
+  [ ] AUDIT-100: Wishlist Multi-Role Conflict & Header Navigation Desynchronization
+  [ ] AUDIT-101: Cart Upsell Strip Recommends Already-Enrolled Courses Causing 400 Errors
+  [ ] AUDIT-104: Course FAQ Ordering Index Collision & Inability to Reorder on Instructor UI
 
 P3 (Low / Polish):
   [ ] AUDIT-17: Category Deletion and Inactivation Leaves Dangling References & Broken Catalog Filters
@@ -641,6 +651,7 @@ P3 (Low / Polish):
 - **Category**: Broken Endpoints & Catalog Inconsistencies
 - **Priority**: `P1 — High`
 - **Impacted Roles**: Student, Instructor, Admin
+- **Status**: Completed
 - **Affected Files**:
   - [`frontend/src/pages/InstructorPublicProfile.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/InstructorPublicProfile.tsx#L70)
   - [`backend/src/routes/userRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/userRoutes.ts#L32)
@@ -653,9 +664,10 @@ P3 (Low / Polish):
   2. Click on the instructor's name link (e.g., `/instructors/65...`).
   3. The page attempts `GET /api/instructors/65.../public-profile`, which returns `404 Cannot GET /api/instructors/...`.
   4. An error banner displays: *"Failed to load instructor profile"*.
-- **Remediation**:
-  - In `InstructorPublicProfile.tsx:70`, change the endpoint to `api.get('/users/instructor/${instructorId}')` (or add an alias route in Express: `app.use('/api/instructors', ...)`).
-  - In `userController.ts:getPublicInstructorProfile`, respect global `requireCourseApproval` system settings when querying courses rather than hardcoding `isApproved: true`.
+- **Remediation & Resolution Summary**:
+  - In `frontend/src/pages/InstructorPublicProfile.tsx:70`, aligned the endpoint to `api.get('/users/instructor/${instructorId}')` and wrapped avatar rendering in `resolveMediaUrl(instructor.avatar)`.
+  - In `backend/src/routes/userRoutes.ts` and `backend/src/server.ts`, added alias route mappings for `/instructor/:instructorId`, `/instructor/:instructorId/public-profile`, `/instructors/:instructorId`, and `/instructors/:instructorId/public-profile` for backward compatibility across existing clients.
+  - In `backend/src/controllers/user/userController.ts:getPublicInstructorProfile`, applied `getCourseApprovalFilter()` to respect the global `requireCourseApproval` system settings rather than hardcoding `isApproved: true`, scoped enrollment metrics to active/completed statuses, and deduplicated student counts via a distinct Set.
 
 ---
 
@@ -2800,6 +2812,328 @@ P3 (Low / Polish):
 
 ---
 
+#### AUDIT-95: Paginated Reviews Break User Review Editing (409 Conflict) and Rating Breakdown Distribution Math
+- **Category**: State Synchronization & Review Edit Lockout
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Student, Instructor
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/pages/courses/CourseDetailsPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/courses/CourseDetailsPage.tsx#L262-L279,L281-L305)
+  - [`backend/src/controllers/course/reviewController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/reviewController.ts#L66-L76,L125-L128)
+- **Description**:
+  In `CourseDetailsPage.tsx:262-279`, the UI calculates `ratingBreakdown` and identifies `myReview` strictly from the locally loaded `reviews` state:
+  ```typescript
+  const totalReviewsCount = reviews.length;
+  // ...
+  const myReview = reviews.find((r) => r.student._id === user?.id);
+  ```
+  However, `loadReviews` fetches paginated reviews (`/courses/:courseId/reviews?page=${reviewsPage}&limit=5`).
+  This causes two critical breakdowns:
+  1. **Distorted Rating Distribution**: Because `totalReviewsCount = reviews.length` caps at 5 (or the current page's slice), the percentage bars in the star breakdown represent only the 5 reviews displayed on the current page rather than the course's true cumulative rating distribution from `course.ratingDistribution` or aggregate counts.
+  2. **Review Edit Lockout (409 Conflict)**: If an enrolled student has previously reviewed the course and their review is located on page 2 (or sorted beyond the top 5), `myReview` evaluates to `undefined`. The review form renders in "Write a Review" mode instead of "Edit Your Review". When the student submits the form, lines 284–294 dispatch `POST /courses/:courseId/reviews` instead of `PATCH /courses/:courseId/reviews/me`. The backend controller correctly enforces uniqueness (`Review.findOne({ course: courseId, student: req.user.id })`) and rejects the request with `409 Conflict: "You have already reviewed this course"`. The student is permanently locked out of editing their review unless they manually paginate to the page containing their review.
+- **Reproduction Steps**:
+  1. Enroll in a course that already has 6 or more reviews from other students.
+  2. Post a 5-star review as Student A (placing it on page 2 of paginated reviews).
+  3. Refresh the course details page (`CourseDetailsPage.tsx`); the first page displays reviews 1–5.
+  4. Note that `myReview` is `undefined`, and the review section displays an empty "Write a Review" form.
+  5. Enter updated review text and click "Submit Review".
+  6. Observe an unhandled `409 Conflict` error toast (*"You have already reviewed this course"*), blocking the user from saving changes.
+- **Remediation**:
+  - Add a dedicated backend endpoint `GET /courses/:courseId/reviews/me` (or return `userReview` as part of the reviews payload or course details response) so `myReview` is always resolved regardless of pagination.
+  - Compute `ratingBreakdown` using the aggregate rating metrics provided by `getCourseRatingSummary` rather than the length of the paginated review subset.
+
+---
+
+#### AUDIT-96: Admin and Instructor Review Moderation Void for Defamatory Content
+- **Category**: Role Permission Void & Moderation Failure
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Admin, Instructor, Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/course/reviewController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/reviewController.ts#L202-L227)
+  - [`backend/src/routes/courseRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/courseRoutes.ts#L78-L80)
+- **Description**:
+  In `reviewController.ts:deleteCourseReview`, review deletion is strictly scoped to the student author:
+  ```typescript
+  const review = await Review.findOne({ course: courseId, student: req.user.id });
+  ```
+  Furthermore, `courseRoutes.ts:78-80` defines review deletion as:
+  ```typescript
+  router.delete("/:courseId/reviews/me", protect, authorize("student", "instructor"), deleteCourseReview);
+  ```
+  There is no administrative endpoint or instructor moderation capability to delete, hide, or report abusive, spam, discriminatory, or defamatory reviews. If a malicious user enrolls in a course, posts hate speech or spam links, and leaves the platform, neither the course instructor nor platform administrators have any mechanism in the UI or API to remove the offending content. This exposes the platform to legal, brand, and safety liabilities.
+- **Reproduction Steps**:
+  1. Student posts an abusive, vulgar, or spam review on Course X.
+  2. Log in as the instructor of Course X or as a Platform Administrator.
+  3. Navigate to the course reviews list or admin console.
+  4. Observe no delete, hide, or moderate icon/button exists.
+  5. Attempting to call `DELETE /courses/:courseId/reviews/:reviewId` returns 404 because no moderation endpoint exists.
+- **Remediation**:
+  - Implement `deleteReviewByModerator` in `reviewController.ts` allowing course instructors and platform administrators (`authorize("admin", "instructor")`) to delete or flag inappropriate reviews by `reviewId`.
+  - Add review moderation actions (e.g. trash icon or "Moderate Review" modal) in the instructor reviews view and admin moderation console, logging an audit record in `adminController.ts`.
+
+---
+
+#### AUDIT-97: Deep-Link Announcement Notifications Tab Context Lost on Viewer Navigation
+- **Category**: Deep Linking & Navigation Context Loss
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Student, Instructor
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/course/announcementController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/announcementController.ts#L124)
+  - [`frontend/src/features/student/pages/LessonViewer.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/student/pages/LessonViewer.tsx#L105)
+- **Description**:
+  When an instructor publishes a new course announcement, `announcementController.ts:createAnnouncement` dispatches notification alerts to all enrolled students with a deep link:
+  ```typescript
+  link: `/learn/${courseId}?tab=announcements`
+  ```
+  However, in `LessonViewer.tsx:105`, the active viewer tab is initialized strictly with local state:
+  ```typescript
+  const [activeTab, setActiveTab] = useState<'lesson' | 'notes' | 'discussion' | 'announcements' | 'assignments'>('lesson');
+  ```
+  `LessonViewer.tsx` completely ignores `useSearchParams` or URL query parameters on initial render. When an enrolled student receives an announcement notification and clicks it, the router navigates to `/learn/:courseId?tab=announcements`. The player mounts and unconditionally displays the `'lesson'` video player tab. The student has no visual cue that an announcement was posted, causing frustration and requiring manual navigation to the Announcements sub-tab.
+- **Reproduction Steps**:
+  1. Instructor posts an announcement for Course A.
+  2. Enrolled Student B sees the in-app notification: *"New Announcement: Course Welcome"*.
+  3. Student B clicks the notification card.
+  4. Browser navigates to `/learn/COURSE_A_ID?tab=announcements`.
+  5. Observe that `LessonViewer.tsx` mounts with `activeTab === 'lesson'`, buffering the first video lecture instead of showing the announcement.
+- **Remediation**:
+  - In `LessonViewer.tsx`, read `useSearchParams()` on mount. If a valid `tab` query parameter (`'notes' | 'discussion' | 'announcements' | 'assignments'`) is present in the URL, initialize `activeTab` to that tab.
+  - Add an effect to keep `activeTab` synchronized with URL changes so back/forward navigation functions smoothly.
+
+---
+
+#### AUDIT-98: Revoked Certificate Verification Security Bypass and Permanent Re-issuance Lockout
+- **Category**: Security Vulnerability & Credential Integrity Bypass
+- **Priority**: `P0 — Critical`
+- **Impacted Roles**: Student, Admin, Public Third Parties / Employers
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts#L421-L424)
+  - [`backend/src/controllers/certificate/certificateController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/certificate/certificateController.ts#L33-L54,L84-L91)
+  - [`frontend/src/pages/VerifyCertificatePage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/VerifyCertificatePage.tsx#L62-L89)
+  - [`frontend/src/pages/MyCertificatesPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/MyCertificatesPage.tsx#L31-L33)
+- **Description**:
+  When a student unenrolls or has their enrollment cancelled in `enrollmentController.ts:cancelEnrollment`, lines 421–424 mark any issued certificate as revoked:
+  ```typescript
+  await Certificate.findOneAndUpdate(
+    { student: enrollment.student, course: enrollment.course },
+    { $set: { revokedAt: new Date() } }
+  );
+  ```
+  However, the certificate verification and re-issuance pipelines completely fail to respect this field:
+  1. **Verification Security Bypass**: In `certificateController.ts:getCertificateById`, the query fetches `Certificate.findById(certificateId)` and returns `{ certificate }` with 200 OK without inspecting `revokedAt`. On the frontend, `VerifyCertificatePage.tsx:62-89` inspects only `certificate` existence and renders a green shield badge: *"Verified Educational Credential — Authenticity Confirmed"*. Third-party employers or background checkers inspecting a revoked certificate link are told the credential is valid.
+  2. **My Certificates Phantoms**: In `certificateController.ts:getMyCertificates`, revoked certificates are returned in the student's credentials list without status indicators, allowing revoked certificates to be downloaded and shared.
+  3. **Permanent Re-Issuance Lockout**: If a student subsequently re-enrolls in the course and legitimately completes 100% of the lessons, `claimCertificate` executes:
+     ```typescript
+     let certificate = await Certificate.findOne({ student: studentId, course: courseId });
+     if (certificate) {
+       return res.json({ message: "Certificate already issued", certificate });
+     }
+     ```
+     `claimCertificate` returns the existing revoked certificate without clearing `revokedAt`. The student is permanently locked out of obtaining a valid, unrevoked completion certificate.
+- **Reproduction Steps**:
+  1. Student completes Course X and claims Certificate C.
+  2. Student or Admin cancels the enrollment via `PATCH /enrollments/:id/cancel`. Database records `revokedAt = Date.now()`.
+  3. Open `/certificates/verify/C` in an incognito window.
+  4. Observe that the public verification page renders a green "Verified Educational Credential" banner, falsely verifying a revoked certificate.
+  5. Student re-enrolls in Course X, completes all lessons, and clicks "Claim Certificate".
+  6. Backend returns *"Certificate already issued"*, leaving `revokedAt` set and locking the student out of a verified credential forever.
+- **Remediation**:
+  - In `certificateController.ts:getCertificateById` and `frontend/src/pages/VerifyCertificatePage.tsx`, verify `certificate.revokedAt`. If set, return an explicit `isRevoked: true` status and render an unmistakable red alert banner: *"This certificate was revoked on [Date] and is no longer a valid credential"*.
+  - In `getMyCertificates`, display a `"Revoked"` badge on invalidated certificates.
+  - In `claimCertificate`, if an existing certificate has `revokedAt`, verify active enrollment and 100% completion, then clear `revokedAt = undefined` and update `issuedAt = new Date()`.
+
+---
+
+#### AUDIT-99: Course Details Page Redundant Dual Checkout CTAs & Free Course Carting Paradox
+- **Category**: Conflicting UI Indicators & E-Commerce Workflow Paradox
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Student, Guest
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/pages/courses/CourseDetailsPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/courses/CourseDetailsPage.tsx#L841-L905)
+  - [`frontend/src/features/enrollment/components/EnrollButton.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/enrollment/components/EnrollButton.tsx#L40-L60)
+- **Description**:
+  In `CourseDetailsPage.tsx:841-905`, the right-side sticky purchase card renders duplicate and conflicting action buttons:
+  1. **Redundant Dual Checkout Buttons**: For paid courses, line 841 renders `<EnrollButton courseId={course._id} price={course.price} />`. When clicked, `EnrollButton.tsx:40-60` executes `addToCart(courseId)` and immediately triggers `navigate('/cart?step=payment')`. Directly beneath `EnrollButton`, lines 851–874 render a second primary button labeled *"Instant Checkout"*, which executes identical logic: `await addToCart(course._id)` followed by `navigate('/cart?step=payment')`. Users are presented with two stacked full-width primary buttons performing the exact same action.
+  2. **Free Course Carting Paradox**: For free courses (`course.price === 0` or `!course.isPaid`), `EnrollButton` renders *"Enroll for Free"* (which invokes 1-click free enrollment via `POST /enrollments`). However, lines 875–905 concurrently render an *"Add to Cart"* button. If a student or guest clicks *"Add to Cart"* on a free course, the course is added to the shopping cart as a $0 item, pushing them into the e-commerce checkout pipeline and credit card form instead of granting immediate 1-click access.
+- **Reproduction Steps**:
+  1. Open a paid course in `CourseDetailsPage.tsx`.
+  2. Observe two primary buttons stacked vertically: "Enroll Now for $XX" and "Instant Checkout". Both perform the same cart addition and redirect to payment.
+  3. Open a free course (`price: 0`).
+  4. Observe "Enroll for Free" button and a secondary "Add to Cart" button.
+  5. Click "Add to Cart"; observe the free course placed into the shopping cart, routing the user to checkout instead of completing instant free enrollment.
+- **Remediation**:
+  - In `CourseDetailsPage.tsx`, cleanly separate free and paid actions:
+    - For free courses: Render only the single 1-click *"Enroll for Free"* button; hide all cart and checkout buttons.
+    - For paid courses: Standardize on an intuitive e-commerce pattern: primary *"Buy Now"* (instant checkout) and secondary *"Add to Cart"* button, removing duplicate redundant actions.
+
+---
+
+#### AUDIT-100: Wishlist Multi-Role Conflict & Header Navigation Desynchronization
+- **Category**: Multi-Role Inconsistency & Cross-Role State Desynchronization
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Student, Instructor, Admin, Guest
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/features/wishlist/components/WishlistButton.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/wishlist/components/WishlistButton.tsx#L26,L49)
+  - [`backend/src/routes/wishlistRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/wishlistRoutes.ts#L13-L18)
+  - [`frontend/src/components/layout/Header.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/components/layout/Header.tsx#L198,L533)
+  - [`frontend/src/features/wishlist/pages/WishlistPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/wishlist/pages/WishlistPage.tsx#L159,L163-L181)
+- **Description**:
+  The wishlist subsystem exhibits multiple cross-role and authorization discrepancies:
+  1. **Header vs Button Role Conflict**: In `Header.tsx:198, 533`, the navigation bar displays the Wishlist icon link (`/wishlist`) for all authenticated users, including Instructors and Admins. However, when an instructor or admin browses courses and clicks the heart icon on any course card, `WishlistButton.tsx:49` abruptly blocks them with an error toast: *"Only students can maintain a wishlist"*.
+  2. **Cart Page Role Bypass**: On `CartPage.tsx:156`, any logged-in user can click *"Move to Wishlist"*. Because `backend/src/routes/wishlistRoutes.ts` uses only `protect` without `authorize("student")`, the backend allows instructors and admins to create wishlist entries via the cart, while the course catalog button blocks them.
+  3. **Guest 401 Error on `/wishlist`**: `/wishlist` is defined as a public route in `App.tsx:71`. When an unauthenticated visitor navigates to `/wishlist`, `loadWishlist` fires `GET /me/wishlist` without an auth token, throwing a raw 401 error toast (*"Failed to load wishlist"*) instead of displaying a friendly login prompt or empty state.
+  4. **Hardcoded Currency**: In `WishlistPage.tsx:159`, prices are displayed with a hardcoded `$` sign instead of utilizing `useCurrency().formatPrice()`.
+- **Reproduction Steps**:
+  1. Log in as an Instructor or Admin.
+  2. In the header navigation, notice the Wishlist heart icon is visible and clickable.
+  3. Navigate to `/courses` and click the Wishlist heart button on any course.
+  4. Observe error toast: *"Only students can maintain a wishlist"*.
+  5. Open an incognito tab and navigate directly to `/wishlist`; observe unhandled 401 error toast.
+- **Remediation**:
+  - In `Header.tsx`, either show the Wishlist link only for `user.role === 'student'`, or allow instructors/admins to maintain a learning wishlist for their own professional development.
+  - Standardize `WishlistButton.tsx` and `wishlistRoutes.ts` on the same permission rules.
+  - In `WishlistPage.tsx`, if the user is unauthenticated, show an attractive sign-in prompt instead of throwing an API error, and use `useCurrency()` for price formatting.
+
+---
+
+#### AUDIT-101: Cart Upsell Strip Recommends Already-Enrolled Courses Causing 400 Errors
+- **Category**: State Synchronization & Defective Upsell Flow
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/pages/CartPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/CartPage.tsx#L104-L114)
+  - [`backend/src/controllers/cart/cartController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/cart/cartController.ts#L175)
+- **Description**:
+  In `CartPage.tsx:104-114`, the shopping cart displays a "Recommended Courses to add to your order" upsell strip. The component fetches courses via `GET /courses?limit=4` and filters out courses already in the current cart:
+  ```typescript
+  const inCartIds = new Set(cart.items.map((i) => i.course._id));
+  setRecommendedCourses(recRes.data.courses.filter((c) => !inCartIds.has(c._id)).slice(0, 3));
+  ```
+  However, it completely fails to filter out courses that the student has already purchased and enrolled in.
+  When a student has enrolled in Course A, and Course A appears in the cart's recommendation strip:
+  1. Course A displays an active "Add to Cart" button.
+  2. When clicked, `addToCart(courseId)` sends `POST /cart/items`.
+  3. In `cartController.ts:175`, the backend checks `Enrollment.findOne({ student: req.user.id, course: courseId, status: { $in: ["active", "completed"] } })` and returns `400 Bad Request: "You are already enrolled in this course."`.
+  4. The student receives an unexpected red error toast on what appeared to be an endorsed recommendation.
+- **Reproduction Steps**:
+  1. Enroll in Course A as Student 1.
+  2. Add Course B to cart and navigate to `/cart`.
+  3. Observe Course A displayed in the "Frequently Bought Together / Recommended" strip with an "Add to Cart" button.
+  4. Click "Add to Cart" on Course A.
+  5. Observe error toast: *"You are already enrolled in this course."*.
+- **Remediation**:
+  - In `CartPage.tsx`, fetch or cross-reference the student's active enrollments (`useEnrollments` or `/me/enrollments`) and filter out already-enrolled course IDs from `recommendedCourses`.
+  - On the recommended course card, if the student is already enrolled, replace "Add to Cart" with an "Enrolled" badge linking to `/learn/:courseId`.
+
+---
+
+#### AUDIT-102: System Settings Singleton Race Condition and Missing Upsert Guard in Admin Settings
+- **Category**: Concurrency Race Condition & Data Corruption
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Admin, Instructor
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/admin/adminController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminController.ts#L670-L750)
+  - [`backend/src/models/SystemSettings.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/SystemSettings.ts)
+- **Description**:
+  Platform system settings (such as `platformCommissionPercentage`, `requireCourseApproval`, `autoApproveInstructors`, and `maintenanceMode`) are stored in a singleton document managed by `adminController.ts:getSystemSettings` and `updateSystemSettings`.
+  In `updateSystemSettings`:
+  ```typescript
+  let settings = await SystemSettings.findOne({ isSingleton: true });
+  if (!settings) {
+    settings = new SystemSettings({ isSingleton: true, ...req.body });
+  } else {
+    Object.assign(settings, req.body);
+  }
+  await settings.save();
+  ```
+  This non-atomic check-then-insert pattern causes two major race condition failures:
+  1. **Duplicate Singleton Documents**: If multiple administrators save settings or if administrative APIs are hit concurrently during server initialization, concurrent `findOne` calls return `null` and create multiple documents with `isSingleton: true`. Subsequent reads by different controllers (`courseController`, `instructorEarningsController`, `orderController`) may read different conflicting documents.
+  2. **Missing Unique Index**: The `SystemSettings` schema lacks a unique compound index on `{ isSingleton: 1 }`.
+  3. **Silent Reset**: If `getSystemSettings` is called before settings are initialized, it returns default fallback values that are not persisted, causing other controllers querying `SystemSettings.findOne({ isSingleton: true })` to encounter `null` and default inconsistently.
+- **Reproduction Steps**:
+  1. Drop or start with a fresh `SystemSettings` collection.
+  2. Concurrently execute two `PUT /admin/settings` requests (e.g. updating commission to 15% and toggling course approval).
+  3. Inspect MongoDB `systemsettings` collection; observe two documents created.
+  4. Instructor earnings calculation reads document A while admin console reads document B, desynchronizing platform commission calculations.
+- **Remediation**:
+  - In `backend/src/models/SystemSettings.ts`, add a unique index `{ isSingleton: 1 }` with `{ unique: true }`.
+  - In `adminController.ts:updateSystemSettings`, use atomic `findOneAndUpdate({ isSingleton: true }, { $set: updateFields }, { upsert: true, new: true, setDefaultsOnInsert: true })`.
+
+---
+
+#### AUDIT-103: Asynchronous Gateway Checkout Auto-Enrollment Vulnerability
+- **Category**: Financial Invariant Violation & Unauthorized Course Access
+- **Priority**: `P0 — Critical`
+- **Impacted Roles**: Student, Instructor, Admin
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/orderController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/orderController.ts#L320-L370)
+  - [`backend/src/services/paymentService.ts`](file:///c:/Users/user/projects/skillkart/backend/src/services/paymentService.ts#L70-L85)
+- **Description**:
+  In `orderController.ts:checkout`, when a student places an order through the payment gateway simulator or an external pluggable gateway, lines 356–370 immediately create active student enrollments:
+  ```typescript
+  // Create or reactivate enrollments
+  for (const item of cart.items) {
+    // ...
+    await Enrollment.create({
+      student: req.user.id,
+      course: item.course._id,
+      status: "active",
+      enrolledAt: new Date(),
+      totalLessonsCount,
+    });
+  }
+  ```
+  However, this auto-enrollment logic executes **unconditionally**, without verifying that `order.paymentStatus === "paid"` or `"completed"`.
+  When integrating real payment gateways (e.g. Stripe 3D Secure, Razorpay webhooks, or PayPal) where the initial checkout response returns `{ paymentStatus: "pending" }` awaiting customer two-factor verification or asynchronous bank clearance:
+  1. The student is instantly granted `status: "active"` lifetime course enrollment.
+  2. If the payment gateway subsequently fails, expires, or is declined by the bank, the student retains full course access, video streaming, quizzes, and certificate generation privileges.
+  3. Neither the order controller nor payment webhook cancels or revokes enrollments created on pending orders.
+- **Reproduction Steps**:
+  1. Place an order where payment provider returns `paymentStatus: "pending"` (or simulated failure).
+  2. Inspect the database; observe order status is `"pending"`.
+  3. Check student enrollments: observe `Enrollment.status === "active"` created immediately.
+  4. Student opens `/learn/:courseId` and completes the course without funds ever having cleared.
+- **Remediation**:
+  - In `orderController.ts:checkout`, only instantiate `Enrollment.create` if `order.paymentStatus === "paid"`.
+  - If `order.paymentStatus === "pending"`, defer enrollment creation to the payment gateway webhook confirmation handler (`handlePaymentWebhook`).
+  - If a pending order fails or is cancelled, ensure no enrollment exists or mark any tentative enrollment as `cancelled`.
+
+---
+
+#### AUDIT-104: Course FAQ Ordering Index Collision & Inability to Reorder on Instructor UI
+- **Category**: Instructor Content Management & State Sorting Collision
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Instructor, Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/features/instructor/components/CourseFAQEditor.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/components/CourseFAQEditor.tsx#L1-L280)
+  - [`backend/src/controllers/course/faqController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/faqController.ts#L65-L75)
+- **Description**:
+  In `faqController.ts:getCourseFAQs`, course FAQs are fetched with `.sort({ order: 1, createdAt: 1 })`.
+  When an instructor creates a new FAQ in `CourseFAQEditor.tsx:51-74`, the frontend automatically sends `order: faqs.length + 1`.
+  However, the editor has two structural flaws:
+  1. **Zero Reordering Controls**: `CourseFAQEditor.tsx` provides no move up/down buttons, drag-and-drop handles, or numeric order inputs. Once an FAQ is created, its relative order position is permanently fixed. If an instructor wants to place an important new FAQ at the top of the course page, they must delete all existing FAQs and re-type them from scratch.
+  2. **Deletion Index Gaps and Duplicate Keys**: When an intermediate FAQ is deleted (`handleDeleteFAQ`), subsequent FAQs retain their original `order` values. Creating new FAQs after deletions can result in duplicate `order` indices or broken sequencing, causing unpredictable sorting on the public course details accordion.
+- **Reproduction Steps**:
+  1. As an instructor, add 3 FAQs: FAQ 1 ("Prerequisites"), FAQ 2 ("Hardware"), FAQ 3 ("Refunds").
+  2. Attempt to move FAQ 3 to the top. Notice there are no reorder controls.
+  3. Delete FAQ 2 ("Hardware"). Remaining FAQs have orders 1 and 3.
+  4. Add a new FAQ ("Certification"); it receives `order: 3` (`faqs.length + 1`), colliding with the existing order 3.
+  5. The public course page renders FAQs in erratic sequence depending on MongoDB ObjectId sorting.
+- **Remediation**:
+  - Add "Move Up" (↑) and "Move Down" (↓) controls to `CourseFAQEditor.tsx`.
+  - Add a `reorderFAQs` endpoint in `faqController.ts` allowing instructors to update FAQ orders atomically in batch, maintaining clean sequential order indices.
+
+---
+
 ## Action Plan & Verification Matrix
 
 | Step | Item | Scope | Test Verification Method |
@@ -2897,5 +3231,15 @@ P3 (Low / Polish):
 | 91 | AUDIT-92 | Standardize active enrollment counts and field naming between `getCourses` and `getCourseById` | Compare student count on catalog card and course details page; verify identical active student counts. |
 | 92 | AUDIT-93 | Send urgent notification to instructor when admin disables course in `adminController.ts:updateCourseStatus` | Disable course as admin; verify instructor receives immediate alert explaining course suspension. |
 | 93 | AUDIT-94 | Guard `deleteCourse` against courses with active enrollments and preserve certificates in `courseController.ts` | Attempt to delete course with active/completed students; verify 400 rejection advising archival instead. |
+| 94 | AUDIT-95 | Unify review loading with dedicated student review fetch and compute `ratingBreakdown` from aggregate ratings | Leave review, paginate to page 2, edit review; verify 200 update without 409 conflict and accurate rating percentages. |
+| 95 | AUDIT-96 | Add review moderation endpoints with `authorize("admin", "instructor")` in `reviewController.ts` and UI actions | As instructor or admin, flag/remove abusive student review; verify review disappears from public course page. |
+| 96 | AUDIT-97 | Parse `searchParams.get('tab')` in `LessonViewer.tsx` and sync with tab state | Click announcement notification link `?tab=announcements`; verify lesson player directly mounts and opens announcements tab. |
+| 97 | AUDIT-98 | Check `revokedAt` in `getCertificateById` and `VerifyCertificatePage.tsx`, and clear revocation on re-enrollment | Cancel enrollment, verify certificate URL; verify revoked warning banner and verify re-issuance succeeds on re-completion. |
+| 98 | AUDIT-99 | Deduplicate checkout action buttons and suppress carting on free courses in `CourseDetailsPage.tsx` | View free course; verify single "Enroll for Free" button; view paid course; verify single primary checkout action. |
+| 99 | AUDIT-100 | Enforce consistent wishlist permissions across frontend/backend and format currency in `WishlistPage.tsx` | Visit wishlist as guest or instructor; verify proper auth redirect and localized currency formatting. |
+| 100 | AUDIT-101 | Filter active/completed enrollments from cart recommendations in `CartPage.tsx` | Enroll in course, add another course to cart, view cart page; verify enrolled course is omitted from upsell strip. |
+| 101 | AUDIT-102 | Implement atomic upsert pattern for singleton system settings in `adminController.ts` | Concurrently update platform settings during cold start; verify atomic update without duplicate singletons or null errors. |
+| 102 | AUDIT-103 | Guard auto-enrollment behind confirmed payment status (`paid`/`completed`) in `orderController.ts` | Simulate asynchronous pending payment; verify order created in pending state without premature active enrollment creation. |
+| 103 | AUDIT-104 | Add reorder controls (move up/down) and bulk order persistence in `CourseFAQEditor.tsx` & `faqController.ts` | Reorder FAQs in instructor editor, refresh page; verify updated sort order persists accurately in student accordion. |
 
 

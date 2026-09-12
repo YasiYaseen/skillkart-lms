@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '@/lib/api';
 import CourseCard from '@/components/common/CourseCard';
+import { resolveMediaUrl } from '@/utils/mediaUtils';
 import {
     AcademicCapIcon,
     CheckBadgeIcon,
@@ -67,7 +68,7 @@ function InstructorPublicProfile() {
             setLoading(true);
             setError(null);
             try {
-                const res = await api.get(`/instructors/${instructorId}/public-profile`);
+                const res = await api.get(`/users/instructor/${instructorId}`);
                 const data = res.data;
                 setInstructor(data.instructor);
                 setStats(data.stats || {
@@ -141,13 +142,13 @@ function InstructorPublicProfile() {
                         <div className="shrink-0 relative">
                             {instructor.avatar ? (
                                 <img
-                                    src={instructor.avatar}
+                                    src={resolveMediaUrl(instructor.avatar)}
                                     alt={instructor.name}
                                     className="w-28 h-28 md:w-32 md:h-32 rounded-xl object-cover border-2 border-slate-700 shadow-2xs"
                                 />
                             ) : (
                                 <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl bg-slate-800 text-blue-400 border-2 border-slate-700 text-3xl font-bold flex items-center justify-center shadow-2xs">
-                                    {instructor.name.substring(0, 2).toUpperCase()}
+                                    {instructor.name ? instructor.name.substring(0, 2).toUpperCase() : 'IN'}
                                 </div>
                             )}
                             <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-1 rounded-full shadow-2xs" title="Verified Instructor">

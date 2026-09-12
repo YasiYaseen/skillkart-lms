@@ -28,8 +28,11 @@ router.get("/streak", protect, getStudentStreak);
 router.get("/recently-viewed", protect, getRecentlyViewedCourses);
 router.post("/recently-viewed/:courseId", protect, recordRecentlyViewedCourse);
 
-// Public instructor profile
+// Public instructor profile (support singular and plural, with and without /public-profile)
 router.get("/instructor/:instructorId", getPublicInstructorProfile);
+router.get("/instructor/:instructorId/public-profile", getPublicInstructorProfile);
+router.get("/instructors/:instructorId", getPublicInstructorProfile);
+router.get("/instructors/:instructorId/public-profile", getPublicInstructorProfile);
 
 export default router;
 

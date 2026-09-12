@@ -69,6 +69,10 @@ app.use("/api/cart", cartRoutes);
 import { getPublicSettings } from "./controllers/admin/adminSettingsController";
 app.get("/api/settings/public", getPublicSettings);
 
+import { getPublicInstructorProfile } from "./controllers/user/userController";
+app.get("/api/instructors/:instructorId/public-profile", getPublicInstructorProfile);
+app.get("/api/instructors/:instructorId", getPublicInstructorProfile);
+
 
 // Health check
 app.get("/", (req, res) => {

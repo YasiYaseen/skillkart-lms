@@ -5,6 +5,7 @@ import Course from "../../models/Course";
 import Review from "../../models/Review";
 import Enrollment from "../../models/Enrollment";
 import SystemSettings from "../../models/SystemSettings";
+import { getCourseApprovalFilter } from "../course/shared";
 import { getTodayDateString } from "../../services/streakService";
 import { updateProfileSchema } from "../../validators/content.validator";
 
@@ -92,11 +93,13 @@ export async function getPublicInstructorProfile(req: Request, res: Response) {
       return res.status(404).json({ message: "Instructor not found" });
     }
 
+    const approvalFilter = await getCourseApprovalFilter();
+
     const courses = await Course.find({
       instructor: instructorId,
       status: "published",
-      isActive: true,
-      isApproved: true,
+      isActive: { $ne: false },
+      ...approvalFilter,
     })
       .select("_id title description thumbnailUrl price isPaid level tags createdAt updatedAt")
       .sort({ createdAt: -1 })
@@ -106,7 +109,10 @@ export async function getPublicInstructorProfile(req: Request, res: Response) {
 
     const [reviews, enrollments] = await Promise.all([
       Review.find({ course: { $in: courseIds } }).lean(),
-      Enrollment.find({ course: { $in: courseIds } }).lean(),
+      Enrollment.find({
+        course: { $in: courseIds },
+        status: { $in: ["active", "completed"] },
+      }).lean(),
     ]);
 
     const reviewMap = new Map<string, { count: number; sum: number }>();
@@ -138,13 +144,15 @@ export async function getPublicInstructorProfile(req: Request, res: Response) {
       };
     });
 
-    const totalStudents = enrollments.length;
+    const distinctStudents = new Set(enrollments.map((e) => e.student.toString()));
+    const totalStudents = distinctStudents.size;
     const totalReviews = reviews.length;
     const totalReviewSum = reviews.reduce((sum, r) => sum + r.rating, 0);
     const overallAverageRating =
       totalReviews > 0 ? Math.round((totalReviewSum / totalReviews) * 10) / 10 : 0;
 
     return res.json({
+      success: true,
       instructor: {
         _id: instructor._id,
         name: instructor.name,
