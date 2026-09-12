@@ -18,7 +18,11 @@ import {
   EyeIcon,
   EyeSlashIcon,
 } from '@heroicons/react/20/solid';
-import { getCouponEffectiveStatus } from '@/features/instructor/pages/Coupons';
+import {
+  getCouponStatus,
+  getCouponEffectiveStatus,
+  getCouponStatusBadgeConfig,
+} from '@/utils/couponUtils';
 
 export function AdminCoupons() {
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
@@ -107,6 +111,11 @@ export function AdminCoupons() {
   };
 
   const handleToggleActive = async (coupon: AdminCoupon) => {
+    const effStatus = getCouponStatus(coupon);
+    if (effStatus === 'expired' || effStatus === 'exhausted') {
+      toast.error(`Cannot toggle an ${effStatus} coupon.`);
+      return;
+    }
     try {
       await updateAdminCoupon(coupon._id, { isActive: !coupon.isActive });
       toast.success(`Coupon "${coupon.code}" ${coupon.isActive ? 'paused' : 'activated'}`);
@@ -117,6 +126,11 @@ export function AdminCoupons() {
   };
 
   const handleTogglePublic = async (coupon: AdminCoupon) => {
+    const effStatus = getCouponStatus(coupon);
+    if (!coupon.isPublic && (effStatus === 'expired' || effStatus === 'exhausted')) {
+      toast.error(`Cannot feature an ${effStatus} coupon on the checkout cart.`);
+      return;
+    }
     try {
       await updateAdminCoupon(coupon._id, { isPublic: !coupon.isPublic });
       toast.success(`Coupon "${coupon.code}" ${coupon.isPublic ? 'hidden from cart' : 'featured on cart'}`);
@@ -149,7 +163,9 @@ export function AdminCoupons() {
   });
 
   const platformCouponsCount = coupons.filter((c) => c.creatorRole === 'admin').length;
-  const publicOffersCount = coupons.filter((c) => c.creatorRole === 'admin' && c.isPublic && c.isActive).length;
+  const publicOffersCount = coupons.filter(
+    (c) => c.creatorRole === 'admin' && c.isPublic && getCouponStatus(c) === 'active'
+  ).length;
   const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesRedeemed || 0), 0);
 
   if (loading) {
@@ -374,17 +390,43 @@ export function AdminCoupons() {
 
                       <td className="px-5 py-4 whitespace-nowrap">
                         {isPlatform ? (
-                          <button
-                            onClick={() => handleTogglePublic(coupon)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer ${
-                              coupon.isPublic
-                                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                            }`}
-                          >
-                            {coupon.isPublic ? <EyeIcon className="w-3 h-3" /> : <EyeSlashIcon className="w-3 h-3" />}
-                            <span>{coupon.isPublic ? 'Featured Pill' : 'Hidden Code'}</span>
-                          </button>
+                          (() => {
+                            const effStatus = getCouponStatus(coupon);
+                            const isInactive = effStatus === 'expired' || effStatus === 'exhausted';
+                            return (
+                              <button
+                                onClick={() => handleTogglePublic(coupon)}
+                                disabled={!coupon.isPublic && isInactive}
+                                title={
+                                  coupon.isPublic && isInactive
+                                    ? `Coupon is ${effStatus} and will not be displayed on cart`
+                                    : !coupon.isPublic && isInactive
+                                    ? `Cannot feature an ${effStatus} coupon`
+                                    : coupon.isPublic
+                                    ? 'Click to hide from checkout cart'
+                                    : 'Click to feature as pill on checkout cart'
+                                }
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                  coupon.isPublic && !isInactive
+                                    ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 cursor-pointer'
+                                    : coupon.isPublic && isInactive
+                                    ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-pointer'
+                                    : isInactive
+                                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 opacity-50 cursor-not-allowed border border-transparent'
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-pointer border border-transparent'
+                                }`}
+                              >
+                                {coupon.isPublic ? <EyeIcon className="w-3 h-3" /> : <EyeSlashIcon className="w-3 h-3" />}
+                                <span>
+                                  {coupon.isPublic && isInactive
+                                    ? `Featured (${effStatus})`
+                                    : coupon.isPublic
+                                    ? 'Featured Pill'
+                                    : 'Hidden Code'}
+                                </span>
+                              </button>
+                            );
+                          })()
                         ) : (
                           <span className="text-[10px] text-gray-400 italic">Direct Code Only</span>
                         )}
@@ -397,23 +439,8 @@ export function AdminCoupons() {
 
                       <td className="px-5 py-4 whitespace-nowrap">
                         {(() => {
-                          const effStatus = getCouponEffectiveStatus(coupon);
-                          const badgeClass =
-                            effStatus === 'active'
-                              ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
-                              : effStatus === 'expired'
-                              ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300'
-                              : effStatus === 'exhausted'
-                              ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                              : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300';
-                          const label =
-                            effStatus === 'active'
-                              ? 'Active'
-                              : effStatus === 'expired'
-                              ? 'Expired'
-                              : effStatus === 'exhausted'
-                              ? 'Exhausted'
-                              : 'Paused';
+                          const effStatus = getCouponStatus(coupon);
+                          const { label, badgeClass } = getCouponStatusBadgeConfig(effStatus);
                           return (
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
                               {label}
@@ -425,9 +452,18 @@ export function AdminCoupons() {
                       <td className="px-5 py-4 text-right whitespace-nowrap space-x-2">
                         <button
                           onClick={() => handleToggleActive(coupon)}
-                          disabled={getCouponEffectiveStatus(coupon) === 'expired' || getCouponEffectiveStatus(coupon) === 'exhausted'}
+                          disabled={getCouponStatus(coupon) === 'expired' || getCouponStatus(coupon) === 'exhausted'}
+                          title={
+                            getCouponStatus(coupon) === 'expired'
+                              ? 'Cannot toggle an expired coupon'
+                              : getCouponStatus(coupon) === 'exhausted'
+                              ? 'Cannot toggle an exhausted coupon'
+                              : coupon.isActive
+                              ? 'Pause coupon'
+                              : 'Activate coupon'
+                          }
                           className={`px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 ${
-                            getCouponEffectiveStatus(coupon) === 'expired' || getCouponEffectiveStatus(coupon) === 'exhausted'
+                            getCouponStatus(coupon) === 'expired' || getCouponStatus(coupon) === 'exhausted'
                               ? 'opacity-50 cursor-not-allowed'
                               : 'cursor-pointer'
                           }`}
@@ -436,7 +472,7 @@ export function AdminCoupons() {
                         </button>
                         <button
                           onClick={() => handleDelete(coupon._id, coupon.code)}
-                          className="px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900 text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                          className="px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900 text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
                         >
                           Delete
                         </button>

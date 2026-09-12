@@ -50,23 +50,46 @@ export async function completeOnboarding(req: Request, res: Response) {
       },
     };
 
+    let requiresApproval = false;
+    let message = "Onboarding complete";
+
     if (normalizedRole) {
       if (normalizedRole === "instructor") {
         // AUDIT-71: Respect requireInstructorApproval setting
         const settings = await SystemSettings.findOne({ isSingleton: true }).lean();
         const requireApproval = settings?.requireInstructorApproval ?? true;
         if (requireApproval) {
-          // Don't grant instructor role directly — put into pending moderation
-          updateData.role = "student";
+          // If the user was already an instructor or admin, preserve existing role
+          if (req.user.role !== "instructor" && req.user.role !== "admin") {
+            updateData.role = "student";
+          }
           updateData.instructorStatus = "pending";
           updateData.isInstructorApproved = false;
+          requiresApproval = true;
+          message =
+            "Onboarding complete. Teaching on SkillKart requires administrator review. Your application has been submitted.";
+
+          // Populate initial application dossier so admin queue has actionable info
+          updateData.instructorApplication = {
+            teachingExperience: "online",
+            primaryTopic: normalizedHeadline,
+            experienceDetails:
+              normalizeText(bio, 1000) ||
+              `Applied during onboarding with focus on ${normalizedHeadline}`,
+            linkedinUrl: normalizeText(socialLinks?.linkedin, 200) || undefined,
+            sampleVideoOrPortfolioUrl: normalizeText(socialLinks?.website, 200) || undefined,
+            appliedAt: new Date(),
+          };
         } else {
           updateData.role = "instructor";
           updateData.instructorStatus = "approved";
           updateData.isInstructorApproved = true;
+          message = "Onboarding complete. Instructor privileges granted!";
         }
       } else {
-        updateData.role = normalizedRole;
+        if (req.user.role !== "admin") {
+          updateData.role = normalizedRole;
+        }
       }
     }
 
@@ -74,7 +97,8 @@ export async function completeOnboarding(req: Request, res: Response) {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     return res.json({
-      message: "Onboarding complete",
+      message,
+      requiresApproval,
       user: {
         id: user._id,
         name: user.name,
@@ -83,6 +107,7 @@ export async function completeOnboarding(req: Request, res: Response) {
         onboardingCompleted: user.onboardingCompleted,
         instructorStatus: user.instructorStatus,
         isInstructorApproved: user.isInstructorApproved,
+        instructorApplication: user.instructorApplication,
         headline: user.headline,
         bio: user.bio,
         interests: user.interests,
@@ -99,7 +124,7 @@ export async function getOnboardingStatus(req: Request, res: Response) {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
     const user = await User.findById(req.user.id).select(
-      "name email role isInstructorApproved instructorStatus instructorRejectionReason instructorApplication onboardingCompleted headline bio interests socialLinks"
+      "name email role isInstructorApproved instructorStatus instructorRejectionReason instructorApplication onboardingCompleted headline bio interests socialLinks avatar isActive"
     );
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -120,6 +145,8 @@ export async function getOnboardingStatus(req: Request, res: Response) {
         bio: user.bio,
         interests: user.interests,
         socialLinks: user.socialLinks,
+        avatar: user.avatar,
+        isActive: user.isActive,
       },
     });
   } catch {

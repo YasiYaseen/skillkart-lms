@@ -326,9 +326,24 @@ export async function getCourses(req: Request, res: Response) {
 }
 
 
+export async function getInstructorCourses(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    req.query.mine = "true";
+    return getCourses(req, res);
+  } catch {
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
 export async function getCourseById(req: Request, res: Response) {
   try {
     const { courseId } = req.params;
+    if (courseId === "instructor") {
+      return getInstructorCourses(req, res);
+    }
     if (!isValidObjectId(courseId)) {
       return res.status(400).json({ message: "Invalid course id" });
     }
@@ -451,9 +466,17 @@ export async function updateCourse(req: Request, res: Response) {
           course.rejectionReason = undefined;
         }
       } else if (parsed.data.status === "published") {
-        const hasSection = await Section.exists({ course: course._id });
-        if (!hasSection) {
+        if (course.isActive === false) {
+          return res.status(403).json({ message: "This course has been suspended by an administrator and cannot be published" });
+        }
+        const sections = await Section.find({ course: course._id }).select("_id");
+        if (sections.length === 0) {
           return res.status(400).json({ message: "Cannot publish a course without sections" });
+        }
+        const sectionIds = sections.map((s) => s._id);
+        const hasLessons = await Lesson.exists({ section: { $in: sectionIds } });
+        if (!hasLessons) {
+          return res.status(400).json({ message: "Cannot publish a course without lessons" });
         }
         course.status = "published";
         course.publishedAt = new Date();
@@ -515,9 +538,19 @@ export async function publishCourse(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const hasSection = await Section.exists({ course: course._id });
-    if (!hasSection) {
+    if (course.isActive === false) {
+      return res.status(403).json({ message: "This course has been suspended by an administrator and cannot be published or resubmitted" });
+    }
+
+    const sections = await Section.find({ course: course._id }).select("_id");
+    if (sections.length === 0) {
       return res.status(400).json({ message: "Cannot publish a course without sections" });
+    }
+
+    const sectionIds = sections.map((s) => s._id);
+    const hasLessons = await Lesson.exists({ section: { $in: sectionIds } });
+    if (!hasLessons) {
+      return res.status(400).json({ message: "Cannot publish a course without lessons" });
     }
 
     // If the course is already published and approved, return idempotently
@@ -568,6 +601,10 @@ export async function unpublishCourse(req: Request, res: Response) {
 
     if (!isCourseManager(req.user.id, req.user.role, course.instructor.toString())) {
       return res.status(403).json({ message: "Forbidden" });
+    }
+
+    if (course.isActive === false) {
+      return res.status(403).json({ message: "This course has been suspended by an administrator and cannot be modified" });
     }
 
     const settings = await SystemSettings.findOne({ isSingleton: true });

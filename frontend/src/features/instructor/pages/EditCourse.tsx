@@ -123,6 +123,7 @@ function EditCourse() {
     const [price, setPrice] = useState<number | ''>('');
     const [thumbnailUrl, setThumbnailUrl] = useState('');
     const [courseStatus, setCourseStatus] = useState('draft');
+    const [isActive, setIsActive] = useState<boolean | undefined>(undefined);
     const [isApproved, setIsApproved] = useState<boolean | undefined>(undefined);
     const [rejectionReason, setRejectionReason] = useState<string | undefined>(undefined);
 
@@ -181,6 +182,7 @@ function EditCourse() {
             setPrice(c.price ?? '');
             setThumbnailUrl(c.thumbnailUrl || '');
             setCourseStatus(c.status || 'draft');
+            setIsActive(c.isActive);
             setIsApproved(c.isApproved);
             setRejectionReason(c.rejectionReason);
 
@@ -228,8 +230,17 @@ function EditCourse() {
 
     const handleResubmitForModeration = async () => {
         if (!courseId) return;
+        if (isActive === false) {
+            toast.error('This course has been suspended by an administrator and cannot be modified');
+            return;
+        }
         if (sections.length === 0) {
             toast.error('Cannot submit a course without sections. Please add at least one section first.');
+            return;
+        }
+        const totalLessons = sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0);
+        if (totalLessons === 0) {
+            toast.error('Cannot submit a course without lessons. Please add at least one lesson first.');
             return;
         }
         setResubmitting(true);
@@ -249,8 +260,17 @@ function EditCourse() {
 
     const handlePublishOrSubmit = async () => {
         if (!courseId) return;
+        if (isActive === false) {
+            toast.error('This course has been suspended by an administrator and cannot be modified');
+            return;
+        }
         if (sections.length === 0) {
             toast.error('Cannot submit a course without sections. Please add at least one section first.');
+            return;
+        }
+        const totalLessons = sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0);
+        if (totalLessons === 0) {
+            toast.error('Cannot submit a course without lessons. Please add at least one lesson first.');
             return;
         }
         setSubmittingPublish(true);
@@ -270,6 +290,10 @@ function EditCourse() {
 
     const handleUnpublishToDraft = async () => {
         if (!courseId) return;
+        if (isActive === false) {
+            toast.error('This course has been suspended by an administrator and cannot be modified');
+            return;
+        }
         setUnpublishing(true);
         try {
             const res = await api.patch<{ message?: string; course?: RawCourseData }>(`/courses/${courseId}/unpublish`);
@@ -651,7 +675,9 @@ function EditCourse() {
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Course</h1>
                             <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
-                                courseStatus === 'published'
+                                isActive === false
+                                    ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                    : courseStatus === 'published'
                                     ? isApproved === true
                                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                                         : isApproved === false
@@ -660,8 +686,12 @@ function EditCourse() {
                                     : isApproved === false
                                     ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                                     : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800'
-                            }`}>
-                                {courseStatus === 'published'
+                            }`}
+                            title={isActive === false ? 'This course has been suspended by platform administrators' : undefined}
+                            >
+                                {isActive === false
+                                    ? 'Suspended by Admin'
+                                    : courseStatus === 'published'
                                     ? isApproved === true
                                         ? 'Live'
                                         : isApproved === false
@@ -679,8 +709,18 @@ function EditCourse() {
                 </div>
 
                 <div className="flex items-center gap-2.5 self-start sm:self-auto">
+                    {/* Course suspended by Admin */}
+                    {isActive === false && (
+                        <span
+                            title="Course is suspended by platform administration and cannot be submitted or toggled."
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 rounded-xl border border-rose-200 dark:border-rose-800 shadow-2xs"
+                        >
+                            Suspended by Admin
+                        </span>
+                    )}
+
                     {/* Rejected course: Resubmit for moderation */}
-                    {isApproved === false && (
+                    {isActive !== false && isApproved === false && (
                         <button
                             type="button"
                             onClick={handleResubmitForModeration}
@@ -703,7 +743,7 @@ function EditCourse() {
                     )}
 
                     {/* Draft course (unsubmitted or unpublished): Submit for review */}
-                    {courseStatus === 'draft' && isApproved !== false && (
+                    {isActive !== false && courseStatus === 'draft' && isApproved !== false && (
                         <button
                             type="button"
                             onClick={handlePublishOrSubmit}
@@ -726,7 +766,7 @@ function EditCourse() {
                     )}
 
                     {/* Published course: Unpublish back to draft */}
-                    {courseStatus === 'published' && (
+                    {isActive !== false && courseStatus === 'published' && (
                         <button
                             type="button"
                             onClick={handleUnpublishToDraft}
@@ -759,13 +799,30 @@ function EditCourse() {
                 </div>
             </div>
 
+            {/* Course Admin Suspension Banner */}
+            {isActive === false && (
+                <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 flex items-start gap-3 shadow-xs">
+                    <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                    <div className="flex-1 min-w-0 text-xs">
+                        <p className="font-bold text-sm text-rose-950 dark:text-rose-100">Course Suspended by Administrator</p>
+                        <p className="mt-0.5 text-rose-700 dark:text-rose-300">
+                            This course has been deactivated and hidden from public catalogs by platform administration. Course publication and submissions are disabled until an administrator re-enables the course.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Course Moderation Rejection Banner */}
-            {isApproved === false && (
+            {isActive !== false && isApproved === false && (
                 <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 flex flex-col sm:flex-row items-start justify-between gap-4 shadow-xs">
                     <div className="flex items-start gap-3 min-w-0">
                         <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                             </svg>
                         </div>
                         <div className="flex-1 min-w-0 text-xs">
@@ -807,7 +864,7 @@ function EditCourse() {
             )}
 
             {/* Course Moderation Pending Banner */}
-            {courseStatus === 'published' && isApproved === undefined && (
+            {isActive !== false && courseStatus === 'published' && isApproved === undefined && (
                 <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 flex items-start gap-3 shadow-xs">
                     <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 shrink-0">
                         <ClockIcon className="w-5 h-5" />

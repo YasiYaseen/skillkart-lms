@@ -383,14 +383,19 @@ export function Assignments() {
           <label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">Select Course:</label>
           <select
             value={selectedCourseId}
+            disabled={loadingCourses || courses.length === 0}
             onChange={(e) => setSelectedCourseId(e.target.value)}
-            className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-850 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:outline-none max-w-md w-full cursor-pointer"
+            className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-850 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:outline-none max-w-md w-full cursor-pointer disabled:opacity-50"
           >
-            {courses.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.title}
-              </option>
-            ))}
+            {courses.length === 0 ? (
+              <option value="">{loadingCourses ? 'Loading courses...' : 'No courses found'}</option>
+            ) : (
+              courses.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.title}
+                </option>
+              ))
+            )}
           </select>
         </div>
 

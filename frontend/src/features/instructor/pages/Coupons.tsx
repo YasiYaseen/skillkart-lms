@@ -18,21 +18,17 @@ import {
   ClipboardDocumentIcon,
   SparklesIcon,
 } from '@heroicons/react/20/solid';
+import {
+  getCouponStatus,
+  getCouponEffectiveStatus,
+  getCouponStatusBadgeConfig,
+} from '@/utils/couponUtils';
 
-export function getCouponEffectiveStatus(coupon: {
-  isActive: boolean;
-  expiresAt?: string | null;
-  timesRedeemed?: number;
-  maxRedemptions?: number;
-}): 'active' | 'expired' | 'exhausted' | 'paused' {
-  if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) return 'expired';
-  if (coupon.maxRedemptions && (coupon.timesRedeemed ?? 0) >= coupon.maxRedemptions) return 'exhausted';
-  if (!coupon.isActive) return 'paused';
-  return 'active';
-}
+export { getCouponStatus, getCouponEffectiveStatus };
 
 interface Course {
   _id: string;
+  id?: string;
   title: string;
 }
 
@@ -64,7 +60,10 @@ export function Coupons() {
       setLoading(true);
       const [cData, crsRes] = await Promise.all([
         fetchInstructorCoupons(),
-        api.get('/courses?mine=true').catch(() => ({ data: { courses: [] } })),
+        api
+          .get('/courses?mine=true')
+          .catch(() => api.get('/instructor/courses'))
+          .catch(() => ({ data: { courses: [] } })),
       ]);
       setCoupons(cData);
       setCourses(Array.isArray(crsRes.data) ? crsRes.data : (crsRes.data?.courses || []));
@@ -143,6 +142,11 @@ export function Coupons() {
   };
 
   const handleToggleActive = async (coupon: InstructorCoupon) => {
+    const effStatus = getCouponStatus(coupon);
+    if (effStatus === 'expired' || effStatus === 'exhausted') {
+      toast.error(`Cannot toggle an ${effStatus} coupon. Please edit the coupon to reactivate it.`);
+      return;
+    }
     try {
       await updateInstructorCoupon(coupon._id, { isActive: !coupon.isActive });
       toast.success(`Coupon "${coupon.code}" ${coupon.isActive ? 'paused' : 'activated'}`);
@@ -169,7 +173,7 @@ export function Coupons() {
   const sampleFinal = Math.max(0, 100 - sampleDiscount);
 
   const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesRedeemed || 0), 0);
-  const activeCouponsCount = coupons.filter((c) => c.isActive).length;
+  const activeCouponsCount = coupons.filter((c) => getCouponStatus(c) === 'active').length;
 
   if (loading) {
     return (
@@ -336,23 +340,8 @@ export function Coupons() {
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       {(() => {
-                        const effStatus = getCouponEffectiveStatus(coupon);
-                        const badgeClass =
-                          effStatus === 'active'
-                            ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
-                            : effStatus === 'expired'
-                            ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300'
-                            : effStatus === 'exhausted'
-                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                            : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300';
-                        const label =
-                          effStatus === 'active'
-                            ? 'Active'
-                            : effStatus === 'expired'
-                            ? 'Expired'
-                            : effStatus === 'exhausted'
-                            ? 'Exhausted'
-                            : 'Paused';
+                        const effStatus = getCouponStatus(coupon);
+                        const { label, badgeClass } = getCouponStatusBadgeConfig(effStatus);
                         return (
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
                             {label}
@@ -362,10 +351,26 @@ export function Coupons() {
                     </td>
                     <td className="px-5 py-4 text-right whitespace-nowrap space-x-2">
                       <button
+                        onClick={() => openEditModal(coupon)}
+                        className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                        title="Edit coupon settings or extend expiration/limits"
+                      >
+                        Edit
+                      </button>
+                      <button
                         onClick={() => handleToggleActive(coupon)}
-                        disabled={getCouponEffectiveStatus(coupon) === 'expired' || getCouponEffectiveStatus(coupon) === 'exhausted'}
+                        disabled={getCouponStatus(coupon) === 'expired' || getCouponStatus(coupon) === 'exhausted'}
+                        title={
+                          getCouponStatus(coupon) === 'expired'
+                            ? 'Cannot toggle an expired coupon'
+                            : getCouponStatus(coupon) === 'exhausted'
+                            ? 'Cannot toggle an exhausted coupon'
+                            : coupon.isActive
+                            ? 'Pause coupon'
+                            : 'Activate coupon'
+                        }
                         className={`px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 ${
-                          getCouponEffectiveStatus(coupon) === 'expired' || getCouponEffectiveStatus(coupon) === 'exhausted'
+                          getCouponStatus(coupon) === 'expired' || getCouponStatus(coupon) === 'exhausted'
                             ? 'opacity-50 cursor-not-allowed'
                             : 'cursor-pointer'
                         }`}
@@ -468,11 +473,14 @@ export function Coupons() {
                   className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 >
                   <option value="">All My Courses</option>
-                  {courses.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.title}
-                    </option>
-                  ))}
+                  {courses.map((c) => {
+                    const cid = c._id || c.id || '';
+                    return (
+                      <option key={cid} value={cid}>
+                        {c.title}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

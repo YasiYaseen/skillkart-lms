@@ -16,6 +16,7 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.post("/change-password", protect, changePassword);
 
+router.get("/me", protect, getOnboardingStatus);
 router.get("/onboarding/status", protect, getOnboardingStatus);
 router.post("/onboarding/complete", protect, completeOnboarding);
 

@@ -287,7 +287,7 @@ export async function bulkApproveInstructors(req: Request, res: Response) {
                 ? "Congratulations! Your application to become an instructor on SkillKart has been approved. You can now create and publish courses."
                 : `Thank you for applying to become an instructor. Unfortunately, your application was not approved at this time.${sanitizedReason ? ` Reason: ${sanitizedReason}` : " You may reapply in the future with updated information."}`,
             type: action === "approve" ? "success" : "warning",
-            link: action === "approve" ? "/instructor/dashboard" : "/profile",
+            link: action === "approve" ? "/instructor" : "/profile",
           });
         } catch (notifErr) {
           console.error("Failed to notify user:", notifErr);
@@ -398,6 +398,30 @@ export async function updateCourseStatus(req: Request, res: Response) {
         }
       } catch (notifErr) {
         console.error("Failed to send course moderation notification:", notifErr);
+      }
+    }
+
+    if (isActive !== undefined && Boolean(isActive) !== Boolean(previousState.isActive)) {
+      try {
+        if (!course.isActive) {
+          await Notification.create({
+            recipient: course.instructor,
+            title: "Course Suspended by Administrator",
+            message: `Your course "${course.title}" has been suspended by platform administration and deactivated from public listings.`,
+            type: "warning",
+            link: `/instructor/courses`,
+          });
+        } else {
+          await Notification.create({
+            recipient: course.instructor,
+            title: "Course Re-enabled",
+            message: `Your course "${course.title}" has been re-enabled by platform administration and restored to the catalog.`,
+            type: "info",
+            link: `/instructor/courses`,
+          });
+        }
+      } catch (notifErr) {
+        console.error("Failed to send course activation notification:", notifErr);
       }
     }
 

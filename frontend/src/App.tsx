@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from '@components/layout';
 import { ProtectedRoute } from '@components/common';
 import { CourseList, CourseDetailsPage } from '@pages/courses';
@@ -85,6 +85,7 @@ function App() {
                         <Route element={<ProtectedRoute allowedRoles={['instructor', 'admin']} />}>
                             <Route element={<InstructorLayout />}>
                                 <Route path="/instructor" element={<Dashboard />} />
+                                <Route path="/instructor/dashboard" element={<Navigate to="/instructor" replace />} />
                                 <Route path="/instructor/courses" element={<MyCourses />} />
                                 <Route path="/instructor/create-course" element={<CreateCourse />} />
                                 <Route path="/instructor/courses/:courseId/edit" element={<EditCourse />} />

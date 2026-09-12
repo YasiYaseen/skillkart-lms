@@ -12,8 +12,17 @@ import {
   requestInstructorPayout,
   exportEarningsCsv,
 } from "../controllers/instructor/instructorEarningsController";
+import { getInstructorCourses } from "../controllers/course/courseController";
 
 const router = Router();
+
+router.get(
+  "/courses",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  getInstructorCourses
+);
 
 router.get(
   "/analytics",

@@ -11,9 +11,10 @@ import {
   OnboardingPayload,
   AuthResponse,
   AuthUser,
+  CompleteOnboardingResponse,
 } from './auth.api';
 
-export type { LoginPayload, RegisterPayload, OnboardingPayload, AuthResponse, AuthUser };
+export type { LoginPayload, RegisterPayload, OnboardingPayload, AuthResponse, AuthUser, CompleteOnboardingResponse };
 
 export const loginWithGoogle = async (accessToken: string): Promise<AuthResponse> => {
   const res = await googleLogin(accessToken);
@@ -30,7 +31,7 @@ export const registerWithEmail = async (data: RegisterPayload): Promise<AuthResp
   return res.data;
 };
 
-export const completeOnboarding = async (data: OnboardingPayload): Promise<{ user: AuthUser }> => {
+export const completeOnboarding = async (data: OnboardingPayload): Promise<CompleteOnboardingResponse> => {
   const res = await completeOnboardingApi(data);
   return res.data;
 };

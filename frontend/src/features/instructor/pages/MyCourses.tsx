@@ -96,6 +96,11 @@ function MyCourses() {
     const [restoringId, setRestoringId] = useState<string | null>(null);
 
     const handleRestore = async (courseId: string) => {
+        const target = courses.find((c) => c.id === courseId);
+        if (target?.isActive === false) {
+            toast.error('This course has been suspended by an administrator');
+            return;
+        }
         setRestoringId(courseId);
         try {
             await api.patch(`/courses/${courseId}/restore`);
@@ -139,6 +144,11 @@ function MyCourses() {
     }, [fetchCourses]);
 
     const togglePublish = async (courseId: string, currentStatus: string) => {
+        const target = courses.find((c) => c.id === courseId);
+        if (target?.isActive === false) {
+            toast.error('This course has been suspended by an administrator and cannot be modified');
+            return;
+        }
         setTogglingId(courseId);
         try {
             if (currentStatus === 'published') {
@@ -178,6 +188,11 @@ function MyCourses() {
     };
 
     const handleResubmit = async (courseId: string) => {
+        const target = courses.find((c) => c.id === courseId);
+        if (target?.isActive === false) {
+            toast.error('This course has been suspended by an administrator and cannot be resubmitted');
+            return;
+        }
         setTogglingId(courseId);
         try {
             const res = await api.patch<{ message?: string; course?: RawInstructorCourse }>(`/courses/${courseId}/publish`);
@@ -278,12 +293,22 @@ function MyCourses() {
                                 {/* Status & Action */}
                                 <td className="py-4 px-6">
                                     {course.isActive === false && (
-                                        <span
-                                            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
-                                            title="Suspended by Platform Administrator"
-                                        >
-                                            Suspended by Admin
-                                        </span>
+                                        <div className="flex items-center gap-2.5">
+                                            <button
+                                                type="button"
+                                                disabled
+                                                title="This course has been deactivated by platform administrators and cannot be published or toggled."
+                                                className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors bg-gray-300 dark:bg-gray-700 opacity-50 cursor-not-allowed shadow-2xs"
+                                            >
+                                                <span className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs translate-x-0.5 transition-transform" />
+                                            </button>
+                                            <span
+                                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                                                title="Suspended by platform administration — this course is deactivated and hidden from public catalogs"
+                                            >
+                                                Suspended by Admin
+                                            </span>
+                                        </div>
                                     )}
 
                                     {course.isActive !== false && course.status === 'published' && course.isApproved === true && (

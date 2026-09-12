@@ -26,16 +26,16 @@ P0 (Critical / Blocker):
   [x] AUDIT-05: Unpublishing and Re-publishing Bypasses Admin Moderation Gate
   [x] AUDIT-20: Paid Course Direct Free Enrollment Bypass via Unvalidated Controller & Button
   [x] AUDIT-21: Instructor Self-Purchase & Cart Auto-Enrollment Revenue Loophole
-  [ ] AUDIT-71: Onboarding Role Selection Bypasses Instructor Moderation Workflow & Auto-Approval Policy
-  [ ] AUDIT-89: Empty Lesson Course Publication Allows White Screen of Death Crash in Student Viewer
+  [x] AUDIT-71: Onboarding Role Selection Bypasses Instructor Moderation Workflow & Auto-Approval Policy
+  [x] AUDIT-89: Empty Lesson Course Publication Allows White Screen of Death Crash in Student Viewer
 
 P1 (High):
-  [ ] AUDIT-06: Phantom API Route `/courses/instructor` Breaks Assignments & Gradebook
-  [ ] AUDIT-07: Silent Route Failure `/instructor/courses` Clears Course Dropdown in Coupons
-  [ ] AUDIT-08: Admin Course Disabling Masks as "Live" with Active Toggle in Instructor Studio
-  [ ] AUDIT-09: Role Promotion Client-State Desync Bounces Approved Instructors to Homepage
-  [ ] AUDIT-10: Expired and Exhausted Coupons Render Active Green Badges and Pause Controls
-  [ ] AUDIT-22: Dead-End Route Desync on Approved Instructor Notification Link
+  [x] AUDIT-06: Phantom API Route `/courses/instructor` Breaks Assignments & Gradebook
+  [x] AUDIT-07: Silent Route Failure `/instructor/courses` Clears Course Dropdown in Coupons
+  [x] AUDIT-08: Admin Course Disabling Masks as "Live" with Active Toggle in Instructor Studio
+  [x] AUDIT-09: Role Promotion Client-State Desync Bounces Approved Instructors to Homepage
+  [x] AUDIT-10: Expired and Exhausted Coupons Render Active Green Badges and Pause Controls
+  [x] AUDIT-22: Dead-End Route Desync on Approved Instructor Notification Link
   [ ] AUDIT-23: Public Instructor Profile Route 404 Endpoint Mismatch
   [ ] AUDIT-24: Permanent Course Archival Lifecycle Deadlock (Missing Unarchive Transition)
   [ ] AUDIT-25: Dangling Quiz, Attempt, and Assignment Entities on Course and Lesson Deletions
@@ -264,10 +264,11 @@ P3 (Low / Polish):
 
 ### P1 — High
 
-#### AUDIT-06: Phantom API Route `/courses/instructor` Breaks Assignments & Gradebook
+#### [x] AUDIT-06: Phantom API Route `/courses/instructor` Breaks Assignments & Gradebook
 - **Category**: Phantom Actions & Route Mismatches
 - **Priority**: `P1 — High`
 - **Impacted Roles**: Instructor
+- **Status**: Completed
 - **Affected Files**:
   - [`frontend/src/features/instructor/pages/Assignments.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/Assignments.tsx#L80)
   - [`backend/src/routes/courseRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/courseRoutes.ts#L45)
@@ -279,18 +280,21 @@ P3 (Low / Polish):
   2. Navigate to `/instructor/assignments`.
   3. Red toast pops up: *"Invalid course id"*.
   4. Course selector dropdown remains empty and submission lists cannot be loaded.
-- **Remediation**:
-  - In `Assignments.tsx:80`, replace `api.get('/courses/instructor')` with `api.get('/courses?mine=true')`, matching `MyCourses.tsx` and `Dashboard.tsx`.
+- **Remediation & Resolution Summary**:
+  - In `Assignments.tsx:80`, updated instructor course loading to call `api.get('/courses?mine=true')` matching other instructor views, handled both `{ courses: [...] }` and raw array response formats, and enhanced the course `<select>` element with disabled states and loading/empty fallback options.
+  - In `backend/src/controllers/course/courseController.ts`, implemented and exported `getInstructorCourses` delegating to `getCourses` with `mine=true`, and added defensive interception in `getCourseById` for `"instructor"` to prevent `400 Invalid course id` errors.
+  - In `backend/src/routes/courseRoutes.ts`, registered `router.get("/instructor", protect, authorize("instructor", "admin"), getInstructorCourses)` before `router.get("/:courseId", ...)` to ensure any direct calls to `/courses/instructor` route cleanly to instructor courses.
 
 ---
 
-#### AUDIT-07: Silent Route Failure `/instructor/courses` Clears Course Dropdown in Coupons
+#### [x] AUDIT-07: Silent Route Failure `/instructor/courses` Clears Course Dropdown in Coupons
 - **Category**: Phantom Actions & Route Mismatches
 - **Priority**: `P1 — High`
 - **Impacted Roles**: Instructor
+- **Status**: Completed
 - **Affected Files**:
-  - [`frontend/src/features/instructor/pages/Coupons.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/Coupons.tsx#L56)
-  - [`backend/src/routes/instructorRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/instructorRoutes.ts)
+  - [`frontend/src/features/instructor/pages/Coupons.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/Coupons.tsx#L60-L75)
+  - [`backend/src/routes/instructorRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/instructorRoutes.ts#L18-L24)
 - **Description**:
   In `Coupons.tsx:56`, the component queries `api.get('/instructor/courses').catch(() => ({ data: { courses: [] } }))`. The route `/instructor/courses` does not exist in `instructorRoutes.ts` (or anywhere in the backend). The 404 error is swallowed by the `.catch()`, silently populating `courses` with `[]`. When an instructor opens the "Create Coupon" modal and chooses to scope a promo to a specific course, the course dropdown is empty.
 - **Reproduction Steps**:
@@ -298,18 +302,24 @@ P3 (Low / Polish):
   2. Navigate to `/instructor/coupons` and click **Create Coupon**.
   3. Select coupon scope "Single Course".
   4. The course selector dropdown is empty despite the instructor having published courses.
-- **Remediation**:
-  - In `Coupons.tsx:56`, change the call to `api.get('/courses?mine=true')` and map `res.data.courses || res.data`.
+- **Remediation & Resolution Summary**:
+  - In `backend/src/routes/instructorRoutes.ts`, registered `router.get("/courses", protect, requireOnboardingCompleted, authorize("instructor", "admin"), getInstructorCourses)` so requests to `/api/instructor/courses` resolve cleanly and return instructor courses without 404 route failures.
+  - In `frontend/src/features/instructor/pages/Coupons.tsx`, updated course fetching in `loadData` to query `api.get('/courses?mine=true')` with fallback to `/instructor/courses`, safely handled both `{ courses: [...] }` and raw array response formats, and supported both `_id` and `id` keys in the Course selector dropdown.
+
 
 ---
 
 #### AUDIT-08: Admin Course Disabling Masks as "Live" with Active Toggle in Instructor Studio
+- **Status**: `Completed`
 - **Category**: Conflicting UI Indicators & Multi-Role Mismatches
 - **Priority**: `P1 — High`
 - **Impacted Roles**: Instructor, Admin
 - **Affected Files**:
-  - [`frontend/src/features/instructor/pages/MyCourses.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/MyCourses.tsx#L221-L238)
-  - [`frontend/src/features/admin/pages/CourseModeration.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/CourseModeration.tsx#L256)
+  - [`frontend/src/features/instructor/pages/MyCourses.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/MyCourses.tsx)
+  - [`frontend/src/features/instructor/pages/EditCourse.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/EditCourse.tsx)
+  - [`frontend/src/features/admin/pages/CourseModeration.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/CourseModeration.tsx)
+  - [`backend/src/controllers/course/courseController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/courseController.ts)
+  - [`backend/src/controllers/admin/adminController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminController.ts)
 - **Description**:
   When an admin suspends a course by clicking "Disable" in `CourseModeration.tsx` (`course.isActive = false`), the admin sees a gray *"Disabled by Admin"* badge. However, `MyCourses.tsx` does not inspect `course.isActive`. If `course.status === 'published'`, it renders a bright green **"Live"** badge and an active toggle switch. The instructor believes their course is active and selling, while it is completely hidden from public catalogs and search results.
 - **Reproduction Steps**:
@@ -318,18 +328,25 @@ P3 (Low / Polish):
   3. The disabled course displays a green "Live" badge with an active status toggle.
   4. Instructor opens incognito browsing and searches for the course; it does not exist.
 - **Remediation**:
-  - In `MyCourses.tsx`, check `if (course.isActive === false)` before status checks. Render an amber/rose badge: *"Suspended by Admin"* and disable the status toggle with a tooltip explaining that platform administration deactivated the listing.
+  - In `MyCourses.tsx`, checked `course.isActive === false` to render disabled toggle button with informative tooltip alongside *"Suspended by Admin"* badge; guarded `togglePublish`, `handleResubmit`, and `handleRestore` against suspended courses.
+  - In `EditCourse.tsx`, stored `isActive`, displayed *"Suspended by Admin"* header status badge, rendered prominent suspension warning banner, replaced publish/review/unpublish actions with disabled indicator, and guarded publish handlers.
+  - In `courseController.ts`, guarded `publishCourse`, `unpublishCourse`, and `updateCourse` against modifying courses with `course.isActive === false` (403 Forbidden).
+  - In `adminController.ts`, dispatched in-app notifications to course instructors when an administrator suspends or re-enables a course.
 
 ---
 
 #### AUDIT-09: Role Promotion Client-State Desync Bounces Approved Instructors to Homepage
+- **Status**: `Completed`
 - **Category**: State-Synchronization & Multi-Role Transitions
 - **Priority**: `P1 — High`
 - **Impacted Roles**: Student, Instructor, Admin
 - **Affected Files**:
-  - [`frontend/src/features/auth/AuthContext.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/auth/AuthContext.tsx#L59-L91)
-  - [`frontend/src/components/common/ProtectedRoute.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/components/common/ProtectedRoute.tsx#L25-L27)
-  - [`frontend/src/components/common/NotificationBell.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/components/common/NotificationBell.tsx#L121)
+  - [`frontend/src/features/auth/AuthContext.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/auth/AuthContext.tsx)
+  - [`frontend/src/features/auth/auth.api.ts`](file:///c:/Users/user/projects/skillkart/frontend/src/features/auth/auth.api.ts)
+  - [`frontend/src/components/common/ProtectedRoute.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/components/common/ProtectedRoute.tsx)
+  - [`frontend/src/components/common/NotificationBell.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/components/common/NotificationBell.tsx)
+  - [`backend/src/routes/authRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/authRoutes.ts)
+  - [`backend/src/controllers/auth/onboardingController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/auth/onboardingController.ts)
 - **Description**:
   `AuthContext.tsx` only fetches onboarding and user profile status during initial component mount. When an admin approves an instructor application in `InstructorReviews.tsx` or updates a role in `UserManagement.tsx`, a notification is generated: *"Instructor Application Approved! 🎉"* with link `/instructor`. The applicant clicks the notification or navigates to `/instructor`. However, the React state `user.role` remains `"student"`. `ProtectedRoute.tsx` checks `allowedRoles.includes(user.role)`, fails, and immediately redirects the user to `/`.
 - **Reproduction Steps**:
@@ -338,21 +355,25 @@ P3 (Low / Polish):
   3. In tab A, user clicks the approval bell notification (*"Start creating courses"*).
   4. The router attempts to load `/instructor`.
   5. `ProtectedRoute` bounces user back to `/` because in-memory role is still `"student"`.
-- **Remediation**:
-  - Expose a `refreshUser()` helper in `AuthContext.tsx`.
-  - In `NotificationBell.tsx`, when a notification with role-changing intent is clicked, invoke `refreshUser()`.
-  - In `ProtectedRoute.tsx`, if access is denied but token is valid, perform a background `getMe()` verification before redirecting.
+- **Remediation & Resolution Summary**:
+  - In `backend/src/routes/authRoutes.ts`, added the canonical protected `router.get("/me", protect, getOnboardingStatus)` endpoint, and updated `getOnboardingStatus` in `backend/src/controllers/auth/onboardingController.ts` to include `avatar` and `isActive` alongside role and instructor application dossier fields.
+  - In `frontend/src/features/auth/auth.api.ts`, exported `getMeApi` and enriched `AuthUser` with `isActive` and instructor application types.
+  - In `frontend/src/features/auth/AuthContext.tsx`, enhanced `refreshUser` to return `Promise<User | null>`, querying `getMeApi()` with fallback to `getOnboardingStatusApi()`, saving fresh user data to state and `localStorage`.
+  - In `frontend/src/components/common/ProtectedRoute.tsx`, implemented robust on-demand role verification: when an authenticated user attempts to access a route guarded by `allowedRoles` that their local `user.role` does not satisfy, `ProtectedRoute` enters a non-bouncing verifying state with a loading spinner, fetches live role status via `refreshUser()`, and seamlessly mounts `<Outlet />` if the promoted role matches, redirecting only if the live verified role still lacks authorization.
+  - In `frontend/src/components/common/NotificationBell.tsx`, added proactive background sync on notification polling intervals if unread notifications indicate role transitions, and ensured `handleNotificationClick` awaits `refreshUser()` prior to routing to role-gated URLs.
 
 ---
 
-#### AUDIT-10: Expired and Exhausted Coupons Render Active Green Badges and Pause Controls
+#### [x] AUDIT-10: Expired and Exhausted Coupons Render Active Green Badges and Pause Controls
 - **Category**: Misleading Status Badges & Conflicting UI Indicators
 - **Priority**: `P1 — High`
+- **Status**: `Completed`
 - **Impacted Roles**: Instructor, Admin, Student
 - **Affected Files**:
-  - [`frontend/src/features/instructor/pages/Coupons.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/Coupons.tsx#L328-L343)
-  - [`frontend/src/features/admin/pages/AdminCoupons.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/AdminCoupons.tsx#L400-L417)
-  - [`backend/src/controllers/couponController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/couponController.ts#L84-L92)
+  - [`frontend/src/utils/couponUtils.ts`](file:///c:/Users/user/projects/skillkart/frontend/src/utils/couponUtils.ts)
+  - [`frontend/src/features/instructor/pages/Coupons.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/Coupons.tsx)
+  - [`frontend/src/features/admin/pages/AdminCoupons.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/AdminCoupons.tsx)
+  - [`backend/src/controllers/couponController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/couponController.ts)
 - **Description**:
   In both Instructor and Admin coupon dashboards, the status badge checks only `coupon.isActive ? 'Active' : 'Paused'`. If a coupon has passed its `expiresAt` timestamp or reached `timesRedeemed >= maxRedemptions`, it still renders a green "Active" pill and offers a "Pause" button. In metric cards, it counts towards "Currently Active". However, when a student attempts to use the coupon at checkout, validation fails with *"This coupon code has expired"* or *"reached its maximum redemption limit"*.
 - **Reproduction Steps**:
@@ -360,9 +381,12 @@ P3 (Low / Polish):
   2. View `/admin/coupons` or `/instructor/coupons`.
   3. The coupon is badged as green "Active" and "Featured".
   4. Student types the code into `/cart` and receives an error that the coupon is expired.
-- **Remediation**:
-  - Create a helper `getCouponStatus(coupon: CouponItem): 'active' | 'expired' | 'exhausted' | 'paused'`.
-  - Display distinct badges: Red *"Expired"*, Gray *"Exhausted"*, Amber *"Paused"*, Green *"Active"*. Disable pause toggles on expired/exhausted coupons.
+- **Remediation & Resolution Summary**:
+  - Created shared frontend utility `frontend/src/utils/couponUtils.ts` exporting `getCouponStatus` and `getCouponStatusBadgeConfig` to evaluate effective coupon lifecycle states (`'active' | 'expired' | 'exhausted' | 'paused'`).
+  - Updated `Coupons.tsx` (Instructor) and `AdminCoupons.tsx` (Admin) to render distinct badges: Red *"Expired"*, Gray *"Exhausted"*, Amber *"Paused"*, and Green *"Active"*.
+  - Fixed metric cards in both dashboards: "Currently Active" and "Featured on Cart" now count only genuinely active coupons instead of counting expired or exhausted coupons.
+  - Disabled "Pause / Activate" toggle buttons on expired and exhausted coupons with explanatory tooltips, and added table "Edit" action in instructor studio to allow extending expiration dates or increasing limits.
+  - Updated `backend/src/controllers/couponController.ts`: enriched coupon responses with computed `status` and `effectiveStatus`, guarded `updateCoupon` to reject activating or featuring expired/exhausted coupons without extending dates or limits, and fixed `getFeaturedCoupons` query `.select(...)` to include `maxRedemptions` and `timesRedeemed` so exhausted coupons are never exposed as featured offers on the cart.
 
 ---
 
@@ -591,13 +615,14 @@ P3 (Low / Polish):
 
 ---
 
-#### AUDIT-22: Dead-End Route Desync on Approved Instructor Notification Link
+#### [x] AUDIT-22: Dead-End Route Desync on Approved Instructor Notification Link
 - **Category**: Broken Navigation & Route Desynchronization
 - **Priority**: `P1 — High`
 - **Impacted Roles**: Instructor, Admin
+- **Status**: Completed
 - **Affected Files**:
-  - [`backend/src/controllers/admin/adminController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminController.ts#L280)
-  - [`frontend/src/App.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/App.tsx#L87-L98)
+  - [`backend/src/controllers/admin/adminController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminController.ts#L280-L295)
+  - [`frontend/src/App.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/App.tsx#L1,L87-L89)
 - **Description**:
   When a platform administrator approves an instructor application in `adminController.ts:bulkApproveInstructors`, an automated notification is created with `link: "/instructor/dashboard"`. However, in `frontend/src/App.tsx`, the instructor studio route is mounted at `/instructor` (with sub-routes `courses`, `analytics`, `earnings`, and `create-course`). There is NO route for `/instructor/dashboard` and no wildcard or redirect configured in `App.tsx`. When the approved user clicks the notification in their notification drawer, the router navigates to `/instructor/dashboard`, which fails to match any route, resulting in a completely blank screen with no user feedback.
 - **Reproduction Steps**:
@@ -606,9 +631,9 @@ P3 (Low / Polish):
   3. User receives a notification: *"Instructor Application Approved"*.
   4. User clicks the notification. The browser navigates to `/instructor/dashboard`.
   5. The screen is completely blank because the route does not exist.
-- **Remediation**:
-  - In `adminController.ts:280`, change `link` to `"/instructor"` or `"/instructor/courses"`.
-  - In `App.tsx`, add an explicit redirect or alias: `<Route path="/instructor/dashboard" element={<Navigate to="/instructor" replace />} />`.
+- **Remediation & Resolution Summary**:
+  - In `backend/src/controllers/admin/adminController.ts:bulkApproveInstructors`, corrected the approval notification payload link from `"/instructor/dashboard"` to `"/instructor"`.
+  - In `frontend/src/App.tsx`, added a fallback redirect route `<Route path="/instructor/dashboard" element={<Navigate to="/instructor" replace />} />` within the protected Instructor layout, guaranteeing existing notifications or direct bookmarks seamlessly redirect to `/instructor` without blank screen errors.
 
 ---
 
@@ -2013,15 +2038,17 @@ P3 (Low / Polish):
 
 ---
 
-#### AUDIT-71: Onboarding Role Selection Bypasses Instructor Moderation Workflow & Auto-Approval Policy
+#### [x] AUDIT-71: Onboarding Role Selection Bypasses Instructor Moderation Workflow & Auto-Approval Policy
 - **Category**: Security / Moderation Bypass & Role State Desynchronization
 - **Priority**: `P0 — Critical / Blocker`
 - **Impacted Roles**: Student, Instructor, Admin
 - **Affected Files**:
-  - [`backend/src/controllers/auth/onboardingController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/auth/onboardingController.ts#L37-L56)
-  - [`frontend/src/pages/OnboardingPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/OnboardingPage.tsx#L26-L48,L145-L172)
-  - [`backend/src/models/User.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/User.ts#L67-L73)
-  - [`backend/src/models/SystemSettings.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/SystemSettings.ts#L22-L24)
+  - [`backend/src/controllers/auth/onboardingController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/auth/onboardingController.ts)
+  - [`frontend/src/pages/OnboardingPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/OnboardingPage.tsx)
+  - [`frontend/src/features/auth/auth.api.ts`](file:///c:/Users/user/projects/skillkart/frontend/src/features/auth/auth.api.ts)
+  - [`frontend/src/features/auth/auth.service.ts`](file:///c:/Users/user/projects/skillkart/frontend/src/features/auth/auth.service.ts)
+  - [`backend/src/models/User.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/User.ts)
+  - [`backend/src/models/SystemSettings.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/SystemSettings.ts)
 - **Description**:
   SkillKart enforces a platform moderation standard where teaching privileges require vetting. In System Settings, `requireInstructorApproval: true` defaults to requiring prospective instructors to submit an application dossier (`primaryTopic`, `experienceDetails`, `sampleVideoOrPortfolioUrl`) that must be evaluated and approved by an administrator at `/admin/instructor-reviews`.
   However, the user onboarding flow completely circumvents this approval gate:
@@ -2054,6 +2081,11 @@ P3 (Low / Polish):
     - If `requireInstructorApproval === true` and `role === "instructor"`: do **not** set `user.role = "instructor"`. Keep `user.role = "student"`, set `user.instructorStatus = "pending"`, and return an instructional flag informing the client that teaching privileges require admin approval.
     - Alternatively, restrict `onboardingController.ts` from mutating `role` entirely; all new users join as `student`, and prospective instructors must apply via the dedicated vetting modal (`applyForInstructor`).
   - In `OnboardingPage.tsx`, if the user selects "Instructor", display an informative callout (*"Teaching on SkillKart requires an approved instructor profile. You'll complete a brief teaching application after onboarding."*), and redirect them to `/profile?apply=instructor` upon completion.
+- **Resolution**:
+  - `backend/src/controllers/auth/onboardingController.ts`: Checks `SystemSettings.requireInstructorApproval`. If `requireInstructorApproval` is true, newly onboarded users who chose instructor role remain `role = "student"`, `isInstructorApproved = false`, and `instructorStatus = "pending"`. Initializes an `instructorApplication` dossier with provided profile headline, bio, and social links so the admin review queue contains actionable data. If auto-approval is enabled (`requireInstructorApproval === false`), grants `role = "instructor"`, `isInstructorApproved = true`, and `instructorStatus = "approved"`. Returns `requiresApproval` flag and synchronized user model.
+  - `frontend/src/features/auth/auth.api.ts` & `frontend/src/features/auth/auth.service.ts`: Updated `AuthUser` and `CompleteOnboardingResponse` to type `instructorStatus`, `isInstructorApproved`, `instructorApplication`, and response flags.
+  - `frontend/src/pages/OnboardingPage.tsx`: Added informative callout box on Step 0 when Instructor card is selected (*"Teaching on SkillKart requires an approved instructor profile. You'll complete a brief teaching application after onboarding."*). In `handleSubmit`, synchronizes `instructorStatus` and `isInstructorApproved` in AuthContext and routes pending instructors to `/profile?apply=instructor` with informative toast.
+- **Status**: Completed (`[x]`)
 
 ---
 
@@ -2620,15 +2652,16 @@ P3 (Low / Polish):
 
 ---
 
-#### AUDIT-89: Empty Lesson Course Publication Allows White Screen of Death Crash in Student Viewer
+#### [x] AUDIT-89: Empty Lesson Course Publication Allows White Screen of Death Crash in Student Viewer
 - **Category**: Unhandled Lifecycle Transition & Fatal Client Crash
 - **Priority**: `P0 — Critical`
 - **Impacted Roles**: Student, Instructor, Admin
-- **Status**: Pending
+- **Status**: Completed
 - **Affected Files**:
-  - [`backend/src/controllers/course/courseController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/courseController.ts#L518-L522)
-  - [`frontend/src/features/instructor/pages/EditCourse.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/EditCourse.tsx#L231-L235)
-  - [`frontend/src/features/student/pages/LessonViewer.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/student/pages/LessonViewer.tsx#L190-L200, L439, L470)
+  - [`backend/src/controllers/course/courseController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/courseController.ts#L453-L466, L520-L533)
+  - [`frontend/src/features/instructor/pages/EditCourse.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/EditCourse.tsx#L231-L240, L254-L263)
+  - [`frontend/src/features/instructor/pages/CreateCourse.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/CreateCourse.tsx#L384-L393, L407-L411)
+  - [`frontend/src/features/student/pages/LessonViewer.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/student/pages/LessonViewer.tsx#L317-L368, L371-L388, L466-L470, L490)
 - **Description**:
   In `courseController.ts:publishCourse`, lines 518–521 check only `await Section.exists({ course: course._id })`. Neither the backend nor `EditCourse.tsx` checks whether the sections actually contain any lessons. An instructor can publish a course containing empty sections.
   When an enrolled student navigates to `/learn/:courseId`, the course loads with `lessons = []`. In `LessonViewer.tsx:439` and `470`, the component attempts to render `activeLesson.title` without null checking (`activeLesson` is `undefined`), throwing an uncaught `TypeError: Cannot read properties of undefined (reading 'title')` and crashing the entire React application with a blank white screen.
@@ -2638,8 +2671,13 @@ P3 (Low / Polish):
   3. As student, enroll in the course and open `/learn/:courseId`.
   4. The page instantly white-screens due to uncaught TypeError on `activeLesson.title`.
 - **Remediation**:
-  - In `courseController.ts:publishCourse`, query `Lesson.exists({ section: { $in: sectionIds } })` and reject with 400 if a course has 0 lessons.
-  - In `LessonViewer.tsx`, add an empty-state guard when `lessons.length === 0`, displaying an informative "This course does not have any published lessons yet" card instead of crashing.
+  - In `courseController.ts:publishCourse` and `updateCourse`, fetch section IDs and query `Lesson.exists({ section: { $in: sectionIds } })`, rejecting with 400 (`Cannot publish a course without lessons`) if a course has no lessons.
+  - In `EditCourse.tsx` (`handlePublishOrSubmit` & `handleResubmitForModeration`) and `CreateCourse.tsx` (`handlePublish` & disabled button state), validate that `totalLessons > 0` before submitting.
+  - In `LessonViewer.tsx`, add an empty-state card when `lessons.length === 0` informing students that the course does not have published lessons yet with a return button to the course overview, add safe empty-section indicators in the curriculum sidebar, and guard `activeLesson` access in tabs to prevent white-screen crashes.
+- **Resolution Summary**:
+  - **Backend**: Added validation in both `publishCourse` and `updateCourse` to ensure that at least one lesson exists in the course's sections before permitting publishing/moderation submission (`Lesson.exists({ section: { $in: sectionIds } })`), responding with 400 Bad Request if no lessons exist.
+  - **Frontend Instructor**: Enforced pre-flight check for `totalLessons === 0` in `EditCourse.tsx` (`handlePublishOrSubmit`, `handleResubmitForModeration`) and `CreateCourse.tsx` (`handlePublish` and disabled publish button).
+  - **Frontend Student**: Added empty-state card in `LessonViewer.tsx` when `lessons.length === 0` with a link back to course overview, added sidebar empty-section indicators, and guarded `activeLesson?.title` and `activeLesson &&` across tabs to prevent runtime `TypeError` crashes.
 
 ---
 
@@ -2835,7 +2873,7 @@ P3 (Low / Polish):
 | 67 | AUDIT-68 | Track `isLate` on `AssignmentSubmission`, validate `dueDate` in `submitAssignment`, & add "Late" badge in Gradebook | Submit assignment past due date; verify `isLate: true` in database and amber "Late" pill renders in Gradebook. |
 | 68 | AUDIT-69 | Branch notification title and type for `resubmission_requested` in `assignmentController.ts:gradeSubmission` | Request resubmission on assignment; verify student receives warning notification ("Assignment Revision Requested") instead of green 0/100 success alert. |
 | 69 | AUDIT-70 | Enforce `pointsEarned <= criterion.maxPoints` in `gradeSubmission` and bind `max` attribute in `Assignments.tsx` | Enter 99 points on a 20-point rubric item; verify UI prevents entry or backend returns 400 validation error. |
-| 70 | AUDIT-71 | Enforce `requireInstructorApproval` in `onboardingController.ts` and prevent direct self-promotion to instructor | Register new user, choose Instructor in onboarding; verify role remains student with pending status, preserving admin vetting gate. |
+| 70 | [x] AUDIT-71 | Enforce `requireInstructorApproval` in `onboardingController.ts` and prevent direct self-promotion to instructor | Register new user, choose Instructor in onboarding; verify role remains student with pending status, preserving admin vetting gate. |
 | 71 | AUDIT-72 | Align payload key `instructorFeedback` in `Assignments.tsx` and render feedback panel for `resubmission_requested` in `CourseAssignmentsTab.tsx` | Enter feedback in gradebook; verify feedback persists in database and is visible to students in both graded and resubmission-requested states. |
 | 72 | AUDIT-73 | Check `user.instructorStatus !== 'pending'` before auto-opening application modal in `Profile.tsx` | Apply as instructor, navigate to `/profile?apply=instructor`; verify modal does not pop open and review status card is displayed. |
 | 73 | AUDIT-74 | Update student enrollment notification target to `/instructor/students?courseId=...` in `enrollmentController.ts` & parse param in `StudentsEnrolled.tsx` | Student enrolls in course, click notification as instructor; verify navigation lands directly on filtered student roster without 404 error. |

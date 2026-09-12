@@ -42,8 +42,23 @@ export default function NotificationBell() {
         if (!user) return;
         try {
             const { data } = await api.get('/notifications');
-            setNotifications(data.notifications || []);
+            const notifs = data.notifications || [];
+            setNotifications(notifs);
             setUnreadCount(data.unreadCount || 0);
+
+            // AUDIT-09: Proactively synchronize user auth state if unread notifications indicate role changes
+            const hasRoleUpdate = notifs.some(
+                (n: AppNotification) =>
+                    !n.read &&
+                    (n.title.toLowerCase().includes('instructor') ||
+                     n.title.toLowerCase().includes('role') ||
+                     n.title.toLowerCase().includes('approved') ||
+                     n.link?.startsWith('/instructor') ||
+                     n.link?.startsWith('/admin'))
+            );
+            if (hasRoleUpdate) {
+                refreshUser();
+            }
         } catch (error) {
             console.error('Failed to fetch notifications', error);
         }
@@ -119,8 +134,15 @@ export default function NotificationBell() {
         }
         setIsOpen(false);
         if (notification.link) {
-            // AUDIT-09: Refresh user auth state when navigating to instructor pages in case role/status just changed
-            if (notification.link.startsWith('/instructor') || notification.title.toLowerCase().includes('instructor')) {
+            // AUDIT-09: Refresh user auth state when navigating to role-gated pages in case role/status just changed
+            const isRoleChange =
+                notification.link.startsWith('/instructor') ||
+                notification.link.startsWith('/admin') ||
+                notification.title.toLowerCase().includes('instructor') ||
+                notification.title.toLowerCase().includes('role') ||
+                notification.title.toLowerCase().includes('approved') ||
+                notification.title.toLowerCase().includes('application');
+            if (isRoleChange) {
                 await refreshUser();
             }
             navigate(notification.link);

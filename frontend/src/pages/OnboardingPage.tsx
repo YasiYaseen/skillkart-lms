@@ -81,17 +81,33 @@ export default function OnboardingPage() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const { user: updatedUser } = await completeOnboarding(form);
+      const { user: updatedUser, message } = await completeOnboarding(form);
       updateUser({
         role: updatedUser.role,
         onboardingCompleted: true,
+        instructorStatus: updatedUser.instructorStatus,
+        isInstructorApproved: updatedUser.isInstructorApproved,
+        instructorApplication: updatedUser.instructorApplication,
         headline: updatedUser.headline,
         bio: updatedUser.bio,
         interests: updatedUser.interests,
         socialLinks: updatedUser.socialLinks,
       });
-      toast.success('Welcome to SkillKart!');
-      navigate(redirectTarget, { replace: true });
+
+      if (form.role === 'instructor') {
+        if (updatedUser.role === 'instructor') {
+          toast.success(message || 'Welcome to SkillKart! Instructor studio unlocked.');
+          navigate(redirectTarget !== '/' ? redirectTarget : '/instructor', { replace: true });
+        } else {
+          toast.info(
+            message || 'Teaching on SkillKart requires admin review. Your application is under review.'
+          );
+          navigate('/profile?apply=instructor', { replace: true });
+        }
+      } else {
+        toast.success(message || 'Welcome to SkillKart!');
+        navigate(redirectTarget, { replace: true });
+      }
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to save onboarding'));
     } finally {
@@ -168,6 +184,15 @@ export default function OnboardingPage() {
                 </button>
               ))}
             </div>
+
+            {form.role === 'instructor' && (
+              <div className="mt-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex items-start gap-3">
+                <span className="text-blue-600 dark:text-blue-400 text-base leading-none shrink-0 mt-0.5">ℹ️</span>
+                <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                  <strong>Note:</strong> Teaching on SkillKart requires an approved instructor profile. You&apos;ll complete a brief teaching application after onboarding.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

@@ -314,60 +314,87 @@ function LessonViewer() {
                 </div>
                 
                 <div className="flex flex-col">
-                    {sections.map((sec, sIdx) => {
-                        const secLessons = lessons.filter(l => l.section === sec._id);
-                        return (
-                            <div key={sec._id} className="border-b border-slate-100 dark:border-slate-800">
-                                <div className="bg-slate-50 dark:bg-slate-850 px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                                    Section {sIdx + 1}: {sec.title.replace(/^Section\s*\d+\s*:\s*/i, '')}
-                                </div>
-                                <div className="flex flex-col">
-                                    {secLessons.map((les, lIdx) => {
-                                        const isActive = les._id === lessonId;
-                                        const isCompleted = completedLessonIds.includes(les._id);
-                                        const isLessonBookmarked = bookmarkedLessonIds.includes(les._id);
+                    {lessons.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-slate-400 dark:text-slate-500">
+                            No lessons published yet
+                        </div>
+                    ) : (
+                        sections.map((sec, sIdx) => {
+                            const secLessons = lessons.filter(l => l.section === sec._id);
+                            return (
+                                <div key={sec._id} className="border-b border-slate-100 dark:border-slate-800">
+                                    <div className="bg-slate-50 dark:bg-slate-850 px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                                        Section {sIdx + 1}: {sec.title.replace(/^Section\s*\d+\s*:\s*/i, '')}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        {secLessons.length === 0 ? (
+                                            <p className="px-4 py-2.5 text-[11px] text-slate-400 dark:text-slate-500 italic">No lessons in this section</p>
+                                        ) : (
+                                            secLessons.map((les, lIdx) => {
+                                                const isActive = les._id === lessonId;
+                                                const isCompleted = completedLessonIds.includes(les._id);
+                                                const isLessonBookmarked = bookmarkedLessonIds.includes(les._id);
 
-                                        return (
-                                            <Link 
-                                                key={les._id} 
-                                                to={`/learn/${courseId}/${les._id}`}
-                                                onClick={() => setShowMobileSidebar(false)}
-                                                className={`px-4 py-2.5 text-xs transition-colors border-l-2 ${
-                                                    isActive 
-                                                        ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-600 text-blue-700 dark:text-blue-300 font-semibold' 
-                                                        : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
-                                                }`}
-                                            >
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="text-slate-400 font-mono text-[11px] mt-0.5">{lIdx + 1}.</span>
-                                                        <span className="line-clamp-2">{les.title}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                        {les.durationMinutes && (
-                                                            <span className="text-[10px] text-slate-400">{les.durationMinutes}m</span>
-                                                        )}
-                                                        {isLessonBookmarked && (
-                                                            <BookmarkIcon className="w-3.5 h-3.5 text-amber-500" />
-                                                        )}
-                                                        {isCompleted && (
-                                                            <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        );
-                                    })}
+                                                return (
+                                                    <Link 
+                                                        key={les._id} 
+                                                        to={`/learn/${courseId}/${les._id}`}
+                                                        onClick={() => setShowMobileSidebar(false)}
+                                                        className={`px-4 py-2.5 text-xs transition-colors border-l-2 ${
+                                                            isActive 
+                                                                ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-600 text-blue-700 dark:text-blue-300 font-semibold' 
+                                                                : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="flex items-start gap-2">
+                                                                <span className="text-slate-400 font-mono text-[11px] mt-0.5">{lIdx + 1}.</span>
+                                                                <span className="line-clamp-2">{les.title}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                {les.durationMinutes && (
+                                                                    <span className="text-[10px] text-slate-400">{les.durationMinutes}m</span>
+                                                                )}
+                                                                {isLessonBookmarked && (
+                                                                    <BookmarkIcon className="w-3.5 h-3.5 text-amber-500" />
+                                                                )}
+                                                                {isCompleted && (
+                                                                    <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            })
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })
+                    )}
                 </div>
             </div>
 
             {/* Main Content Area */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
-                {!activeLesson ? (
+                {lessons.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto py-16">
+                        <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-4 shadow-xs">
+                            <AcademicCapIcon className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No Lessons Available</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+                            This course does not have any published lessons yet. The instructor is actively preparing the curriculum content.
+                        </p>
+                        <Link
+                            to={`/courses/${courseId}`}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs"
+                        >
+                            <ArrowLeftIcon className="w-4 h-4" />
+                            <span>Return to Course Overview</span>
+                        </Link>
+                    </div>
+                ) : !activeLesson ? (
                     <div className="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto">
                         <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 text-slate-400">
                             <AcademicCapIcon className="w-6 h-6" />
@@ -436,7 +463,7 @@ function LessonViewer() {
                             <LessonNotes
                                 courseId={courseId!}
                                 lessonId={lessonId!}
-                                lessonTitle={activeLesson.title}
+                                lessonTitle={activeLesson?.title || ''}
                                 onNavigateLesson={(targetId) => navigate(`/learn/${courseId}/${targetId}`)}
                             />
                         )}
@@ -460,7 +487,7 @@ function LessonViewer() {
                         )}
 
                         {/* Lesson Content tab */}
-                        {activeTab === 'lesson' && (
+                        {activeTab === 'lesson' && activeLesson && (
                         <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-xl overflow-hidden transition-colors">
                             <div className="p-6 md:p-8 bg-slate-900 text-white flex flex-wrap justify-between items-center gap-4">
                                 <div>

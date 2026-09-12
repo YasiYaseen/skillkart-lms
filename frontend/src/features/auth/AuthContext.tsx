@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { getOnboardingStatusApi } from './auth.api';
+import { getMeApi, getOnboardingStatusApi } from './auth.api';
 
 export interface InstructorApplication {
   teachingExperience: 'none' | 'in_person' | 'online' | 'professional';
@@ -11,7 +11,7 @@ export interface InstructorApplication {
   rejectionReason?: string;
 }
 
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
@@ -22,6 +22,7 @@ interface User {
   instructorRejectionReason?: string;
   instructorApplication?: InstructorApplication;
   avatar?: string;
+  isActive?: boolean;
   hasPassword?: boolean;
   googleId?: string;
   headline?: string;
@@ -41,7 +42,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -117,16 +118,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const refreshUser = async () => {
+  const refreshUser = async (): Promise<User | null> => {
     try {
-      const res = await getOnboardingStatusApi();
+      const res = await getMeApi().catch(() => getOnboardingStatusApi());
       const serverUser = res.data?.user as User | undefined;
       if (serverUser) {
         setUser(serverUser);
         localStorage.setItem('user', JSON.stringify(serverUser));
+        return serverUser;
       }
+      return null;
     } catch {
-      // safe fail
+      return null;
     }
   };
 

@@ -381,6 +381,15 @@ export const CreateCourse = () => {
 
     const handlePublish = async () => {
         if (!courseId) return;
+        if (sections.length === 0) {
+            toast.error('Cannot publish a course without sections. Please add at least one section first.');
+            return;
+        }
+        const totalLessons = sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0);
+        if (totalLessons === 0) {
+            toast.error('Cannot publish a course without lessons. Please add at least one lesson first.');
+            return;
+        }
         try {
             const res = await api.patch<{ message?: string }>(`/courses/${courseId}/publish`);
             toast.success(res.data?.message || 'Course submitted successfully!');
@@ -405,8 +414,8 @@ export const CreateCourse = () => {
                         </button>
                         <button
                             onClick={handlePublish}
-                            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 shadow-xs"
-                            disabled={sections.length === 0}
+                            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 shadow-xs cursor-pointer"
+                            disabled={sections.length === 0 || sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0) === 0}
                         >
                             Publish Course
                         </button>

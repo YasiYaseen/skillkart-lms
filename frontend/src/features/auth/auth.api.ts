@@ -24,13 +24,28 @@ export interface OnboardingPayload {
   };
 }
 
+export interface InstructorApplication {
+  teachingExperience: 'none' | 'in_person' | 'online' | 'professional';
+  primaryTopic: string;
+  experienceDetails: string;
+  sampleVideoOrPortfolioUrl?: string;
+  linkedinUrl?: string;
+  appliedAt?: string;
+  rejectionReason?: string;
+}
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   role: 'student' | 'instructor' | 'admin';
   onboardingCompleted: boolean;
+  isInstructorApproved?: boolean;
+  instructorStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+  instructorRejectionReason?: string;
+  instructorApplication?: InstructorApplication;
   avatar?: string;
+  isActive?: boolean;
   headline?: string;
   bio?: string;
   interests?: string[];
@@ -46,6 +61,12 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+export interface CompleteOnboardingResponse {
+  message: string;
+  requiresApproval?: boolean;
+  user: AuthUser;
+}
+
 export const googleLogin = async (accessToken: string) =>
   api.post<AuthResponse>('/auth/google', { access_token: accessToken });
 
@@ -56,10 +77,13 @@ export const registerApi = async (data: RegisterPayload) =>
   api.post<AuthResponse>('/auth/register', data);
 
 export const completeOnboardingApi = async (data: OnboardingPayload) =>
-  api.post<{ user: AuthUser }>('/auth/onboarding/complete', data);
+  api.post<CompleteOnboardingResponse>('/auth/onboarding/complete', data);
 
 export const getOnboardingStatusApi = async () =>
-  api.get<{ user: AuthUser; onboardingCompleted: boolean }>('/auth/onboarding/status');
+  api.get<{ user: AuthUser; onboardingCompleted: boolean; role?: string }>('/auth/onboarding/status');
+
+export const getMeApi = async () =>
+  api.get<{ user: AuthUser; onboardingCompleted: boolean; role?: string }>('/auth/me');
 
 export const forgotPasswordApi = async (email: string) =>
   api.post<{ message: string; resetToken?: string }>('/auth/forgot-password', { email });

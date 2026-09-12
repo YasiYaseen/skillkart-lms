@@ -14,6 +14,32 @@ function getParam(param: string | string[] | undefined): string {
   return Array.isArray(param) ? param[0] : param;
 }
 
+/**
+ * Computes authoritative effective lifecycle status of a coupon.
+ */
+export function getCouponEffectiveStatus(coupon: {
+  isActive: boolean;
+  expiresAt?: Date | string | null;
+  timesRedeemed?: number;
+  maxRedemptions?: number | null;
+}): "active" | "expired" | "exhausted" | "paused" {
+  if (coupon.expiresAt && new Date(coupon.expiresAt).getTime() <= Date.now()) {
+    return "expired";
+  }
+  if (
+    coupon.maxRedemptions !== undefined &&
+    coupon.maxRedemptions !== null &&
+    coupon.maxRedemptions > 0 &&
+    (coupon.timesRedeemed ?? 0) >= coupon.maxRedemptions
+  ) {
+    return "exhausted";
+  }
+  if (!coupon.isActive) {
+    return "paused";
+  }
+  return "active";
+}
+
 // ---------------------------------------------------------------------------
 // GET /api/coupons/featured
 // Public endpoint for CartPage to dynamically show active public platform coupons
@@ -27,15 +53,14 @@ export async function getFeaturedCoupons(_req: Request, res: Response) {
       creatorRole: "admin",
       $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }, { expiresAt: { $gt: now } }],
     })
-      .select("code title discountType discountValue minPurchaseAmount maxDiscountAmount description")
+      .select("code title discountType discountValue minPurchaseAmount maxDiscountAmount description maxRedemptions timesRedeemed")
       .sort({ discountValue: -1 })
-      .limit(6)
       .lean();
 
     // Filter out redemptions exceeded
     const available = coupons.filter(
-      (c) => !c.maxRedemptions || c.timesRedeemed < c.maxRedemptions
-    );
+      (c) => !c.maxRedemptions || (c.timesRedeemed ?? 0) < c.maxRedemptions
+    ).slice(0, 6);
 
     return res.json({
       coupons: available.map((c) => ({
@@ -253,7 +278,13 @@ export async function getInstructorCoupons(req: Request, res: Response) {
       .sort({ createdAt: -1 })
       .lean();
 
-    return res.json({ coupons });
+    const enriched = coupons.map((c) => ({
+      ...c,
+      status: getCouponEffectiveStatus(c),
+      effectiveStatus: getCouponEffectiveStatus(c),
+    }));
+
+    return res.json({ coupons: enriched });
   } catch (error) {
     return res.status(500).json({ message: "Server error fetching coupons" });
   }
@@ -278,8 +309,14 @@ export async function getAdminCoupons(req: Request, res: Response) {
       .sort({ createdAt: -1 })
       .lean();
 
+    const enriched = coupons.map((c) => ({
+      ...c,
+      status: getCouponEffectiveStatus(c),
+      effectiveStatus: getCouponEffectiveStatus(c),
+    }));
+
     return res.json({
-      coupons,
+      coupons: enriched,
       platformCommissionRate,
     });
   } catch (error) {
@@ -414,6 +451,49 @@ export async function updateCoupon(req: Request, res: Response) {
       }
     }
 
+    // Check projected expiry and redemption caps
+    const nextExpiresAt = parsed.data.expiresAt !== undefined
+      ? (parsed.data.expiresAt ? new Date(parsed.data.expiresAt) : undefined)
+      : coupon.expiresAt;
+    const nextMaxRedemptions = parsed.data.maxRedemptions !== undefined
+      ? (parsed.data.maxRedemptions || undefined)
+      : coupon.maxRedemptions;
+
+    const isProjectedExpired = !!(nextExpiresAt && new Date(nextExpiresAt).getTime() <= Date.now());
+    const isProjectedExhausted = !!(
+      nextMaxRedemptions &&
+      nextMaxRedemptions > 0 &&
+      (coupon.timesRedeemed ?? 0) >= nextMaxRedemptions
+    );
+
+    // Guard: Prevent activating an expired or exhausted coupon
+    if (parsed.data.isActive === true) {
+      if (isProjectedExpired) {
+        return res.status(400).json({
+          message: "Cannot activate an expired coupon. Please extend the expiration date first.",
+        });
+      }
+      if (isProjectedExhausted) {
+        return res.status(400).json({
+          message: "Cannot activate an exhausted coupon. Please increase the maximum redemptions limit first.",
+        });
+      }
+    }
+
+    // Guard: Prevent setting public (featured on cart) for an expired or exhausted coupon
+    if (isAdmin && parsed.data.isPublic === true) {
+      if (isProjectedExpired) {
+        return res.status(400).json({
+          message: "Cannot feature an expired coupon on the checkout cart. Please extend the expiration date first.",
+        });
+      }
+      if (isProjectedExhausted) {
+        return res.status(400).json({
+          message: "Cannot feature an exhausted coupon on the checkout cart. Please increase the maximum redemptions limit first.",
+        });
+      }
+    }
+
     if (parsed.data.code) coupon.code = parsed.data.code.toUpperCase();
     if (parsed.data.title !== undefined) coupon.title = parsed.data.title || undefined;
     if (parsed.data.discountType) coupon.discountType = parsed.data.discountType;
@@ -439,7 +519,15 @@ export async function updateCoupon(req: Request, res: Response) {
     if (parsed.data.isActive !== undefined) coupon.isActive = parsed.data.isActive;
 
     await coupon.save();
-    return res.json({ message: "Coupon updated successfully", coupon });
+    const savedObj = coupon.toObject();
+    return res.json({
+      message: "Coupon updated successfully",
+      coupon: {
+        ...savedObj,
+        status: getCouponEffectiveStatus(coupon),
+        effectiveStatus: getCouponEffectiveStatus(coupon),
+      },
+    });
   } catch (error) {
     return res.status(500).json({ message: "Server error updating coupon" });
   }
