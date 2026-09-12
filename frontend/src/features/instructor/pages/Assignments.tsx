@@ -13,6 +13,7 @@ import {
   type RubricCriterion,
 } from '../api/assignments';
 import FileUpload from '@/components/common/FileUpload';
+import { resolveMediaUrl } from '@/utils/mediaUtils';
 import { getErrorMessage } from '@/utils/errorUtils';
 import {
   ClipboardDocumentListIcon,
@@ -726,6 +727,7 @@ export function Assignments() {
                   Starter Files / Templates (Optional)
                 </label>
                 <FileUpload
+                  folder="assignments"
                   accept=".zip,.pdf,.docx,.txt"
                   label=""
                   onUploadSuccess={(url) => {
@@ -814,7 +816,7 @@ export function Assignments() {
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Deliverable:</span>
                 {selectedSubmission.fileUrl && (
                   <a
-                    href={selectedSubmission.fileUrl}
+                    href={resolveMediaUrl(selectedSubmission.fileUrl)}
                     target="_blank"
                     rel="noreferrer"
                     className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-500 transition-colors flex items-center gap-1 text-xs cursor-pointer shadow-2xs"

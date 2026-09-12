@@ -113,7 +113,7 @@ export async function login(req: Request, res: Response) {
     }
 
     if (user.isActive === false) {
-      return res.status(403).json({ message: "Account is disabled. Please contact support." });
+      return res.status(403).json({ message: "Your account has been deactivated. Please contact support." });
     }
 
     const isMatch = await compare(password, user.password || "");

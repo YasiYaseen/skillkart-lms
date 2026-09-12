@@ -134,7 +134,7 @@ All skill files for this project live in `.agents/skills/`. Before implementing 
 | `skillkart-certificates` | Certificate auto-issuance, unique ID, verification routes, PDF export |
 | `skillkart-notifications` | Notification model, trigger patterns, supported types |
 | `skillkart-wishlist` | Wishlist CRUD, enriched course response |
-| `skillkart-file-upload` | Multer config, allowed types, size limits, serving files |
+| `skillkart-file-upload` | Cloudflare R2 cloud storage, local dev fallback, storageService, Multer config |
 | `skillkart-notes-bookmarks` | Personal study notes, lesson bookmarks, scoped queries, study hub |
 | `skillkart-email-notifications` | Outbound transactional emails (welcome, enrollment, certificates) |
 | `skillkart-announcements` | Course announcements, instructor broadcasting, mass notifications |

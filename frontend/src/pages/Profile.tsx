@@ -7,6 +7,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import { FileUpload } from '@/components/common';
+import { resolveMediaUrl } from '@/utils/mediaUtils';
 import { getErrorMessage } from '@/utils/errorUtils';
 import { FireIcon, UserIcon, LockClosedIcon, AcademicCapIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/20/solid';
 
@@ -371,13 +372,14 @@ function Profile() {
                                     </label>
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                                         <img
-                                            src={avatar || defaultAvatarUrl}
+                                            src={resolveMediaUrl(avatar, defaultAvatarUrl)}
                                             alt="Current Avatar"
                                             className="w-16 h-16 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
                                         />
                                         <div className="flex-1 w-full">
                                             <FileUpload
                                                 label=""
+                                                folder="avatars"
                                                 accept="image/jpeg, image/png, image/webp"
                                                 maxSizeMB={3}
                                                 onUploadSuccess={(url) => setAvatar(url)}

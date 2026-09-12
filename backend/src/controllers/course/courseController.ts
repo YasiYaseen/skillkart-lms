@@ -30,6 +30,7 @@ import {
   isCoursePubliclyAccessible,
 } from "./shared";
 import { createCourseSchema, updateCourseSchema } from "../../validators/course.validator";
+import { deleteFile } from "../../services/storageService";
 
 
 async function getCourseRatingSummary(courseId: string) {
@@ -734,6 +735,9 @@ export async function deleteCourse(req: Request, res: Response) {
       Enrollment.deleteMany({ course: course._id }),
       Review.deleteMany({ course: course._id }),
     ]);
+    if (course.thumbnailUrl) {
+      await deleteFile(course.thumbnailUrl).catch(() => {});
+    }
     await Course.deleteOne({ _id: course._id });
 
     return res.json({ message: "Course deleted" });

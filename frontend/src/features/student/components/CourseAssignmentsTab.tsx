@@ -5,6 +5,7 @@ import {
   type AssignmentItem,
 } from '../api/assignments';
 import FileUpload from '@/components/common/FileUpload';
+import { resolveMediaUrl } from '@/utils/mediaUtils';
 import { FolderIcon, LinkIcon, DocumentTextIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
 
 interface CourseAssignmentsTabProps {
@@ -360,6 +361,7 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
                     Upload Project Archive / Document (ZIP, PDF, DOCX, Code)
                   </label>
                   <FileUpload
+                    folder="submissions"
                     accept=".zip,.pdf,.docx,.doc,.tar,.gz,.txt,.png,.jpg,.jpeg"
                     label=""
                     maxSizeMB={25}
@@ -372,7 +374,7 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
                     <div className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-1 bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800">
                       <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
                       <span>Ready:</span>
-                      <a href={fileUrl} target="_blank" rel="noreferrer" className="underline truncate max-w-xs font-mono">
+                      <a href={resolveMediaUrl(fileUrl)} target="_blank" rel="noreferrer" className="underline truncate max-w-xs font-mono">
                         {fileName || fileUrl}
                       </a>
                     </div>

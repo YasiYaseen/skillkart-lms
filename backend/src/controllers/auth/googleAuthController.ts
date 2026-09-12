@@ -22,7 +22,7 @@ export async function googleLogin(req: Request, res: Response) {
     const { email, name, picture, sub } = googleRes.data;
 
     let isNewUser = false;
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ $or: [{ googleId: sub }, { email }] });
     if (!user) {
       const settings = await SystemSettings.findOne({ isSingleton: true });
       if (settings && settings.allowUserRegistration === false) {
@@ -43,6 +43,26 @@ export async function googleLogin(req: Request, res: Response) {
         onboardingCompleted: false,
       });
       isNewUser = true;
+    } else {
+      // AUDIT-105: Guard against suspended/deactivated accounts obtaining an active session
+      if (user.isActive === false) {
+        return res.status(403).json({
+          message: "Your account has been deactivated. Please contact support.",
+        });
+      }
+
+      let needsSave = false;
+      if (!user.googleId && sub) {
+        user.googleId = sub;
+        needsSave = true;
+      }
+      if (!user.avatar && picture) {
+        user.avatar = picture;
+        needsSave = true;
+      }
+      if (needsSave) {
+        await user.save();
+      }
     }
 
     if (isNewUser) {
@@ -70,7 +90,11 @@ export async function googleLogin(req: Request, res: Response) {
         onboardingCompleted: user.onboardingCompleted,
       },
     });
-  } catch {
-    return res.status(401).json({ message: "Google authentication failed" });
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      return res.status(401).json({ message: "Google authentication failed" });
+    }
+    console.error("[GOOGLE_AUTH] Error during Google login:", error);
+    return res.status(500).json({ message: "Server error during Google authentication" });
   }
 }

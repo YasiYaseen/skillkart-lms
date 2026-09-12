@@ -655,6 +655,7 @@ export const CreateCourse = () => {
                             <div className="flex-1 min-w-[200px]">
                                 <FileUpload
                                     label="Course Thumbnail"
+                                    folder="thumbnails"
                                     accept="image/jpeg, image/png, image/webp"
                                     maxSizeMB={10}
                                     onUploadSuccess={(url) => setThumbnail(url)}

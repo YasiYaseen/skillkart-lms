@@ -1201,6 +1201,7 @@ function EditCourse() {
                             </div>
                         )}
                         <FileUpload
+                            folder="thumbnails"
                             accept="image/*"
                             maxSizeMB={10}
                             onUploadSuccess={(url) => setThumbnailUrl(url)}
@@ -1690,6 +1691,7 @@ function EditCourse() {
                                                                 />
                                                                 <p className="text-[11px] text-gray-500 dark:text-gray-400">Or upload video file directly:</p>
                                                                 <FileUpload
+                                                                    folder="lessons"
                                                                     accept="video/*"
                                                                     maxSizeMB={100}
                                                                     onUploadSuccess={(url) => setNewItemContent(url)}
@@ -1707,6 +1709,7 @@ function EditCourse() {
                                                                     className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                                                                 />
                                                                 <FileUpload
+                                                                    folder="lessons"
                                                                     accept=".pdf,.doc,.docx,application/pdf"
                                                                     maxSizeMB={50}
                                                                     onUploadSuccess={(url) => setNewItemContent(url)}

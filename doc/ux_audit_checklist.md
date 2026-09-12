@@ -30,7 +30,7 @@ P0 (Critical / Blocker):
   [x] AUDIT-89: Empty Lesson Course Publication Allows White Screen of Death Crash in Student Viewer
   [x] AUDIT-98: Revoked Certificate Verification Security Bypass and Permanent Re-issuance Lockout
   [x] AUDIT-103: Asynchronous Gateway Checkout Auto-Enrollment Vulnerability
-  [ ] AUDIT-105: Google OAuth Suspended User Bypass Permits Inactive Accounts to Log In and Obtain Active Session
+  [x] AUDIT-105: Google OAuth Suspended User Bypass Permits Inactive Accounts to Log In and Obtain Active Session
   [ ] AUDIT-110: Student Lesson Progress Auto-Restores Revoked Certificates Overriding Admin Disciplinary Revocation
 
 P1 (High):
@@ -3155,15 +3155,17 @@ P3 (Low / Polish):
 
 ---
 
-#### AUDIT-105: Google OAuth Suspended User Bypass Permits Inactive Accounts to Log In and Obtain Active Session
+#### [x] AUDIT-105: Google OAuth Suspended User Bypass Permits Inactive Accounts to Log In and Obtain Active Session
 - **Category**: Authentication Security & Account Lifecycle Invariant Violation
 - **Priority**: `P0 — Critical`
 - **Impacted Roles**: Admin, Student, Instructor, Public
-- **Status**: Pending
+- **Status**: Completed
 - **Affected Files**:
-  - [`backend/src/controllers/auth/googleAuthController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/auth/googleAuthController.ts#L25-L72)
+  - [`backend/src/controllers/auth/googleAuthController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/auth/googleAuthController.ts#L22-L55)
   - [`backend/src/controllers/auth/authController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/auth/authController.ts#L115-L117)
   - [`backend/src/controllers/admin/adminController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminController.ts#L110-L130)
+  - [`frontend/src/features/auth/AuthModals.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/auth/AuthModals.tsx#L74-L86)
+  - [`frontend/src/lib/api.ts`](file:///c:/Users/user/projects/skillkart/frontend/src/lib/api.ts#L20-L28)
 - **Description**:
   In `adminController.ts:toggleUserStatus`, platform administrators have the authority to suspend fraudulent, abusive, or non-compliant user accounts by toggling `user.isActive = false`.
   In standard email/password authentication (`authController.ts:login`), the controller strictly verifies user activation status:
@@ -3172,40 +3174,28 @@ P3 (Low / Polish):
     return res.status(403).json({ message: "Your account has been deactivated. Please contact support." });
   }
   ```
-  However, in Google OAuth authentication (`googleAuthController.ts:googleLogin`), this critical security gate is completely missing.
-  When an existing user clicks "Sign in with Google" or completes the OAuth callback (`POST /api/auth/google`), lines 25–46 look up the user by `googleId` or `email`:
-  ```typescript
-  let user = await User.findOne({ googleId: payload.sub });
-  if (!user && payload.email) {
-    user = await User.findOne({ email: payload.email });
-    // ...
-  }
-  ```
-  If the account already exists, the controller immediately signs and issues a fresh 7-day JWT:
-  ```typescript
-  const token = jwt.sign(
-    { id: user._id, role: user.role, email: user.email },
-    process.env.JWT_SECRET || "fallback_secret",
-    { expiresIn: "7d" }
-  );
-  return res.json({ token, user: { id: user._id, name: user.name, ... } });
-  ```
-  At no point does `googleAuthController.ts` verify whether `user.isActive === false`.
-  As a consequence, any suspended student or banned instructor can effortlessly bypass an administrative ban simply by authenticating through Google OAuth, re-entering the platform with a fully valid JWT and unrestricted API privileges.
+  However, in Google OAuth authentication (`googleAuthController.ts:googleLogin`), this critical security gate was completely missing.
+  When an existing user clicks "Sign in with Google" or completes the OAuth callback (`POST /api/auth/google`), lines 25–46 looked up the user by email, created or fetched the user document, and immediately issued a fresh 7-day JWT without verifying activation status.
+  At no point did `googleAuthController.ts` verify whether `user.isActive === false`.
+  As a consequence, any suspended student or banned instructor could effortlessly bypass an administrative ban simply by authenticating through Google OAuth, re-entering the platform with a fully valid JWT and unrestricted API privileges.
 - **Reproduction Steps**:
   1. Log in as Admin and navigate to `/admin/users`.
   2. Locate an active user (e.g. `student@example.com` who has linked Google OAuth) and click "Deactivate". The user record in MongoDB now has `isActive: false`.
-  3. Attempt to log in using standard credentials (`POST /api/auth/login`); verify the system returns `403 Forbidden: "Your account has been deactivated."`.
+  3. Attempt to log in using standard credentials (`POST /api/auth/login`); verify the system returns `403 Forbidden: "Your account has been deactivated. Please contact support."`.
   4. On the frontend login modal, click "Sign in with Google" and authenticate using `student@example.com`.
-  5. Observe that the OAuth API returns `200 OK` with a valid JWT. The user is logged in, session state is populated, and the deactivated account regains complete access to courses, discussions, and student/instructor portals.
-- **Remediation**:
-  - In `googleAuthController.ts:googleLogin`, inspect `user.isActive` immediately after retrieving an existing user document:
+  5. Observe that previously the OAuth API returned `200 OK` with a valid JWT, regaining complete platform access.
+- **Remediation & Resolution Summary**:
+  - In `googleAuthController.ts:googleLogin`, expanded user lookup to query both `{ $or: [{ googleId: sub }, { email }] }` and explicitly inspected `user.isActive` immediately after retrieving an existing user document:
     ```typescript
-    if (user && user.isActive === false) {
-      return res.status(403).json({ message: "Your account has been deactivated. Please contact support." });
+    if (user.isActive === false) {
+      return res.status(403).json({
+        message: "Your account has been deactivated. Please contact support.",
+      });
     }
     ```
-  - Ensure consistent error messaging across password and OAuth authentication flows.
+  - In `authController.ts:login`, synchronized the 403 error message with the exact wording `"Your account has been deactivated. Please contact support."` for parity across authentication methods.
+  - In `AuthModals.tsx`, updated `useGoogleLogin` catch handler to extract and toast specific API error messages via `getErrorMessage(err, 'Google authentication failed')`, ensuring deactivated users clearly see the suspension notice instead of a generic failure toast.
+  - In `frontend/src/lib/api.ts`, registered `/auth/google` in the auth endpoints bypass list so 401 response codes on invalid OAuth tokens do not inadvertently purge prior session storage or fire spurious `auth:expired` events.
 
 ---
 
@@ -3743,7 +3733,7 @@ P3 (Low / Polish):
 | 101 | AUDIT-102 | Implement atomic upsert pattern for singleton system settings in `adminController.ts` | Concurrently update platform settings during cold start; verify atomic update without duplicate singletons or null errors. |
 | 102 | [x] AUDIT-103 | Guard auto-enrollment behind confirmed payment status (`paid`/`completed`) in `orderController.ts` | Simulate asynchronous pending payment; verify order created in pending state without premature active enrollment creation. |
 | 103 | AUDIT-104 | Add reorder controls (move up/down) and bulk order persistence in `CourseFAQEditor.tsx` & `faqController.ts` | Reorder FAQs in instructor editor, refresh page; verify updated sort order persists accurately in student accordion. |
-| 104 | AUDIT-105 | Check `user.isActive !== false` in `googleAuthController.ts:googleLogin` | Deactivate user via admin, attempt Google OAuth login; verify 403 Forbidden response blocking suspended account access. |
+| 104 | [x] AUDIT-105 | Check `user.isActive !== false` in `googleAuthController.ts:googleLogin` | Deactivate user via admin, attempt Google OAuth login; verify 403 Forbidden response blocking suspended account access. |
 | 105 | AUDIT-106 | Guard category deletion against assigned courses and log audit trail in `categoryController.ts` | Attempt to delete category with active courses; verify 400 rejection or clean cascade unset and verify audit log entry. |
 | 106 | AUDIT-107 | Offer course reactivation prompt and notification on instructor restoration in `adminController.ts` | Deactivate instructor then re-activate in admin users; verify course restoration prompt and verify instructor notification. |
 | 107 | AUDIT-108 | Add `cancelled` status and cancellation endpoint for pending payouts in `instructorEarningsController.ts` & alert admins | Submit payout request as instructor; verify cancel button refunds balance and verify admin notification received on submission. |

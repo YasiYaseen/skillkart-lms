@@ -76,12 +76,12 @@ function AuthModals({ isOpen, initialMode, onClose, redirectTo, onSuccess }: Aut
             try {
                 const { token, user } = await loginWithGoogle(tokenResponse.access_token);
                 await handleAuthSuccess(token, user);
-            } catch {
-                toast.error('Login failed');
+            } catch (err: unknown) {
+                toast.error(getErrorMessage(err, 'Google authentication failed'));
             }
         },
         onError: () => {
-            toast.error('Login failed');
+            toast.error('Google authentication failed');
         }
     });
 
