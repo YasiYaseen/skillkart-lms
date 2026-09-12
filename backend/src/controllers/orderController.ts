@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { isValidObjectId, Types } from "mongoose";
-import Order, { type IOrderItem } from "../models/Order";
+import Order, { type IOrder, type IOrderItem } from "../models/Order";
 import Course from "../models/Course";
 import Coupon, { type ICoupon } from "../models/Coupon";
 import Enrollment from "../models/Enrollment";
@@ -46,7 +46,7 @@ export async function checkout(req: Request, res: Response) {
       });
     }
 
-    const { courseIds, couponCode, paymentMethod, billingDetails } = parsed.data;
+    const { courseIds, couponCode, paymentMethod, billingDetails, metadata } = parsed.data;
 
     // Filter valid IDs and deduplicate
     const validCourseIds = Array.from(
@@ -313,6 +313,7 @@ export async function checkout(req: Request, res: Response) {
         studentId: req.user.id,
         courseCount: items.length,
         billingDetails,
+        ...metadata,
       }
     );
 
@@ -327,7 +328,11 @@ export async function checkout(req: Request, res: Response) {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const orderNumber = `SK-${dateStr}-${randomSuffix}`;
 
-    // Create Order record
+    const isConfirmedPayment =
+      paymentResult.paymentStatus === "completed" ||
+      (paymentResult.paymentStatus as string) === "paid";
+
+    // Create Order record (pending by default if payment has not cleared yet)
     const order = await Order.create({
       orderNumber,
       student: req.user.id,
@@ -340,75 +345,230 @@ export async function checkout(req: Request, res: Response) {
       totalAmount,
       currency: primaryCurrency,
       paymentMethod: totalAmount === 0 ? "free" : paymentMethod,
-      paymentStatus: paymentResult.paymentStatus,
+      paymentStatus: isConfirmedPayment ? "completed" : "pending",
       transactionId: paymentResult.transactionId,
       paymentMetadata: paymentResult.metadata,
-      completedAt: new Date(),
+      completedAt: isConfirmedPayment ? new Date() : undefined,
     });
-
-    // Increment coupon redemption count if applied
-    if (appliedCoupon) {
-      await Coupon.findByIdAndUpdate(appliedCoupon._id, { $inc: { timesRedeemed: 1 } });
-    }
 
     const userId = req.user.id;
 
-    // Auto-enroll student into all purchased courses with accurate totalLessonsCount
-    const enrollmentPromises = courses.map(async (course) => {
-      const totalLessonsCount = await getCourseLessonCount(course._id);
-      return Enrollment.findOneAndUpdate(
-        { student: userId, course: course._id },
-        {
-          $set: {
-            student: userId,
-            course: course._id,
-            status: "active",
-            paymentStatus: totalAmount === 0 ? "none" : "paid",
-            totalLessonsCount,
-            enrolledAt: new Date(),
-          },
-          $setOnInsert: {
-            completedLessonIds: [],
-          },
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
-    });
-    await Promise.all(enrollmentPromises);
+    if (isConfirmedPayment) {
+      // AUDIT-103: Confirmed payment — activate enrollments and notify student
+      await activateOrderEnrollments(order);
+    } else {
+      // AUDIT-103: Asynchronous pending payment — defer enrollment until gateway confirmation webhook
+      setImmediate(async () => {
+        try {
+          await Notification.create({
+            recipient: userId,
+            title: "Order Placed — Payment Pending",
+            message: `Your order #${orderNumber} for ${items.length} course(s) is pending clearance. Course access will unlock automatically once confirmed.`,
+            type: "info",
+            link: "/purchase-history",
+          });
+        } catch {
+          // Safe fail
+        }
+      });
+    }
 
-    // Clear user's shopping cart in database
+    // Clear user's shopping cart in database once order is placed
     await Cart.findOneAndUpdate(
       { student: userId },
       { $set: { items: [] } }
     ).catch(() => {});
 
-    // Clear purchased courses from user's wishlist in database
-    await Wishlist.deleteMany({
-      student: userId,
-      course: { $in: courses.map((c) => c._id) },
-    }).catch(() => {});
-
-    // Trigger confirmation notification
-    setImmediate(async () => {
-      try {
-        await Notification.create({
-          recipient: userId,
-          title: "Order Confirmed & Enrolled",
-          message: `Your order #${orderNumber} for ${items.length} course(s) has been confirmed. You now have full access!`,
-          type: "success",
-          link: "/my-courses",
-        });
-      } catch {
-        // Safe fail
-      }
-    });
-
     return res.status(201).json({
-      message: "Order placed successfully! You are now enrolled in your courses.",
+      message: isConfirmedPayment
+        ? "Order placed successfully! You are now enrolled in your courses."
+        : "Order placed. Payment confirmation is pending with your payment provider. Course access will be unlocked once payment clears.",
       order,
     });
   } catch (error) {
     return res.status(500).json({ message: "Server error processing checkout" });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helper: activateOrderEnrollments
+// Activates enrollments and completes an order (used by checkout and webhook)
+// ---------------------------------------------------------------------------
+export async function activateOrderEnrollments(order: IOrder): Promise<void> {
+  const isAlreadyCompleted =
+    order.paymentStatus === "completed" ||
+    (order.paymentStatus as string) === "paid";
+
+  if (!isAlreadyCompleted) {
+    order.paymentStatus = "completed";
+    order.completedAt = new Date();
+    await order.save();
+  }
+
+  // Increment coupon redemption count if applied
+  if (order.coupon && !isAlreadyCompleted) {
+    await Coupon.findByIdAndUpdate(order.coupon, { $inc: { timesRedeemed: 1 } }).catch(() => {});
+  }
+
+  const courseIds = order.items.map((item) => item.course);
+
+  // Auto-enroll student into all purchased courses with accurate totalLessonsCount
+  const enrollmentPromises = order.items.map(async (item) => {
+    const courseId = item.course.toString();
+    const totalLessonsCount = await getCourseLessonCount(courseId);
+    return Enrollment.findOneAndUpdate(
+      { student: order.student, course: item.course },
+      {
+        $set: {
+          student: order.student,
+          course: item.course,
+          status: "active",
+          paymentStatus: order.totalAmount === 0 ? "none" : "paid",
+          paymentId: order.transactionId,
+          totalLessonsCount,
+          enrolledAt: new Date(),
+        },
+        $setOnInsert: {
+          completedLessonIds: [],
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+  });
+  await Promise.all(enrollmentPromises);
+
+  // Clear purchased courses from user's wishlist in database
+  await Wishlist.deleteMany({
+    student: order.student,
+    course: { $in: courseIds },
+  }).catch(() => {});
+
+  // Trigger confirmation notification
+  try {
+    await Notification.create({
+      recipient: order.student,
+      title: "Order Confirmed & Enrolled",
+      message: `Your payment for order #${order.orderNumber} for ${order.items.length} course(s) has cleared. You now have full access!`,
+      type: "success",
+      link: "/my-courses",
+    });
+  } catch {
+    // Safe fail
+  }
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/orders/webhook
+// Payment gateway webhook confirmation handler for asynchronous payments
+// ---------------------------------------------------------------------------
+export async function handlePaymentWebhook(req: Request, res: Response) {
+  try {
+    const {
+      event,
+      transactionId,
+      orderNumber,
+      orderId,
+      status,
+      paymentStatus,
+    } = req.body || {};
+
+    const resolvedTxnId = transactionId || req.body?.data?.object?.id || req.body?.id;
+    const resolvedOrderNumber = orderNumber || req.body?.data?.object?.metadata?.orderNumber;
+    const resolvedOrderId = orderId || req.body?.data?.object?.metadata?.orderId;
+    const resolvedStatus = (status || paymentStatus || event || "").toLowerCase();
+
+    // Find the matching order
+    let order: IOrder | null = null;
+    if (resolvedOrderId && isValidObjectId(resolvedOrderId)) {
+      order = await Order.findById(resolvedOrderId);
+    }
+    if (!order && resolvedOrderNumber) {
+      order = await Order.findOne({ orderNumber: resolvedOrderNumber });
+    }
+    if (!order && resolvedTxnId) {
+      order = await Order.findOne({ transactionId: resolvedTxnId });
+    }
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found for webhook event",
+        received: req.body,
+      });
+    }
+
+    const isSuccessEvent =
+      resolvedStatus.includes("success") ||
+      resolvedStatus.includes("completed") ||
+      resolvedStatus.includes("paid") ||
+      event === "payment_intent.succeeded" ||
+      event === "checkout.session.completed";
+
+    const isFailureEvent =
+      resolvedStatus.includes("failed") ||
+      resolvedStatus.includes("decline") ||
+      resolvedStatus.includes("cancel") ||
+      resolvedStatus.includes("expired") ||
+      event === "payment_intent.payment_failed";
+
+    if (isSuccessEvent) {
+      if (resolvedTxnId && order.transactionId !== resolvedTxnId) {
+        order.transactionId = resolvedTxnId;
+      }
+      await activateOrderEnrollments(order);
+
+      return res.status(200).json({
+        success: true,
+        message: "Order payment confirmed and student enrolled",
+        orderNumber: order.orderNumber,
+        status: "completed",
+      });
+    }
+
+    if (isFailureEvent) {
+      // If order was already completed, do not cancel without formal refund
+      if (order.paymentStatus !== "completed" && (order.paymentStatus as string) !== "paid") {
+        order.paymentStatus = "failed";
+        await order.save();
+
+        // Ensure no active or pending enrollment remains for this failed order
+        await Enrollment.updateMany(
+          {
+            student: order.student,
+            course: { $in: order.items.map((i) => i.course) },
+            paymentId: order.transactionId,
+          },
+          { $set: { status: "cancelled" } }
+        );
+
+        setImmediate(async () => {
+          try {
+            await Notification.create({
+              recipient: order.student,
+              title: "Payment Authorization Failed",
+              message: `Payment for order #${order.orderNumber} could not be completed. Any pending access has been cancelled.`,
+              type: "error",
+              link: "/purchase-history",
+            });
+          } catch {
+            // Safe fail
+          }
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Order marked as failed and tentative access revoked",
+        orderNumber: order.orderNumber,
+        status: "failed",
+      });
+    }
+
+    return res.status(200).json({
+      received: true,
+      message: "Webhook event acknowledged without status change",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error processing payment webhook" });
   }
 }
 

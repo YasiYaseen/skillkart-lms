@@ -58,7 +58,7 @@ export interface OrderRecord {
   paymentMethod: string;
   paymentStatus: string;
   transactionId: string;
-  completedAt: string;
+  completedAt?: string;
   createdAt: string;
 }
 

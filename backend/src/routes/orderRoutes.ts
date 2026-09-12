@@ -1,8 +1,17 @@
 import { Router } from "express";
 import { protect } from "../middleware/authMiddleware";
-import { checkout, getOrderHistory, getOrderReceipt } from "../controllers/orderController";
+import {
+  checkout,
+  getOrderHistory,
+  getOrderReceipt,
+  handlePaymentWebhook,
+} from "../controllers/orderController";
 
 const router = Router();
+
+// Public Payment Gateway Webhooks (asynchronous confirmation)
+router.post("/webhook", handlePaymentWebhook);
+router.post("/payment-webhook", handlePaymentWebhook);
 
 // Student Protected Checkout & Order History
 router.post("/checkout", protect, checkout);

@@ -185,19 +185,32 @@ export async function updateLessonProgress(req: Request, res: Response) {
       enrollment.completedAt = new Date();
       await enrollment.save();
 
-      // Auto-issue certificate on first completion
-      const certDoc = await Certificate.findOneAndUpdate(
-        { student: req.user.id, course: course._id },
-        {
-          $setOnInsert: {
-            student: req.user.id,
-            course: course._id,
-            enrollment: enrollment._id,
-            issuedAt: enrollment.completedAt,
-          },
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
+      // Auto-issue certificate on completion (or re-issue if previously revoked)
+      let certDoc = await Certificate.findOne({ student: req.user.id, course: course._id });
+      if (certDoc) {
+        if (certDoc.revokedAt) {
+          await Certificate.updateOne(
+            { _id: certDoc._id },
+            {
+              $unset: { revokedAt: 1 },
+              $set: {
+                issuedAt: enrollment.completedAt,
+                enrollment: enrollment._id,
+              },
+            }
+          );
+          certDoc.revokedAt = undefined;
+          certDoc.issuedAt = enrollment.completedAt;
+          certDoc.enrollment = enrollment._id;
+        }
+      } else {
+        certDoc = await Certificate.create({
+          student: req.user.id,
+          course: course._id,
+          enrollment: enrollment._id,
+          issuedAt: enrollment.completedAt,
+        });
+      }
 
       // Notify student of course completion
       await Notification.create({
@@ -228,8 +241,12 @@ export async function updateLessonProgress(req: Request, res: Response) {
           console.error("[EMAIL] Error fetching user for certificate email:", err);
         });
     } else if (!isFullyComplete && enrollment.status === "completed") {
-      // AUDIT-41: Preserve completed status and completedAt milestone if a certificate was already issued
-      const hasCertificate = await Certificate.exists({ student: req.user.id, course: course._id });
+      // AUDIT-41: Preserve completed status and completedAt milestone if a valid certificate was already issued
+      const hasCertificate = await Certificate.exists({
+        student: req.user.id,
+        course: course._id,
+        $or: [{ revokedAt: { $exists: false } }, { revokedAt: null }],
+      });
       if (!hasCertificate) {
         enrollment.status = "active";
         enrollment.completedAt = undefined;

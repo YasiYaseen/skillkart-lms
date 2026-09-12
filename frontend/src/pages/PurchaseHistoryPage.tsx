@@ -9,6 +9,7 @@ import {
   ReceiptPercentIcon,
   PrinterIcon,
   CheckIcon,
+  ClockIcon,
   XMarkIcon,
 } from '@heroicons/react/20/solid';
 
@@ -186,12 +187,22 @@ export default function PurchaseHistoryPage() {
                               {it.title}
                             </span>
                             {it.course?._id ? (
-                              <Link
-                                to={`/learn/${it.course._id}`}
-                                className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline shrink-0 font-medium"
-                              >
-                                [Open]
-                              </Link>
+                              order.paymentStatus === 'completed' || order.paymentStatus === 'paid' ? (
+                                <Link
+                                  to={`/learn/${it.course._id}`}
+                                  className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline shrink-0 font-medium"
+                                >
+                                  [Open]
+                                </Link>
+                              ) : order.paymentStatus === 'pending' ? (
+                                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium shrink-0">
+                                  [Pending Clearance]
+                                </span>
+                              ) : order.paymentStatus === 'failed' ? (
+                                <span className="text-[10px] text-red-500 dark:text-red-400 font-medium shrink-0">
+                                  [Failed]
+                                </span>
+                              ) : null
                             ) : null}
                           </div>
                         ))}
@@ -209,10 +220,30 @@ export default function PurchaseHistoryPage() {
                       {formatAmount(order.totalAmount)}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium text-xs">
-                        <CheckIcon className="w-3.5 h-3.5" />
-                        <span>Completed</span>
-                      </span>
+                      {order.paymentStatus === 'completed' || order.paymentStatus === 'paid' ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium text-xs">
+                          <CheckIcon className="w-3.5 h-3.5" />
+                          <span>Completed</span>
+                        </span>
+                      ) : order.paymentStatus === 'pending' ? (
+                        <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium text-xs">
+                          <ClockIcon className="w-3.5 h-3.5" />
+                          <span>Pending Clearance</span>
+                        </span>
+                      ) : order.paymentStatus === 'failed' ? (
+                        <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium text-xs">
+                          <XMarkIcon className="w-3.5 h-3.5" />
+                          <span>Failed</span>
+                        </span>
+                      ) : order.paymentStatus === 'refunded' ? (
+                        <span className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium text-xs">
+                          <span>Refunded</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-slate-500 font-medium text-xs">
+                          <span className="capitalize">{order.paymentStatus}</span>
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-right whitespace-nowrap">
                       <button
@@ -276,7 +307,18 @@ export default function PurchaseHistoryPage() {
                   Date: {new Date(selectedReceipt.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
                 <div>
-                  Status: <span className="font-bold text-emerald-600">Paid & Enrolled</span>
+                  Status:{' '}
+                  {selectedReceipt.paymentStatus === 'completed' || selectedReceipt.paymentStatus === 'paid' ? (
+                    <span className="font-bold text-emerald-600">Paid & Enrolled</span>
+                  ) : selectedReceipt.paymentStatus === 'pending' ? (
+                    <span className="font-bold text-amber-600">Payment Pending (Enrollment Deferred)</span>
+                  ) : selectedReceipt.paymentStatus === 'failed' ? (
+                    <span className="font-bold text-red-600">Payment Failed</span>
+                  ) : selectedReceipt.paymentStatus === 'refunded' ? (
+                    <span className="font-bold text-purple-600">Refunded</span>
+                  ) : (
+                    <span className="font-bold text-slate-600 capitalize">{selectedReceipt.paymentStatus}</span>
+                  )}
                 </div>
               </div>
             </div>

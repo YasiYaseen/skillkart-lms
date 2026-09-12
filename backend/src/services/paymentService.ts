@@ -22,10 +22,15 @@ export interface IPaymentProvider {
 class SimulatedPaymentProvider implements IPaymentProvider {
   async processPayment(amount: number, currency: string, metadata?: Record<string, any>): Promise<PaymentIntentResult> {
     const transactionId = `txn_sim_${uuidv4().replace(/-/g, "").slice(0, 16)}`;
+    const requestedStatus = metadata?.simulateStatus || metadata?.paymentStatus || "completed";
+    const paymentStatus: "completed" | "pending" | "failed" =
+      requestedStatus === "pending" || requestedStatus === "failed" ? requestedStatus : "completed";
+    const success = paymentStatus !== "failed";
+
     return {
-      success: true,
+      success,
       transactionId,
-      paymentStatus: "completed",
+      paymentStatus,
       metadata: {
         provider: "simulated",
         processedAt: new Date().toISOString(),
@@ -33,6 +38,12 @@ class SimulatedPaymentProvider implements IPaymentProvider {
         currency,
         ...metadata,
       },
+      message:
+        paymentStatus === "pending"
+          ? "Payment authorization is pending gateway clearance."
+          : paymentStatus === "failed"
+          ? "Payment authorization declined by issuing bank."
+          : undefined,
     };
   }
 

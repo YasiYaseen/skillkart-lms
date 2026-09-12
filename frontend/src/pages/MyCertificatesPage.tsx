@@ -7,6 +7,7 @@ import {
     ArrowDownTrayIcon,
     CheckBadgeIcon,
     ArrowRightIcon,
+    ExclamationTriangleIcon,
 } from '@heroicons/react/20/solid';
 
 export interface StudentCertificate {
@@ -21,6 +22,8 @@ export interface StudentCertificate {
         };
     };
     issuedAt: string;
+    revokedAt?: string | null;
+    isRevoked?: boolean;
 }
 
 function MyCertificatesPage() {
@@ -61,56 +64,105 @@ function MyCertificatesPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {certificates.map(cert => (
-                        <div key={cert._id} className="bg-white dark:bg-slate-900 rounded-xl shadow-2xs border border-slate-200 dark:border-slate-800 overflow-hidden hover:border-slate-300 dark:hover:border-slate-700 transition-all group flex flex-col">
-                            {/* Course thumbnail */}
-                            {cert.course?.thumbnailUrl ? (
-                                <div className="aspect-16/10 bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                                    <img
-                                        src={cert.course.thumbnailUrl}
-                                        alt={cert.course.title}
-                                        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="aspect-16/10 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-                                    <AcademicCapIcon className="w-10 h-10" />
-                                </div>
-                            )}
-
-                            <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                                <div>
-                                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold mb-2">
-                                        <CheckBadgeIcon className="w-4 h-4" />
-                                        <span>Verified Completion</span>
+                    {certificates.map(cert => {
+                        const isRevoked = Boolean(cert.isRevoked || cert.revokedAt);
+                        return (
+                            <div
+                                key={cert._id}
+                                className={`bg-white dark:bg-slate-900 rounded-xl shadow-2xs border ${
+                                    isRevoked
+                                        ? 'border-rose-200 dark:border-rose-900/60'
+                                        : 'border-slate-200 dark:border-slate-800'
+                                } overflow-hidden hover:border-slate-300 dark:hover:border-slate-700 transition-all group flex flex-col`}
+                            >
+                                {/* Course thumbnail */}
+                                {cert.course?.thumbnailUrl ? (
+                                    <div className="aspect-16/10 bg-slate-100 dark:bg-slate-800 overflow-hidden relative">
+                                        <img
+                                            src={cert.course.thumbnailUrl}
+                                            alt={cert.course.title}
+                                            className={`w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300 ${
+                                                isRevoked ? 'grayscale-50 opacity-80' : ''
+                                            }`}
+                                        />
+                                        {isRevoked && (
+                                            <div className="absolute top-2.5 right-2.5 bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-xs">
+                                                Revoked
+                                            </div>
+                                        )}
                                     </div>
+                                ) : (
+                                    <div className="aspect-16/10 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 relative">
+                                        <AcademicCapIcon className="w-10 h-10" />
+                                        {isRevoked && (
+                                            <div className="absolute top-2.5 right-2.5 bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-xs">
+                                                Revoked
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
-                                    <h3 className="font-semibold text-sm text-slate-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                        {cert.course?.title || 'Course Certificate'}
-                                    </h3>
-                                    {cert.course?.instructor?.name && (
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Instructor: {cert.course.instructor.name}</p>
-                                    )}
-                                </div>
-
-                                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                                     <div>
-                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">Issued On</p>
-                                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                            {new Date(cert.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                                        </p>
+                                        {isRevoked ? (
+                                            <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 font-semibold mb-2">
+                                                <ExclamationTriangleIcon className="w-4 h-4" />
+                                                <span>Revoked Credential</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-2">
+                                                <CheckBadgeIcon className="w-4 h-4" />
+                                                <span>Verified Completion</span>
+                                            </div>
+                                        )}
+
+                                        <h3 className="font-semibold text-sm text-slate-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                            {cert.course?.title || 'Course Certificate'}
+                                        </h3>
+                                        {cert.course?.instructor?.name && (
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                Instructor: {cert.course.instructor.name}
+                                            </p>
+                                        )}
                                     </div>
-                                    <Link
-                                        to={`/certificates/verify/${cert.certificateId}`}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-medium transition-colors shadow-2xs"
-                                    >
-                                        <ArrowDownTrayIcon className="w-3.5 h-3.5" />
-                                        <span>View Certificate</span>
-                                    </Link>
+
+                                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                                        <div>
+                                            <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                                {isRevoked ? 'Revoked On' : 'Issued On'}
+                                            </p>
+                                            <p
+                                                className={`text-xs font-medium ${
+                                                    isRevoked
+                                                        ? 'text-rose-600 dark:text-rose-400'
+                                                        : 'text-slate-700 dark:text-slate-300'
+                                                }`}
+                                            >
+                                                {new Date(
+                                                    isRevoked && cert.revokedAt ? cert.revokedAt : cert.issuedAt
+                                                ).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                })}
+                                            </p>
+                                        </div>
+                                        <Link
+                                            to={`/certificates/verify/${cert.certificateId}`}
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors shadow-2xs ${
+                                                isRevoked
+                                                    ? 'bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 border-rose-200 dark:border-rose-800'
+                                                    : 'bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                            }`}
+                                        >
+                                            <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                                            <span>View Certificate</span>
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

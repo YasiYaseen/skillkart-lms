@@ -28,8 +28,10 @@ P0 (Critical / Blocker):
   [x] AUDIT-21: Instructor Self-Purchase & Cart Auto-Enrollment Revenue Loophole
   [x] AUDIT-71: Onboarding Role Selection Bypasses Instructor Moderation Workflow & Auto-Approval Policy
   [x] AUDIT-89: Empty Lesson Course Publication Allows White Screen of Death Crash in Student Viewer
-  [ ] AUDIT-98: Revoked Certificate Verification Security Bypass and Permanent Re-issuance Lockout
-  [ ] AUDIT-103: Asynchronous Gateway Checkout Auto-Enrollment Vulnerability
+  [x] AUDIT-98: Revoked Certificate Verification Security Bypass and Permanent Re-issuance Lockout
+  [x] AUDIT-103: Asynchronous Gateway Checkout Auto-Enrollment Vulnerability
+  [ ] AUDIT-105: Google OAuth Suspended User Bypass Permits Inactive Accounts to Log In and Obtain Active Session
+  [ ] AUDIT-110: Student Lesson Progress Auto-Restores Revoked Certificates Overriding Admin Disciplinary Revocation
 
 P1 (High):
   [x] AUDIT-06: Phantom API Route `/courses/instructor` Breaks Assignments & Gradebook
@@ -68,6 +70,12 @@ P1 (High):
   [ ] AUDIT-95: Paginated Reviews Break User Review Editing (409 Conflict) and Rating Breakdown Distribution Math
   [ ] AUDIT-96: Admin and Instructor Review Moderation Void for Defamatory Content
   [ ] AUDIT-102: System Settings Singleton Race Condition and Missing Upsert Guard in Admin Settings
+  [ ] AUDIT-106: Category Deletion Foreign Key Orphanage Leaves Dangling References, Skewed Filters, and Lacks Audit Logging
+  [ ] AUDIT-107: Instructor Re-Activation Asymmetric Course Suspension Leaves Catalog Content Indefinitely Suspended
+  [ ] AUDIT-111: Purchase History Hardcoded "Completed" Badges & Unchecked Viewer Access for Failed / Refunded Orders
+  [ ] AUDIT-112: Bulk Instructor Review Nuclear Fallback Processes Entire Platform Pending Queue When Selection is Empty
+  [ ] AUDIT-113: Student Unenroll Modal Misleading Progress Retention Promise Contradicts Permanent Deletion
+  [ ] AUDIT-114: Missing Lesson Item Update Route & Controller Deadlocks Content Modification
 
 P2 (Medium):
   [ ] AUDIT-11: 0% Progress Invariant Violation Across All Students in Instructor Analytics
@@ -118,6 +126,10 @@ P2 (Medium):
   [ ] AUDIT-100: Wishlist Multi-Role Conflict & Header Navigation Desynchronization
   [ ] AUDIT-101: Cart Upsell Strip Recommends Already-Enrolled Courses Causing 400 Errors
   [ ] AUDIT-104: Course FAQ Ordering Index Collision & Inability to Reorder on Instructor UI
+  [ ] AUDIT-108: Instructor Payout Request Irrevocability Locks Balances & Lacks Admin Notification Dispatch
+  [ ] AUDIT-109: Course Generator Incomplete Instructor Lifecycle Flags Cause Multi-Role State Desynchronization
+  [ ] AUDIT-115: Admin Financial Reports Ledger Unconditionally Renders Emerald Badges for Failed and Refunded Transactions
+  [ ] AUDIT-116: Hardcoded Dollar Currency Formatting in Course Catalog and Cart Promo Badges Bypasses System Currency
 
 P3 (Low / Polish):
   [ ] AUDIT-17: Category Deletion and Inactivation Leaves Dangling References & Broken Catalog Filters
@@ -2904,16 +2916,17 @@ P3 (Low / Polish):
 
 ---
 
-#### AUDIT-98: Revoked Certificate Verification Security Bypass and Permanent Re-issuance Lockout
+#### [x] AUDIT-98: Revoked Certificate Verification Security Bypass and Permanent Re-issuance Lockout
 - **Category**: Security Vulnerability & Credential Integrity Bypass
 - **Priority**: `P0 — Critical`
 - **Impacted Roles**: Student, Admin, Public Third Parties / Employers
-- **Status**: Pending
+- **Status**: Completed
 - **Affected Files**:
-  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts#L421-L424)
-  - [`backend/src/controllers/certificate/certificateController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/certificate/certificateController.ts#L33-L54,L84-L91)
-  - [`frontend/src/pages/VerifyCertificatePage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/VerifyCertificatePage.tsx#L62-L89)
-  - [`frontend/src/pages/MyCertificatesPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/MyCertificatesPage.tsx#L31-L33)
+  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts#L358-L385)
+  - [`backend/src/controllers/course/progressController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/progressController.ts#L188-L237)
+  - [`backend/src/controllers/certificate/certificateController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/certificate/certificateController.ts#L20-L120)
+  - [`frontend/src/pages/VerifyCertificatePage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/VerifyCertificatePage.tsx#L16-L349)
+  - [`frontend/src/pages/MyCertificatesPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/MyCertificatesPage.tsx#L12-L114)
 - **Description**:
   When a student unenrolls or has their enrollment cancelled in `enrollmentController.ts:cancelEnrollment`, lines 421–424 mark any issued certificate as revoked:
   ```typescript
@@ -2940,10 +2953,11 @@ P3 (Low / Polish):
   4. Observe that the public verification page renders a green "Verified Educational Credential" banner, falsely verifying a revoked certificate.
   5. Student re-enrolls in Course X, completes all lessons, and clicks "Claim Certificate".
   6. Backend returns *"Certificate already issued"*, leaving `revokedAt` set and locking the student out of a verified credential forever.
-- **Remediation**:
-  - In `certificateController.ts:getCertificateById` and `frontend/src/pages/VerifyCertificatePage.tsx`, verify `certificate.revokedAt`. If set, return an explicit `isRevoked: true` status and render an unmistakable red alert banner: *"This certificate was revoked on [Date] and is no longer a valid credential"*.
-  - In `getMyCertificates`, display a `"Revoked"` badge on invalidated certificates.
-  - In `claimCertificate`, if an existing certificate has `revokedAt`, verify active enrollment and 100% completion, then clear `revokedAt = undefined` and update `issuedAt = new Date()`.
+- **Remediation & Resolution Summary**:
+  - **Verification Status & Endpoint Security**: In `certificateController.ts:getCertificateById`, computed `isRevoked: Boolean(certificate.revokedAt)` and returned `{ certificate: { ...certificate, isRevoked }, isRevoked, revokedAt }`. In `getMyCertificates`, mapped each certificate to include `isRevoked: Boolean(cert.revokedAt)`.
+  - **Public Verification UI Alerting**: In `VerifyCertificatePage.tsx`, added conditional rendering for revoked credentials: a prominent red alert banner (*"This certificate was revoked on [Date] and is no longer a valid credential"*), a red "Revoked Credential" badge instead of "Verified Credential", a diagonal "REVOKED" watermark across the credential frame, a red "Revoked Seal" at the footer, and automatic suppression of the "Share on LinkedIn" action.
+  - **Student Portfolio Representation**: In `MyCertificatesPage.tsx`, added a "Revoked" ribbon tag on course thumbnails, replaced "Verified Completion" with "Revoked Credential", rendered "Revoked On [Date]", and adjusted CTA styling.
+  - **Legitimate Re-Issuance Lifecycle**: In `certificateController.ts:claimCertificate`, `progressController.ts:updateLessonProgress`, and `enrollmentController.ts:updateProgress`, when an actively enrolled student completes 100% of course requirements, any existing certificate with `revokedAt` has its revocation cleared via MongoDB `$unset: { revokedAt: 1 }`, `issuedAt` updated to the completion date, and enrollment reference synchronized, successfully re-issuing a valid credential. Additionally guarded course completion demotion checks against revoked certificates.
 
 ---
 
@@ -3068,14 +3082,18 @@ P3 (Low / Polish):
 
 ---
 
-#### AUDIT-103: Asynchronous Gateway Checkout Auto-Enrollment Vulnerability
+#### [x] AUDIT-103: Asynchronous Gateway Checkout Auto-Enrollment Vulnerability
 - **Category**: Financial Invariant Violation & Unauthorized Course Access
 - **Priority**: `P0 — Critical`
 - **Impacted Roles**: Student, Instructor, Admin
-- **Status**: Pending
+- **Status**: Completed
 - **Affected Files**:
   - [`backend/src/controllers/orderController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/orderController.ts#L320-L370)
   - [`backend/src/services/paymentService.ts`](file:///c:/Users/user/projects/skillkart/backend/src/services/paymentService.ts#L70-L85)
+  - [`backend/src/models/Order.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Order.ts)
+  - [`backend/src/routes/orderRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/orderRoutes.ts)
+  - [`frontend/src/pages/CartPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/CartPage.tsx)
+  - [`frontend/src/pages/PurchaseHistoryPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/PurchaseHistoryPage.tsx)
 - **Description**:
   In `orderController.ts:checkout`, when a student places an order through the payment gateway simulator or an external pluggable gateway, lines 356–370 immediately create active student enrollments:
   ```typescript
@@ -3102,9 +3120,12 @@ P3 (Low / Polish):
   3. Check student enrollments: observe `Enrollment.status === "active"` created immediately.
   4. Student opens `/learn/:courseId` and completes the course without funds ever having cleared.
 - **Remediation**:
-  - In `orderController.ts:checkout`, only instantiate `Enrollment.create` if `order.paymentStatus === "paid"`.
-  - If `order.paymentStatus === "pending"`, defer enrollment creation to the payment gateway webhook confirmation handler (`handlePaymentWebhook`).
-  - If a pending order fails or is cancelled, ensure no enrollment exists or mark any tentative enrollment as `cancelled`.
+  - In `orderController.ts:checkout`, guarded enrollment creation, coupon redemption counting, and completion timestamp strictly behind `isConfirmedPayment` (`paymentStatus === "completed"` or `"paid"`).
+  - For pending orders (`paymentStatus: "pending"`), deferred enrollment creation, left `completedAt` unset, and dispatched an "Order Placed — Payment Pending" notification to the student.
+  - Implemented `activateOrderEnrollments(order: IOrder)` helper with idempotent activation, lesson calculation, and single-redemption coupon increments.
+  - Registered `handlePaymentWebhook` at `/api/orders/webhook` and `/api/orders/payment-webhook` supporting standard gateway events (`payment_intent.succeeded`, `checkout.session.completed`, failure/cancellation), activating enrollments on payment clearance and revoking tentative access on failure.
+  - Updated `CartPage.tsx` confirmation view with dual-mode banner (green "Payment Confirmed • Enrolled" vs amber "Payment Pending • Awaiting Clearance" with delayed activation explanation).
+  - Updated `PurchaseHistoryPage.tsx` with dynamic status pills (`Completed`, `Pending Clearance`, `Failed`, `Refunded`), conditional course access gating (`[Open]` link strictly enabled on confirmed payment, `[Pending Clearance]` indicator when pending), and dynamic receipt invoice status.
 
 ---
 
@@ -3131,6 +3152,487 @@ P3 (Low / Polish):
 - **Remediation**:
   - Add "Move Up" (↑) and "Move Down" (↓) controls to `CourseFAQEditor.tsx`.
   - Add a `reorderFAQs` endpoint in `faqController.ts` allowing instructors to update FAQ orders atomically in batch, maintaining clean sequential order indices.
+
+---
+
+#### AUDIT-105: Google OAuth Suspended User Bypass Permits Inactive Accounts to Log In and Obtain Active Session
+- **Category**: Authentication Security & Account Lifecycle Invariant Violation
+- **Priority**: `P0 — Critical`
+- **Impacted Roles**: Admin, Student, Instructor, Public
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/auth/googleAuthController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/auth/googleAuthController.ts#L25-L72)
+  - [`backend/src/controllers/auth/authController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/auth/authController.ts#L115-L117)
+  - [`backend/src/controllers/admin/adminController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminController.ts#L110-L130)
+- **Description**:
+  In `adminController.ts:toggleUserStatus`, platform administrators have the authority to suspend fraudulent, abusive, or non-compliant user accounts by toggling `user.isActive = false`.
+  In standard email/password authentication (`authController.ts:login`), the controller strictly verifies user activation status:
+  ```typescript
+  if (user.isActive === false) {
+    return res.status(403).json({ message: "Your account has been deactivated. Please contact support." });
+  }
+  ```
+  However, in Google OAuth authentication (`googleAuthController.ts:googleLogin`), this critical security gate is completely missing.
+  When an existing user clicks "Sign in with Google" or completes the OAuth callback (`POST /api/auth/google`), lines 25–46 look up the user by `googleId` or `email`:
+  ```typescript
+  let user = await User.findOne({ googleId: payload.sub });
+  if (!user && payload.email) {
+    user = await User.findOne({ email: payload.email });
+    // ...
+  }
+  ```
+  If the account already exists, the controller immediately signs and issues a fresh 7-day JWT:
+  ```typescript
+  const token = jwt.sign(
+    { id: user._id, role: user.role, email: user.email },
+    process.env.JWT_SECRET || "fallback_secret",
+    { expiresIn: "7d" }
+  );
+  return res.json({ token, user: { id: user._id, name: user.name, ... } });
+  ```
+  At no point does `googleAuthController.ts` verify whether `user.isActive === false`.
+  As a consequence, any suspended student or banned instructor can effortlessly bypass an administrative ban simply by authenticating through Google OAuth, re-entering the platform with a fully valid JWT and unrestricted API privileges.
+- **Reproduction Steps**:
+  1. Log in as Admin and navigate to `/admin/users`.
+  2. Locate an active user (e.g. `student@example.com` who has linked Google OAuth) and click "Deactivate". The user record in MongoDB now has `isActive: false`.
+  3. Attempt to log in using standard credentials (`POST /api/auth/login`); verify the system returns `403 Forbidden: "Your account has been deactivated."`.
+  4. On the frontend login modal, click "Sign in with Google" and authenticate using `student@example.com`.
+  5. Observe that the OAuth API returns `200 OK` with a valid JWT. The user is logged in, session state is populated, and the deactivated account regains complete access to courses, discussions, and student/instructor portals.
+- **Remediation**:
+  - In `googleAuthController.ts:googleLogin`, inspect `user.isActive` immediately after retrieving an existing user document:
+    ```typescript
+    if (user && user.isActive === false) {
+      return res.status(403).json({ message: "Your account has been deactivated. Please contact support." });
+    }
+    ```
+  - Ensure consistent error messaging across password and OAuth authentication flows.
+
+---
+
+#### AUDIT-106: Category Deletion Foreign Key Orphanage Leaves Dangling References, Skewed Filters, and Lacks Audit Logging
+- **Category**: Admin Catalog Integrity & Cascading Lifecycle Inconsistency
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Admin, Instructor, Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/category/categoryController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/category/categoryController.ts#L188-L207)
+  - [`frontend/src/features/admin/pages/CategoryManagement.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/CategoryManagement.tsx#L175-L188)
+  - [`backend/src/controllers/course/courseController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/courseController.ts#L159-L184,L497-L505)
+- **Description**:
+  In `categoryController.ts:deleteCategory`, administrators can delete a category via `DELETE /api/categories/:categoryId`.
+  The controller executes `Category.findByIdAndDelete(categoryId)` without checking if any courses are currently assigned to that category (`Course.countDocuments({ category: categoryId })`).
+  This causes three critical system defects:
+  1. **Dangling Foreign Keys & Catalog Invisibility**: Existing courses retain the deleted category's `ObjectId` in `course.category`. When learners filter the course catalog by category slug or category ID (`courseController.ts:getCourses`), the deleted category is no longer found in `Category.findById/findOne`, causing courses tagged with it to become completely unreachable via category browsing and category discovery chips.
+  2. **Zero Dependency Warning in Admin UI**: In `CategoryManagement.tsx:175-188`, the delete handler triggers a generic browser prompt: `window.confirm("Are you sure you want to delete this category?")`. It provides no visibility into how many courses are attached to the category, nor does it warn the administrator that existing courses will be orphaned.
+  3. **Complete Lack of Audit Logging**: Unlike user management, course moderation, and system settings which invoke `recordAuditLog`, `categoryController.ts` lacks any audit trail calls. Deleting or modifying categories leaves no record in the admin audit log, making accidental or malicious category deletions untraceable.
+- **Reproduction Steps**:
+  1. As Admin, create a category named "Cloud Computing" and assign 3 published courses to it.
+  2. Open `/admin/categories` and click "Delete" on "Cloud Computing". Confirm the browser prompt.
+  3. Deletion succeeds instantly.
+  4. Inspect MongoDB `courses` collection; observe the 3 courses still have `category: ObjectId("...")` referencing the now-deleted category document.
+  5. Navigate to `/courses` and observe the courses have `category: null` populated, breaking category badges on course cards.
+  6. Navigate to `/admin/audit-logs`; verify zero audit events exist for the deleted category.
+- **Remediation**:
+  - In `categoryController.ts:deleteCategory`:
+    - Count assigned courses: `const courseCount = await Course.countDocuments({ category: categoryId });`.
+    - If `courseCount > 0`, return `400 Bad Request` with `{ message: "Cannot delete category with attached courses. Please reassign or uncategorize existing courses first.", courseCount }`, OR optionally provide a cascade option that executes `await Course.updateMany({ category: categoryId }, { $unset: { category: 1 } })`.
+    - Record the administrative action with `recordAuditLog({ adminId, action: "CATEGORY_DELETED", targetType: "category", targetId: categoryId, targetName: category.name, details: { courseCount } })`.
+  - In `CategoryManagement.tsx`, replace `window.confirm` with a structured confirmation modal that displays the number of attached courses.
+
+---
+
+#### AUDIT-107: Instructor Re-Activation Asymmetric Course Suspension Leaves Catalog Content Indefinitely Suspended
+- **Category**: Admin / Instructor Lifecycle Asymmetry & Catalog Visibility Lockout
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Admin, Instructor, Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/admin/adminController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminController.ts#L110-L135)
+  - [`frontend/src/features/admin/pages/UserManagement.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/UserManagement.tsx#L65-L85)
+  - [`frontend/src/features/instructor/pages/MyCourses.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/MyCourses.tsx#L128-L145)
+- **Description**:
+  In `adminController.ts:toggleUserStatus`, when an administrator deactivates an instructor account (`newStatus === false`), lines 116–118 automatically deactivate all courses authored by that instructor:
+  ```typescript
+  if (!newStatus && user.role === "instructor") {
+    await Course.updateMany({ instructor: user._id }, { isActive: false });
+  }
+  ```
+  This cascading suspension safeguards the marketplace while the instructor's account is under investigation.
+  However, when the administrator resolves the investigation or billing hold and re-activates the instructor (`newStatus === true`), the system exhibits a severe lifecycle asymmetry:
+  1. The user account is re-enabled (`user.isActive = true`), but **all of the instructor's courses remain `isActive: false` indefinitely**.
+  2. The administrator is given no prompt, checkbox, or option to reactivate the instructor's courses upon re-enabling their account.
+  3. The instructor logs into their studio (`/instructor/courses`) and finds all their published courses tagged as "Suspended by Admin", with the active/inactive toggle switch disabled.
+  4. Because instructors have no permission to modify `course.isActive` (only admins can toggle `isActive` via `/admin/courses`), the instructor cannot self-restore their catalog visibility.
+  5. The instructor's content remains deadlocked in suspended status unless an admin manually visits `/admin/courses` and toggles every individual course back on one by one.
+- **Reproduction Steps**:
+  1. As Admin, deactivate Instructor Jane Doe via `/admin/users`. All Jane Doe's published courses are marked `isActive: false`.
+  2. Jane Doe's courses vanish from the marketplace catalog and search results.
+  3. As Admin, re-activate Jane Doe in `/admin/users` (`isActive: true`).
+  4. Jane Doe logs in and navigates to `/instructor/courses`.
+  5. Observe that every course displays "Suspended by Admin", and the publish/unpublish toggle is locked.
+  6. Public students searching for Jane Doe's courses still find zero results despite Jane Doe's account being active and verified.
+- **Remediation**:
+  - In `adminController.ts:toggleUserStatus`, when `newStatus === true` and `user.role === "instructor"`:
+    - Check if the admin included a query flag or body option `reactivateCourses: true`.
+    - If `reactivateCourses` is true, restore `isActive: true` on all courses owned by the instructor that were previously published.
+    - Return `suspendedCoursesCount` in the response payload so the admin frontend can inform the admin.
+  - In `UserManagement.tsx`, when enabling an instructor who has suspended courses, prompt the admin: *"This instructor has X suspended courses. Would you like to reactivate their published courses as well?"*.
+  - Send an in-app notification to the instructor notifying them of their account restoration and clarifying the visibility status of their courses.
+
+---
+
+#### AUDIT-108: Instructor Payout Request Irrevocability Locks Balances & Lacks Admin Notification Dispatch
+- **Category**: Instructor Finance UX & Asynchronous Lifecycle Dead-End
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Instructor, Admin
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/instructor/instructorEarningsController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/instructor/instructorEarningsController.ts#L328-L412)
+  - [`backend/src/models/Payout.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Payout.ts#L3-L20)
+  - [`frontend/src/features/instructor/pages/EarningsAndPayouts.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/EarningsAndPayouts.tsx#L280-L340)
+  - [`frontend/src/features/admin/pages/AdminPayouts.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/AdminPayouts.tsx#L1-L150)
+- **Description**:
+  In `instructorEarningsController.ts:requestInstructorPayout`, instructors submit withdrawal requests against their earned balance. The endpoint deducts the requested payout amount from the instructor's earnings and records a `Payout` document with `status: "pending"`.
+  However, this withdrawal pipeline suffers from two structural gaps:
+  1. **No Instructor Self-Cancellation Mechanism**: The `PayoutStatus` enum in `Payout.ts` only defines `["pending", "processing", "completed", "rejected"]`. There is no `"cancelled"` status, nor is there a route for instructors to cancel a pending payout. If an instructor requests a payout with incorrect bank/PayPal account details or realizes they need to delay the withdrawal for tax accounting, their money is frozen in "pending" status indefinitely. They cannot recall the request or modify payout destination details without administrative manual intervention.
+  2. **Silent Submission Void of Admin Notification**: When an instructor submits a withdrawal request, no notification, alert, or system event is dispatched to platform administrators. Administrators are only aware of pending payouts if they proactively navigate to `/admin/payouts`. Without notification alerts, instructor withdrawal requests can sit unattended for weeks, degrading instructor satisfaction and trust.
+- **Reproduction Steps**:
+  1. As an instructor, navigate to `/instructor/earnings` with an available balance of $1,000.
+  2. Request a withdrawal of $400. Available balance immediately drops to $600, and a payout row with status "Pending" appears in the payout history table.
+  3. Realizing incorrect bank transfer information was entered, attempt to cancel or retract the payout. Notice there is no "Cancel Request" action in `EarningsAndPayouts.tsx`.
+  4. Log in as an administrator; check the notification bell. Notice no notification was received alerting administrators to the new $400 payout request.
+- **Remediation**:
+  - In `backend/src/models/Payout.ts`, update `PayoutStatus` to include `"cancelled"`.
+  - In `instructorEarningsController.ts`, implement `cancelPayoutRequest(req, res)`:
+    - Verify that the payout belongs to the requesting instructor and is currently in `"pending"` status.
+    - Transition status to `"cancelled"`.
+    - Refund the payout amount back into the instructor's available balance.
+    - Notify the instructor and record an audit log event.
+  - In `requestInstructorPayout`, dispatch a notification to all platform administrators (`User.find({ role: "admin" })`) linking to `/admin/payouts`.
+  - In `EarningsAndPayouts.tsx`, display a "Cancel Request" button on rows where `status === "pending"`.
+
+---
+
+#### AUDIT-109: Course Generator Incomplete Instructor Lifecycle Flags Cause Multi-Role State Desynchronization
+- **Category**: Multi-Role State Synchronization & Demo Data Integrity
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Admin, Instructor, Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/services/courseGeneratorService.ts`](file:///c:/Users/user/projects/skillkart/backend/src/services/courseGeneratorService.ts#L1117-L1145)
+  - [`frontend/src/features/admin/pages/UserManagement.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/UserManagement.tsx#L175-L210)
+  - [`backend/src/models/User.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/User.ts#L66-L74)
+- **Description**:
+  The demo data generator (`courseGeneratorService.ts:getOrCreateInstructor`) automatically creates instructor accounts when seeding the platform with demo courses:
+  ```typescript
+  let instructor = await User.findOne({ email: input.email });
+  if (!instructor) {
+    instructor = await User.create({
+      name: input.name,
+      email: input.email,
+      password: hashedPassword,
+      role: "instructor",
+      avatarUrl: input.avatarUrl,
+      headline: input.headline,
+      bio: input.bio,
+    });
+    return { instructor, created: true };
+  }
+  ```
+  This implementation causes two severe state synchronization defects:
+  1. **Unset Schema Approval Flags**: The `User` Mongoose schema defines `isInstructorApproved: { type: Boolean, default: false }` and `instructorStatus: { type: String, enum: ["none", "pending", "approved", "rejected"], default: "none" }`. Because `getOrCreateInstructor` only sets `role: "instructor"` without explicitly setting `isInstructorApproved` and `instructorStatus`, the newly created instructor has `role: "instructor"`, but `isInstructorApproved: false` and `instructorStatus: "none"`. When an administrator views `/admin/users`, the instructor appears with conflicting badges, and filtering by `instructorStatus === "approved"` completely excludes them.
+  2. **Existing Student Downgrade Trap**: If an existing user account has the same email as one of the seed instructors (e.g. `instructor1@skillkart.com`), lines 1133–1145 update their bio and headline, but **leave `instructor.role` as `"student"`**. The generator then creates courses authored by this user (`course.instructor = instructor._id`). However, because the user's role remains `"student"`, the user cannot access the `/instructor` portal or gradebook (`ProtectedRoute` blocks them with 403 Forbidden). A student is now the recorded author of published courses without having instructor privileges.
+- **Reproduction Steps**:
+  1. Run the demo course generator via `/admin/courses` ("Regenerate Demo Data").
+  2. Navigate to `/admin/users` and inspect the newly created instructors.
+  3. Notice that their Role is displayed as "Instructor", but their Approval Status is "None" or "Unapproved" due to `isInstructorApproved: false`.
+  4. Register a student user with email `demo.instructor@skillkart.com`, then run the generator with that email.
+  5. The generator assigns 5 courses to `demo.instructor@skillkart.com`, but the user cannot log in and access `/instructor/courses` because their role is still `"student"`.
+- **Remediation**:
+  - In `courseGeneratorService.ts:getOrCreateInstructor`, explicitly pass `isInstructorApproved: true` and `instructorStatus: "approved"` when creating instructors.
+  - When an existing user matches the email, ensure `instructor.role = "instructor"`, `instructor.isInstructorApproved = true`, and `instructor.instructorStatus = "approved"`, and save before generating courses.
+
+---
+
+#### AUDIT-110: Student Lesson Progress Auto-Restores Revoked Certificates Overriding Admin Disciplinary Revocation
+- **Category**: Academic Integrity & Security Lifecycle Vulnerability
+- **Priority**: `P0 — Critical`
+- **Impacted Roles**: Admin, Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/course/progressController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/progressController.ts#L188-L215)
+  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts#L358-L375)
+  - [`backend/src/models/Certificate.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Certificate.ts#L10,L27)
+  - [`frontend/src/pages/VerifyCertificatePage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/VerifyCertificatePage.tsx#L40-L106)
+- **Description**:
+  The SkillKart credentialing engine supports certificate revocation via `Certificate.revokedAt` (used when an enrollment is cancelled or when an administrator revokes a certificate for academic integrity violations, fraud, or chargebacks).
+  However, in `progressController.ts:updateLessonProgress`, when a student completes all lessons (or updates progress on a completed course):
+  ```typescript
+  let certDoc = await Certificate.findOne({ student: req.user.id, course: course._id });
+  if (certDoc) {
+    if (certDoc.revokedAt) {
+      await Certificate.updateOne(
+        { _id: certDoc._id },
+        {
+          $unset: { revokedAt: 1 },
+          $set: {
+            issuedAt: enrollment.completedAt,
+            enrollment: enrollment._id,
+          },
+        }
+      );
+      certDoc.revokedAt = undefined;
+    }
+  }
+  ```
+  This un-revocation routine executes **completely unconditionally**.
+  If an administrator discovers that a student engaged in plagiarism or fraudulent quiz automation and revokes the student's certificate:
+  1. The administrator marks `certDoc.revokedAt = new Date()` (or issues an administrative revocation).
+  2. The student visits `/learn/:courseId/:lessonId`.
+  3. The student simply clicks "Update" on any lesson (or toggles a lesson progress).
+  4. `updateLessonProgress` detects `isFullyComplete` and unconditionally executes `$unset: { revokedAt: 1 }`!
+  5. The student has effectively un-revoked their own certificate with a single button click, completely nullifying administrative disciplinary actions and compromising platform credibility.
+- **Reproduction Steps**:
+  1. Student completes a course and receives a certificate.
+  2. Administrator or integrity committee revokes the certificate due to plagiarism (`revokedAt = new Date()`).
+  3. Verify public verification page `/verify/:id` correctly displays the certificate as revoked.
+  4. Student opens `/learn/:courseId/lesson-1` in `LessonViewer.tsx` and clicks "Update" on the lesson header.
+  5. Refresh `/verify/:id`; observe the certificate is once again active, verified, and displays a green shield with authenticity confirmed.
+- **Remediation**:
+  - Add a revocation reason or source field to `CertificateSchema` (e.g. `revocationReason: string`, `isDisciplinaryRevocation: boolean`, `revokedBy?: ObjectId`).
+  - In `progressController.ts:updateLessonProgress`, do NOT clear `revokedAt` if the certificate was revoked administratively or for disciplinary reasons. Only allow re-issuance if the revocation was specifically due to an enrollment cancellation that has been legitimate re-enrolled and re-approved.
+  - Require an explicit administrative action to reinstate an administratively revoked credential.
+
+---
+
+#### AUDIT-111: Purchase History Hardcoded "Completed" Badges & Unchecked Viewer Access for Failed / Refunded Orders
+- **Category**: Misleading Status Badges & Broken Cross-Role Payment Access
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Student, Admin
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/pages/PurchaseHistoryPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/PurchaseHistoryPage.tsx#L189-L195,L212-L218,L279)
+  - [`backend/src/models/Order.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Order.ts#L15,L138-L143)
+  - [`backend/src/controllers/orderController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/orderController.ts#L393-L410)
+- **Description**:
+  The `Order` model defines four distinct payment states: `"completed" | "pending" | "failed" | "refunded"`.
+  However, in `PurchaseHistoryPage.tsx#L212-218`, the status table column completely ignores `order.paymentStatus` and hardcodes an emerald checkmark and text:
+  ```tsx
+  <td className="px-5 py-4 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+      <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+      <span>Completed</span>
+    </span>
+  </td>
+  ```
+  Furthermore:
+  1. In the printable invoice modal (`PurchaseHistoryPage.tsx#L279`), it hardcodes `Status: <span className="font-bold text-emerald-600">Paid & Enrolled</span>` unconditionally, even for failed or pending transactions.
+  2. On lines 189–195, each purchased course row renders an `[Open]` button (`/learn/${item.course._id}`) regardless of whether the transaction succeeded, failed, or was refunded. Clicking this link for a failed or refunded order redirects to `LessonViewer.tsx`, which subsequently throws `403 Forbidden` ("You are not enrolled in this course") because no active enrollment was created.
+- **Reproduction Steps**:
+  1. Trigger an asynchronous order or simulate a failed/pending payment transaction in MongoDB (`paymentStatus: "failed"` or `"pending"`).
+  2. Log in as the student and navigate to `/purchase-history`.
+  3. Observe that the order row displays a bright emerald checkmark with the status `"Completed"`.
+  4. Click "View Invoice" / "Print Receipt"; observe that the invoice modal states `"Status: Paid & Enrolled"`.
+  5. Click the `[Open]` link next to the course item; observe that the student is dropped into `/learn/:courseId` where a raw 403 error toast is displayed.
+- **Remediation**:
+  - In `PurchaseHistoryPage.tsx`, replace the hardcoded "Completed" status badge with a dynamic badge helper that inspects `order.paymentStatus`:
+    - `"completed"`: Emerald badge (`CheckIcon`, "Completed").
+    - `"pending"`: Amber badge (`ClockIcon`, "Pending Payment").
+    - `"failed"`: Rose/Red badge (`XCircleIcon`, "Failed").
+    - `"refunded"`: Slate badge (`ArrowPathIcon`, "Refunded").
+  - Dynamically render the receipt modal status based on `activeReceipt.paymentStatus`.
+  - Only render the `[Open]` `/learn/:courseId` link if `order.paymentStatus === 'completed'`. For pending or failed orders, render a retry or support prompt instead.
+
+---
+
+#### AUDIT-112: Bulk Instructor Review Nuclear Fallback Processes Entire Platform Pending Queue When Selection is Empty
+- **Category**: Admin Oversight & Bulk Action Safeguard Failure
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Admin, Instructor
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/admin/adminController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminController.ts#L232-L270)
+  - [`frontend/src/features/admin/pages/InstructorReviews.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/InstructorReviews.tsx#L123-L145)
+- **Description**:
+  In `frontend/src/features/admin/pages/InstructorReviews.tsx#L124-136`, `handleBulk` attempts to extract selected IDs:
+  ```typescript
+  const ids = userIds ?? (selected.size > 0 ? Array.from(selected) : undefined);
+  ```
+  If an admin clicks a bulk action button when `selected.size === 0` (or if header selection desynchronizes), `ids` evaluates to `undefined`, and `api.patch('/admin/instructors/bulk-approve', { userIds: undefined })` is dispatched.
+  In `backend/src/controllers/admin/adminController.ts#L244-250`:
+  ```typescript
+  const filter: Record<string, any> = { instructorStatus: "pending" };
+  if (Array.isArray(userIds) && userIds.length > 0) {
+    filter._id = { $in: userIds };
+  }
+  ```
+  Because `userIds` is `undefined`, the controller does **not** append `{ _id: { $in: userIds } }`. Instead, it executes:
+  ```typescript
+  const pendingInstructors = await User.find({ instructorStatus: "pending" });
+  ```
+  It unconditionally processes **every single pending instructor in the entire platform database**!
+  An accidental click with zero items selected indiscriminately approves (or rejects) hundreds of pending applicant dossiers across the platform, bypassing individual dossier vetting, creating bulk notifications, and granting instructor platform privileges without administrative intent.
+- **Reproduction Steps**:
+  1. Have 3 pending instructor applicants in the database (`user1`, `user2`, `user3`).
+  2. Navigate to `/admin/instructor-reviews` as an administrator.
+  3. Ensure 0 checkboxes are selected.
+  4. Trigger `handleBulk(..., 'approved')` (or invoke the bulk approve action).
+  5. Inspect the backend logs and database: all 3 pending instructors are instantly bulk-approved, promoted to `role: "instructor"`, and notified.
+- **Remediation**:
+  - In `backend/src/controllers/admin/adminController.ts:bulkApproveInstructors` and `bulkRejectInstructors`, strictly validate `userIds`:
+    ```typescript
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: "userIds array is required and cannot be empty for bulk operations" });
+    }
+    ```
+  - In `frontend/src/features/admin/pages/InstructorReviews.tsx`, disable the bulk action buttons whenever `selected.size === 0`, and display a confirmation modal detailing the exact number of applicants targeted before dispatching.
+
+---
+
+#### AUDIT-113: Student Unenroll Modal Misleading Progress Retention Promise Contradicts Permanent Deletion
+- **Category**: Conflicting UI Indicators & State-Synchronization Inconsistency
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Student
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/features/enrollment/components/EnrollmentCard.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/enrollment/components/EnrollmentCard.tsx#L161-L184)
+  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts#L430-L440)
+- **Description**:
+  In `frontend/src/features/enrollment/components/EnrollmentCard.tsx#L167-170`, when an active student clicks "Unenroll" on a course card, a confirmation dialog pops up with the following assurance:
+  ```tsx
+  <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+    Are you sure you want to unenroll from <strong className="text-slate-800 dark:text-slate-200">"{c.title}"</strong>?
+    Your completed lesson history will remain saved if you enroll again.
+  </p>
+  ```
+  However, in `backend/src/controllers/enrollment/enrollmentController.ts#L430-440`, `cancelEnrollment` executes:
+  ```typescript
+  // Remove lesson progress for this student in this course
+  const sections = await Section.find({ course: enrollment.course }).select("_id").lean();
+  const sectionIds = sections.map((s) => s._id);
+  if (sectionIds.length > 0) {
+    const lessons = await Lesson.find({ section: { $in: sectionIds } }).select("_id").lean();
+    const lessonIds = lessons.map((l) => l._id);
+    if (lessonIds.length > 0) {
+      await LessonProgress.deleteMany({ user: enrollment.student, lesson: { $in: lessonIds } });
+    }
+  }
+  ```
+  The backend immediately and permanently wipes **every single `LessonProgress` record** for that student in that course!
+  When the student re-enrolls later, all their lesson progress, video timestamps, and quiz completion flags are completely gone (0% progress), directly contradicting the explicit guarantee given in the confirmation modal.
+- **Reproduction Steps**:
+  1. Enroll in a course and complete 4 out of 10 lessons.
+  2. Open `/my-courses` and click the unenroll (trash/drop) icon on the course card.
+  3. Read the modal text: observe it explicitly claims: *"Your completed lesson history will remain saved if you enroll again."*
+  4. Confirm unenrollment.
+  5. Inspect the MongoDB collection: `db.lessonprogresses.find({ user: studentId, lesson: { $in: courseLessonIds } })` returns zero documents.
+  6. Re-enroll in the course; observe that progress is at 0%, and all previously completed lessons must be taken from scratch.
+- **Remediation**:
+  - Update the confirmation modal copy in `EnrollmentCard.tsx` to truthfully reflect system behavior:
+    *"Are you sure you want to unenroll from \"{c.title}\"? Warning: All your completed lesson history and progress will be permanently reset."*
+  - Alternatively, if product intent is to preserve progress upon re-enrollment, soft-delete or retain `LessonProgress` records instead of executing `LessonProgress.deleteMany`.
+
+---
+
+#### AUDIT-114: Missing Lesson Item Update Route & Controller Deadlocks Content Modification
+- **Category**: Unhandled Lifecycle Transitions & Deadlocked Authoring Workflow
+- **Priority**: `P1 — High`
+- **Impacted Roles**: Instructor, Admin
+- **Status**: Pending
+- **Affected Files**:
+  - [`backend/src/controllers/course/lessonItemController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/lessonItemController.ts#L10-L130)
+  - [`backend/src/routes/lessonRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/lessonRoutes.ts#L1-L30)
+  - [`backend/src/models/LessonItem.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/LessonItem.ts#L41)
+  - [`frontend/src/features/instructor/pages/EditCourse.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/EditCourse.tsx#L486-L530)
+- **Description**:
+  In `backend/src/controllers/course/lessonItemController.ts`, only two endpoints are implemented:
+  1. `createLessonItem` (`POST /api/lessons/:lessonId/items`)
+  2. `deleteLessonItem` (`DELETE /api/lessons/:lessonId/items/:itemId`)
+  There is **no update endpoint** (`PUT /api/lessons/:lessonId/items/:itemId` or `PATCH /api/lessons/:lessonId/items/:itemId`) in either `lessonItemController.ts` or `backend/src/routes/lessonRoutes.ts`.
+  Because `LessonItem.ts` defines a unique compound index `{ lesson: 1, order: 1 }`:
+  - If an instructor makes a typo in text content, updates an external resource link, or uploads an updated PDF or video URL, they have no mechanism to edit the existing item.
+  - The only workaround is to delete the item and recreate it. However, deleting and recreating appends the new item to the end of the lesson (highest `order`), disrupting the pedagogical order of multi-item lessons with no UI or API support to restore the original position.
+- **Reproduction Steps**:
+  1. As an instructor, open an existing course in the course editor (`/instructor/courses/:id/edit`).
+  2. Expand a lesson that contains multiple items (e.g., a video followed by notes and downloadable resources).
+  3. Attempt to edit the description or URL of the second item; observe there is no edit action button in the curriculum editor UI.
+  4. Inspect API routes: attempting `PUT /api/lessons/:lessonId/items/:itemId` yields `404 Not Found`.
+- **Remediation**:
+  - Implement `updateLessonItem` in `backend/src/controllers/course/lessonItemController.ts` that validates lesson ownership and updates `type`, `title`, and `content`.
+  - Register `router.put("/:lessonId/items/:itemId", authenticate, updateLessonItem)` in `backend/src/routes/lessonRoutes.ts`.
+  - Add an "Edit Item" modal in `EditCourse.tsx` to enable instructors to update existing lesson items in place without reordering disruption.
+
+---
+
+#### AUDIT-115: Admin Financial Reports Ledger Unconditionally Renders Emerald Badges for Failed and Refunded Transactions
+- **Category**: Misleading Status Badges & Cross-Role Reporting Discrepancy
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Admin
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/features/admin/pages/FinancialReports.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/FinancialReports.tsx#L482-L487)
+  - [`backend/src/controllers/admin/adminFinancialController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminFinancialController.ts#L100-L130)
+- **Description**:
+  In `frontend/src/features/admin/pages/FinancialReports.tsx#L482-487`, the Transactions & Invoices Ledger displays recent platform order activity.
+  The status column is styled with hardcoded emerald classes:
+  ```tsx
+  <td className="px-4 py-3.5">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+      {tx.paymentStatus}
+    </span>
+  </td>
+  ```
+  If a customer's transaction status is `failed`, `pending`, or `refunded`, the badge renders the status text inside a bright emerald (green) pill.
+  For an administrator or financial auditor reviewing platform transaction logs, failed and refunded purchases visually mimic completed revenue events, creating severe confusion and misleading financial oversight.
+- **Reproduction Steps**:
+  1. Generate test orders with statuses: one `completed`, one `failed`, and one `refunded`.
+  2. Navigate to `/admin/financial-reports` as an administrator.
+  3. Scroll down to the "Transactions & Invoices Ledger" table.
+  4. Observe that the `FAILED` and `REFUNDED` transactions are rendered with identical green pills (`bg-emerald-100 text-emerald-700`) as the `COMPLETED` transaction.
+- **Remediation**:
+  - In `FinancialReports.tsx`, define a semantic badge color mapping function for `paymentStatus`:
+    - `completed` / `paid`: `bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300`
+    - `pending`: `bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300`
+    - `failed`: `bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300`
+    - `refunded`: `bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300`
+
+---
+
+#### AUDIT-116: Hardcoded Dollar Currency Formatting in Course Catalog and Cart Promo Badges Bypasses System Currency
+- **Category**: Conflicting UI Indicators & Multi-Role Setting Desync
+- **Priority**: `P2 — Medium`
+- **Impacted Roles**: Student, Instructor, Admin
+- **Status**: Pending
+- **Affected Files**:
+  - [`frontend/src/features/course/pages/CourseList.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/course/pages/CourseList.tsx#L912)
+  - [`frontend/src/features/cart/pages/CartPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/cart/pages/CartPage.tsx#L693)
+  - [`frontend/src/context/CurrencyContext.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/context/CurrencyContext.tsx#L1-L40)
+- **Description**:
+  The platform provides a centralized `CurrencyContext` that loads `primaryCurrency` (`USD`, `EUR`, `GBP`, `INR`, etc.) from platform settings and formats all prices with the configured symbol and decimal places via `formatAmount(amount)`.
+  While course detail pages and checkout tables utilize `CurrencyContext`, several key public views continue to hardcode the `$` dollar sign:
+  1. `frontend/src/features/course/pages/CourseList.tsx#L912`:
+     ```tsx
+     {course.price === 0 ? 'Free' : `$${course.price.toFixed(2)}`}
+     ```
+  2. `frontend/src/features/cart/pages/CartPage.tsx#L693`:
+     ```tsx
+     {promo.discountType === 'percentage'
+       ? `${promo.discountValue}% off`
+       : `$${promo.discountValue} off`}
+     ```
+  When the administrator configures the LMS to operate in a non-USD currency (such as Euros `€` or British Pounds `£`), students browsing the catalog and viewing cart discount badges see prices formatted with `$`, while the cart total and invoice receipts display `€`. This causes jarring currency mismatch across customer purchasing journeys.
+- **Reproduction Steps**:
+  1. Log in as admin and navigate to `/admin/settings`.
+  2. Change "Primary Currency" to `EUR (€)`.
+  3. Open `/courses` (Course Catalog) in an incognito window.
+  4. Inspect course cards: price tags display `$49.99` instead of `€49.99`.
+  5. Add a course to the cart and apply a fixed discount coupon: observe promo badge displays `"$10 off"` while the cart subtotal and summary display `€`.
+- **Remediation**:
+  - In `CourseList.tsx`, import `useCurrency` and replace `$${course.price.toFixed(2)}` with `formatAmount(course.price)`.
+  - In `CartPage.tsx`, replace `$${promo.discountValue} off` with `${formatAmount(promo.discountValue)} off`.
+
+---
+
 
 ---
 
@@ -3239,7 +3741,19 @@ P3 (Low / Polish):
 | 99 | AUDIT-100 | Enforce consistent wishlist permissions across frontend/backend and format currency in `WishlistPage.tsx` | Visit wishlist as guest or instructor; verify proper auth redirect and localized currency formatting. |
 | 100 | AUDIT-101 | Filter active/completed enrollments from cart recommendations in `CartPage.tsx` | Enroll in course, add another course to cart, view cart page; verify enrolled course is omitted from upsell strip. |
 | 101 | AUDIT-102 | Implement atomic upsert pattern for singleton system settings in `adminController.ts` | Concurrently update platform settings during cold start; verify atomic update without duplicate singletons or null errors. |
-| 102 | AUDIT-103 | Guard auto-enrollment behind confirmed payment status (`paid`/`completed`) in `orderController.ts` | Simulate asynchronous pending payment; verify order created in pending state without premature active enrollment creation. |
+| 102 | [x] AUDIT-103 | Guard auto-enrollment behind confirmed payment status (`paid`/`completed`) in `orderController.ts` | Simulate asynchronous pending payment; verify order created in pending state without premature active enrollment creation. |
 | 103 | AUDIT-104 | Add reorder controls (move up/down) and bulk order persistence in `CourseFAQEditor.tsx` & `faqController.ts` | Reorder FAQs in instructor editor, refresh page; verify updated sort order persists accurately in student accordion. |
+| 104 | AUDIT-105 | Check `user.isActive !== false` in `googleAuthController.ts:googleLogin` | Deactivate user via admin, attempt Google OAuth login; verify 403 Forbidden response blocking suspended account access. |
+| 105 | AUDIT-106 | Guard category deletion against assigned courses and log audit trail in `categoryController.ts` | Attempt to delete category with active courses; verify 400 rejection or clean cascade unset and verify audit log entry. |
+| 106 | AUDIT-107 | Offer course reactivation prompt and notification on instructor restoration in `adminController.ts` | Deactivate instructor then re-activate in admin users; verify course restoration prompt and verify instructor notification. |
+| 107 | AUDIT-108 | Add `cancelled` status and cancellation endpoint for pending payouts in `instructorEarningsController.ts` & alert admins | Submit payout request as instructor; verify cancel button refunds balance and verify admin notification received on submission. |
+| 108 | AUDIT-109 | Set `isInstructorApproved: true` and `instructorStatus: "approved"` in `courseGeneratorService.ts` | Run course generator; verify generated instructors have approved flags and existing accounts are upgraded to instructor role. |
+| 109 | AUDIT-110 | Guard against auto-clearing `revokedAt` on administratively revoked certificates in `progressController.ts` | Revoke student certificate as admin, update lesson progress as student; verify certificate remains revoked. |
+| 110 | AUDIT-111 | Render dynamic badges based on `paymentStatus` and conditionally disable viewer link in `PurchaseHistoryPage.tsx` | Create pending and failed test orders, load `/purchase-history`; verify amber "Pending" and red "Failed" badges with disabled course access links. |
+| 111 | AUDIT-112 | Require non-empty `userIds` array in `bulkApproveInstructors` / `bulkRejectInstructors` & disable bulk button in `InstructorReviews.tsx` | Click bulk approve with 0 users selected; verify UI button is disabled and backend returns 400 validation error without modifying unselected users. |
+| 112 | AUDIT-113 | Correct confirmation modal copy in `EnrollmentCard.tsx` to warn about permanent progress reset or preserve progress in `enrollmentController.ts` | Click "Unenroll" on active course; verify modal accurately warns that course progress and lesson completions will be permanently reset. |
+| 113 | AUDIT-114 | Implement `updateLessonItem` in `lessonItemController.ts` and bind PUT route in `lessonRoutes.ts` | Send `PUT /api/lessons/:lessonId/items/:itemId` with updated title/content; verify 200 OK and verify lesson item updates without order mutation. |
+| 114 | AUDIT-115 | Apply semantic badge color mapping (`failed` -> rose, `refunded` -> amber, `completed` -> emerald) in `FinancialReports.tsx` | View Financial Reports transactions ledger with failed or refunded orders; verify red and amber badges render instead of deceptive green pills. |
+| 115 | AUDIT-116 | Replace hardcoded `$` string templates with `formatAmount(course.price)` from `useCurrency()` in `CourseList.tsx` and `CartPage.tsx` | Change system primary currency to EUR (€) in admin settings; verify CourseList card prices and Cart promo discount badges render with `€`. |
 
 

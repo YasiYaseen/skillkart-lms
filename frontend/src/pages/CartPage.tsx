@@ -19,6 +19,7 @@ import { getErrorMessage } from '@/utils/errorUtils';
 import {
   ShoppingBagIcon,
   CheckCircleIcon,
+  ClockIcon,
   AcademicCapIcon,
   TagIcon,
   ShieldCheckIcon,
@@ -205,7 +206,7 @@ export default function CartPage() {
     setCheckingOut(true);
     try {
       const courseIds = cart.map((i) => i.courseId);
-      const order = await processCheckout({
+      const res = await processCheckout({
         courseIds,
         couponCode: appliedCoupon?.code,
         paymentMethod: paymentForm.method,
@@ -216,9 +217,16 @@ export default function CartPage() {
         },
       });
 
-      setCompletedOrder(order);
+      const orderData = res.order || (res as unknown as OrderRecord);
+      setCompletedOrder(orderData);
       clearCart();
-      toast.success('Order completed successfully! Welcome to your courses.');
+
+      const isConfirmed = orderData.paymentStatus === 'completed' || orderData.paymentStatus === 'paid';
+      if (isConfirmed) {
+        toast.success(res.message || 'Order completed successfully! Welcome to your courses.');
+      } else {
+        toast.info(res.message || 'Order placed! Payment confirmation is pending.');
+      }
     } catch (err: unknown) {
       await refreshCart();
       setCurrentStep('items');
@@ -230,61 +238,93 @@ export default function CartPage() {
     }
   };
 
-  // SUCCESS CONFIRMATION VIEW
+  // SUCCESS / CONFIRMATION VIEW
   if (completedOrder) {
+    const isConfirmed = completedOrder.paymentStatus === 'completed' || completedOrder.paymentStatus === 'paid';
+
     return (
       <div className="max-w-2xl mx-auto py-12 px-4 sm:px-6">
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm text-center space-y-5 animate-fadeIn">
-          <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircleIcon className="w-8 h-8" />
-          </div>
+          {isConfirmed ? (
+            <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircleIcon className="w-8 h-8" />
+            </div>
+          ) : (
+            <div className="w-14 h-14 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto">
+              <ClockIcon className="w-8 h-8" />
+            </div>
+          )}
 
           <div className="space-y-1.5">
-            <span className="text-[11px] uppercase tracking-wider font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-              Payment Confirmed &bull; Enrolled
-            </span>
+            {isConfirmed ? (
+              <span className="text-[11px] uppercase tracking-wider font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                Payment Confirmed &bull; Enrolled
+              </span>
+            ) : (
+              <span className="text-[11px] uppercase tracking-wider font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                Payment Pending &bull; Awaiting Clearance
+              </span>
+            )}
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Thank you for your order
+              {isConfirmed ? 'Thank you for your order' : 'Order Placed — Awaiting Payment'}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Order Reference: <strong className="font-mono text-slate-800 dark:text-slate-200">{completedOrder.orderNumber}</strong>
             </p>
+            {!isConfirmed && (
+              <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50/70 dark:bg-amber-950/40 p-3 rounded-lg border border-amber-200/80 dark:border-amber-800/60 max-w-lg mx-auto leading-relaxed">
+                Your payment is being verified by your payment provider. Course access will unlock automatically as soon as payment clears.
+              </p>
+            )}
           </div>
 
-          {/* Enrolled Courses Summary Box */}
+          {/* Enrolled / Purchased Courses Summary Box */}
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 text-left border border-slate-200 dark:border-slate-700 space-y-3">
             <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Enrolled Courses ({completedOrder.items.length})
+              {isConfirmed ? `Enrolled Courses (${completedOrder.items.length})` : `Purchased Courses (${completedOrder.items.length})`}
             </h3>
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
               {completedOrder.items.map((item, idx) => (
                 <div key={idx} className="py-2.5 flex justify-between items-center text-xs">
                   <div>
                     <span className="font-semibold text-slate-900 dark:text-white block">{item.title}</span>
-                    <span className="text-[10px] text-emerald-600 font-medium">Instant Access Activated</span>
+                    {isConfirmed ? (
+                      <span className="text-[10px] text-emerald-600 font-medium">Instant Access Activated</span>
+                    ) : (
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Access Activates Upon Payment Clearance</span>
+                    )}
                   </div>
                   <span className="text-slate-600 dark:text-slate-300 font-mono font-semibold">{formatAmount(item.finalPrice)}</span>
                 </div>
               ))}
             </div>
             <div className="pt-2.5 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-xs font-bold text-slate-900 dark:text-white">
-              <span>Total Paid</span>
+              <span>Total {isConfirmed ? 'Paid' : 'Pending'}</span>
               <span className="text-blue-600 dark:text-blue-400 font-mono text-sm">{formatAmount(completedOrder.totalAmount, { showCode: true })}</span>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
+            {isConfirmed ? (
+              <Link
+                to="/my-courses"
+                className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs"
+              >
+                Go to My Courses
+              </Link>
+            ) : (
+              <Link
+                to="/purchase-history"
+                className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs"
+              >
+                View Order Status & Receipt
+              </Link>
+            )}
             <Link
-              to="/my-courses"
-              className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs"
-            >
-              Go to My Courses
-            </Link>
-            <Link
-              to="/purchase-history"
+              to={isConfirmed ? "/purchase-history" : "/courses"}
               className="w-full sm:w-auto px-5 py-2.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg transition-colors"
             >
-              View Order Receipt
+              {isConfirmed ? "View Order Receipt" : "Browse More Courses"}
             </Link>
           </div>
         </div>

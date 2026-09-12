@@ -20,7 +20,12 @@ export async function getMyCertificates(req: Request, res: Response) {
       .sort({ issuedAt: -1 })
       .lean();
 
-    return res.json({ certificates });
+    const formatted = certificates.map((cert) => ({
+      ...cert,
+      isRevoked: Boolean(cert.revokedAt),
+    }));
+
+    return res.json({ certificates: formatted });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }
@@ -47,7 +52,16 @@ export async function getCertificateById(req: Request, res: Response) {
       return res.status(404).json({ message: "Certificate not found" });
     }
 
-    return res.json({ certificate });
+    const isRevoked = Boolean(certificate.revokedAt);
+
+    return res.json({
+      certificate: {
+        ...certificate,
+        isRevoked,
+      },
+      isRevoked,
+      revokedAt: certificate.revokedAt || null,
+    });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }
@@ -56,7 +70,7 @@ export async function getCertificateById(req: Request, res: Response) {
 /**
  * POST /api/certificates/claim
  * Student claims a certificate for a completed course.
- * Auto-generates if not yet issued; returns existing if already issued.
+ * Auto-generates if not yet issued; returns existing if already issued; clears revocation if legitimately re-completed.
  */
 export async function claimCertificate(req: Request, res: Response) {
   try {
@@ -87,6 +101,50 @@ export async function claimCertificate(req: Request, res: Response) {
     });
 
     if (existing) {
+      if (existing.revokedAt) {
+        // AUDIT-98: Certificate was previously revoked, but student has legitimately completed the course again.
+        // Clear revocation, update issuance timestamp & enrollment reference.
+        await Certificate.updateOne(
+          { _id: existing._id },
+          {
+            $unset: { revokedAt: 1 },
+            $set: {
+              issuedAt: enrollment.completedAt || new Date(),
+              enrollment: enrollment._id,
+            },
+          }
+        );
+        existing.revokedAt = undefined;
+        existing.issuedAt = enrollment.completedAt || new Date();
+        existing.enrollment = enrollment._id;
+
+        // Send certificate email on re-issuance
+        Promise.all([
+          User.findById(req.user.id).select("email name").lean(),
+          Course.findById(courseId).select("title").lean(),
+        ])
+          .then(([studentUser, courseDoc]) => {
+            if (studentUser && studentUser.email && courseDoc) {
+              sendCertificateEmail(
+                studentUser.email,
+                studentUser.name || "Student",
+                courseDoc.title,
+                existing.certificateId
+              ).catch((err) => {
+                console.error("[EMAIL] Failed to send certificate email:", err);
+              });
+            }
+          })
+          .catch((err) => {
+            console.error("[EMAIL] Error looking up certificate details for email:", err);
+          });
+
+        return res.status(200).json({
+          certificate: existing,
+          message: "Certificate re-issued successfully",
+        });
+      }
+
       return res.json({ certificate: existing, message: "Certificate already issued" });
     }
 

@@ -354,19 +354,32 @@ export async function updateProgress(req: Request, res: Response) {
       updated.completedAt = new Date();
       await updated.save();
 
-      // Auto-issue certificate on first completion
-      await Certificate.findOneAndUpdate(
-        { student: req.user.id, course: enrollment.course },
-        {
-          $setOnInsert: {
-            student: req.user.id,
-            course: enrollment.course,
-            enrollment: updated._id,
-            issuedAt: updated.completedAt,
-          },
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
+      // Auto-issue certificate on completion (or re-issue if previously revoked)
+      let certDoc = await Certificate.findOne({ student: req.user.id, course: enrollment.course });
+      if (certDoc) {
+        if (certDoc.revokedAt) {
+          await Certificate.updateOne(
+            { _id: certDoc._id },
+            {
+              $unset: { revokedAt: 1 },
+              $set: {
+                issuedAt: updated.completedAt,
+                enrollment: updated._id,
+              },
+            }
+          );
+          certDoc.revokedAt = undefined;
+          certDoc.issuedAt = updated.completedAt;
+          certDoc.enrollment = updated._id;
+        }
+      } else {
+        certDoc = await Certificate.create({
+          student: req.user.id,
+          course: enrollment.course,
+          enrollment: updated._id,
+          issuedAt: updated.completedAt,
+        });
+      }
 
       // Notify student of course completion
       const courseObj = await Course.findById(enrollment.course).select("title");
@@ -378,9 +391,16 @@ export async function updateProgress(req: Request, res: Response) {
         link: `/my-certificates`,
       });
     } else if (!isFullyComplete && updated.status === "completed") {
-      // User un-marked a lesson after course was auto-completed — revert to active
-      updated.status = "active";
-      updated.completedAt = undefined;
+      // User un-marked a lesson after course was auto-completed — revert to active only if no unrevoked certificate exists
+      const hasCertificate = await Certificate.exists({
+        student: req.user.id,
+        course: enrollment.course,
+        $or: [{ revokedAt: { $exists: false } }, { revokedAt: null }],
+      });
+      if (!hasCertificate) {
+        updated.status = "active";
+        updated.completedAt = undefined;
+      }
       await updated.save();
     }
 

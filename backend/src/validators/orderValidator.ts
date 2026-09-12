@@ -13,4 +13,5 @@ export const checkoutSchema = z.object({
       country: z.string().trim().optional().nullable(),
     })
     .optional(),
+  metadata: z.record(z.string(), z.any()).optional().nullable(),
 });

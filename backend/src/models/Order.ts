@@ -12,7 +12,7 @@ export interface IOrderItem {
 }
 
 export type PaymentMethod = "simulated" | "free" | "stripe" | "razorpay" | "paypal" | "card" | "express" | "upi";
-export type PaymentStatus = "completed" | "pending" | "failed" | "refunded";
+export type PaymentStatus = "completed" | "pending" | "failed" | "refunded" | "paid";
 
 export interface IOrder extends Document {
   orderNumber: string;
@@ -29,7 +29,7 @@ export interface IOrder extends Document {
   paymentStatus: PaymentStatus;
   transactionId: string;
   paymentMetadata?: Record<string, any>;
-  completedAt: Date;
+  completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -137,7 +137,7 @@ const OrderSchema = new Schema<IOrder>(
     },
     paymentStatus: {
       type: String,
-      enum: ["completed", "pending", "failed", "refunded"],
+      enum: ["completed", "pending", "failed", "refunded", "paid"],
       default: "completed",
       index: true,
     },
@@ -152,7 +152,6 @@ const OrderSchema = new Schema<IOrder>(
     },
     completedAt: {
       type: Date,
-      default: Date.now,
     },
   },
   { timestamps: true }
