@@ -31,6 +31,8 @@ interface CertificateData {
     issuedAt: string;
     revokedAt?: string | null;
     isRevoked?: boolean;
+    revocationReason?: string | null;
+    isDisciplinaryRevocation?: boolean;
 }
 
 function VerifyCertificatePage() {
@@ -48,6 +50,8 @@ function VerifyCertificatePage() {
                 setCert({
                     ...certData,
                     isRevoked,
+                    revocationReason: res.data.revocationReason ?? certData?.revocationReason ?? null,
+                    isDisciplinaryRevocation: res.data.isDisciplinaryRevocation ?? certData?.isDisciplinaryRevocation ?? false,
                 });
             })
             .catch(() => {
@@ -168,7 +172,7 @@ function VerifyCertificatePage() {
                 </div>
             </div>
 
-            {/* AUDIT-98: Revoked Certificate Alert Banner */}
+            {/* AUDIT-98 / AUDIT-110: Revoked Certificate Alert Banner */}
             {isRevoked && (
                 <div className="w-full max-w-4xl mb-6 bg-rose-50 dark:bg-rose-950/70 border-2 border-rose-500/80 rounded-xl p-4 sm:p-5 flex items-start sm:items-center gap-3.5 text-rose-900 dark:text-rose-200 shadow-sm print:border-rose-600 print:bg-rose-50 print:text-rose-900">
                     <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/80 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-300">
@@ -176,10 +180,11 @@ function VerifyCertificatePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wide">
-                            Revoked Credential Notice
+                            {cert.isDisciplinaryRevocation ? 'Disciplinary Revocation Notice' : 'Revoked Credential Notice'}
                         </h3>
                         <p className="text-xs sm:text-sm text-rose-700 dark:text-rose-300 font-medium mt-0.5">
-                            This certificate was revoked on <span className="font-semibold">{formattedRevokedDate || formattedDate}</span> and is no longer a valid credential.
+                            This certificate was revoked on <span className="font-semibold">{formattedRevokedDate || formattedDate}</span>
+                            {cert.revocationReason ? ` due to: "${cert.revocationReason}"` : ''} and is no longer a valid credential.
                         </p>
                     </div>
                 </div>

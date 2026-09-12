@@ -31,7 +31,7 @@ P0 (Critical / Blocker):
   [x] AUDIT-98: Revoked Certificate Verification Security Bypass and Permanent Re-issuance Lockout
   [x] AUDIT-103: Asynchronous Gateway Checkout Auto-Enrollment Vulnerability
   [x] AUDIT-105: Google OAuth Suspended User Bypass Permits Inactive Accounts to Log In and Obtain Active Session
-  [ ] AUDIT-110: Student Lesson Progress Auto-Restores Revoked Certificates Overriding Admin Disciplinary Revocation
+  [x] AUDIT-110: Student Lesson Progress Auto-Restores Revoked Certificates Overriding Admin Disciplinary Revocation
   [ ] AUDIT-117: Cross-Instructor Course Coupon Exploitation & Unauthorized Revenue Deduction
 
 P1 (High):
@@ -3352,19 +3352,26 @@ P3 (Low / Polish):
 
 ---
 
-#### AUDIT-110: Student Lesson Progress Auto-Restores Revoked Certificates Overriding Admin Disciplinary Revocation
+#### [x] AUDIT-110: Student Lesson Progress Auto-Restores Revoked Certificates Overriding Admin Disciplinary Revocation
 - **Category**: Academic Integrity & Security Lifecycle Vulnerability
 - **Priority**: `P0 — Critical`
 - **Impacted Roles**: Admin, Student
-- **Status**: Pending
+- **Status**: Completed
 - **Affected Files**:
-  - [`backend/src/controllers/course/progressController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/progressController.ts#L188-L215)
-  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts#L358-L375)
-  - [`backend/src/models/Certificate.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Certificate.ts#L10,L27)
-  - [`frontend/src/pages/VerifyCertificatePage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/VerifyCertificatePage.tsx#L40-L106)
+  - [`backend/src/models/Certificate.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Certificate.ts#L4-L35)
+  - [`backend/src/models/AuditLog.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/AuditLog.ts#L6-L34)
+  - [`backend/src/services/auditService.ts`](file:///c:/Users/user/projects/skillkart/backend/src/services/auditService.ts#L4-L12)
+  - [`backend/src/controllers/course/progressController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/progressController.ts#L188-L245)
+  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts#L358-L455)
+  - [`backend/src/controllers/certificate/certificateController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/certificate/certificateController.ts#L22-L140)
+  - [`backend/src/controllers/admin/adminController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/admin/adminController.ts#L450-L490,L1030-L1200)
+  - [`backend/src/routes/adminRoutes.ts`](file:///c:/Users/user/projects/skillkart/backend/src/routes/adminRoutes.ts#L68-L72)
+  - [`frontend/src/pages/VerifyCertificatePage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/VerifyCertificatePage.tsx#L30-L55,L175-L190)
+  - [`frontend/src/pages/MyCertificatesPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/MyCertificatesPage.tsx#L24-L28,L105-L125)
+  - [`frontend/src/features/admin/pages/EnrollmentList.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/admin/pages/EnrollmentList.tsx#L8-L75,L165-L255)
 - **Description**:
   The SkillKart credentialing engine supports certificate revocation via `Certificate.revokedAt` (used when an enrollment is cancelled or when an administrator revokes a certificate for academic integrity violations, fraud, or chargebacks).
-  However, in `progressController.ts:updateLessonProgress`, when a student completes all lessons (or updates progress on a completed course):
+  However, in `progressController.ts:updateLessonProgress`, when a student completed all lessons (or updated progress on a completed course), the un-revocation routine executed unconditionally:
   ```typescript
   let certDoc = await Certificate.findOne({ student: req.user.id, course: course._id });
   if (certDoc) {
@@ -3383,23 +3390,25 @@ P3 (Low / Polish):
     }
   }
   ```
-  This un-revocation routine executes **completely unconditionally**.
-  If an administrator discovers that a student engaged in plagiarism or fraudulent quiz automation and revokes the student's certificate:
-  1. The administrator marks `certDoc.revokedAt = new Date()` (or issues an administrative revocation).
-  2. The student visits `/learn/:courseId/:lessonId`.
-  3. The student simply clicks "Update" on any lesson (or toggles a lesson progress).
-  4. `updateLessonProgress` detects `isFullyComplete` and unconditionally executes `$unset: { revokedAt: 1 }`!
-  5. The student has effectively un-revoked their own certificate with a single button click, completely nullifying administrative disciplinary actions and compromising platform credibility.
+  If an administrator discovered that a student engaged in plagiarism or fraudulent quiz automation and revoked the student's certificate:
+  1. The administrator marked `certDoc.revokedAt = new Date()`.
+  2. The student visited `/learn/:courseId/:lessonId`.
+  3. The student clicked "Update" on any lesson.
+  4. `updateLessonProgress` detected `isFullyComplete` and unconditionally executed `$unset: { revokedAt: 1 }`!
+  5. The student effectively un-revoked their own certificate with a single button click, completely nullifying administrative disciplinary actions and compromising platform credibility.
 - **Reproduction Steps**:
   1. Student completes a course and receives a certificate.
   2. Administrator or integrity committee revokes the certificate due to plagiarism (`revokedAt = new Date()`).
   3. Verify public verification page `/verify/:id` correctly displays the certificate as revoked.
   4. Student opens `/learn/:courseId/lesson-1` in `LessonViewer.tsx` and clicks "Update" on the lesson header.
-  5. Refresh `/verify/:id`; observe the certificate is once again active, verified, and displays a green shield with authenticity confirmed.
-- **Remediation**:
-  - Add a revocation reason or source field to `CertificateSchema` (e.g. `revocationReason: string`, `isDisciplinaryRevocation: boolean`, `revokedBy?: ObjectId`).
-  - In `progressController.ts:updateLessonProgress`, do NOT clear `revokedAt` if the certificate was revoked administratively or for disciplinary reasons. Only allow re-issuance if the revocation was specifically due to an enrollment cancellation that has been legitimate re-enrolled and re-approved.
-  - Require an explicit administrative action to reinstate an administratively revoked credential.
+  5. Refresh `/verify/:id`; observe the certificate was previously active again, verified, and displayed authenticity confirmed.
+- **Remediation & Resolution Summary**:
+  - In `Certificate.ts`, added `isDisciplinaryRevocation: boolean` (default: false), `revocationReason: string`, and `revokedBy: ObjectId` schema fields.
+  - In `progressController.ts:updateLessonProgress`, `enrollmentController.ts:updateProgress`, and `certificateController.ts:claimCertificate`, guarded all auto-restoration routines with `if (!certDoc.isDisciplinaryRevocation)`. Certificates revoked for disciplinary or administrative infractions remain permanently revoked regardless of student progress mutations or re-claims, and congratulations emails/notifications are suppressed for un-reinstated credentials.
+  - In `enrollmentController.ts:cancelEnrollment`, explicitly marked cancellation revocations with `isDisciplinaryRevocation: false` and `revocationReason: "Enrollment cancelled"`, preserving legitimate re-issuance upon re-enrollment and completion.
+  - In `adminController.ts` and `adminRoutes.ts`, created dedicated administrative endpoints: `PATCH /api/admin/certificates/:certificateId/revoke` (sets disciplinary flag, reason, and administrator reference with full audit logging and student alert notification) and `PATCH /api/admin/certificates/:certificateId/reinstate` (allows authorized admins to explicitly restore credentials).
+  - In `EnrollmentList.tsx`, enriched the admin table with live Certificate status chips (`Verified` vs `Revoked`), direct verification links, and quick-action buttons allowing admins to revoke with custom disciplinary reasons or reinstate credentials.
+  - In `VerifyCertificatePage.tsx` and `MyCertificatesPage.tsx`, added explicit "Disciplinary Revocation Notice" labels and surfaced exact revocation reasons in the verification header banner and student credential cards.
 
 ---
 
@@ -4086,7 +4095,7 @@ P3 (Low / Polish):
 | 106 | AUDIT-107 | Offer course reactivation prompt and notification on instructor restoration in `adminController.ts` | Deactivate instructor then re-activate in admin users; verify course restoration prompt and verify instructor notification. |
 | 107 | AUDIT-108 | Add `cancelled` status and cancellation endpoint for pending payouts in `instructorEarningsController.ts` & alert admins | Submit payout request as instructor; verify cancel button refunds balance and verify admin notification received on submission. |
 | 108 | AUDIT-109 | Set `isInstructorApproved: true` and `instructorStatus: "approved"` in `courseGeneratorService.ts` | Run course generator; verify generated instructors have approved flags and existing accounts are upgraded to instructor role. |
-| 109 | AUDIT-110 | Guard against auto-clearing `revokedAt` on administratively revoked certificates in `progressController.ts` | Revoke student certificate as admin, update lesson progress as student; verify certificate remains revoked. |
+| 109 | [x] AUDIT-110 | Guard against auto-clearing `revokedAt` on administratively revoked certificates in `progressController.ts` | Revoke student certificate as admin, update lesson progress as student; verify certificate remains revoked. |
 | 110 | AUDIT-111 | Render dynamic badges based on `paymentStatus` and conditionally disable viewer link in `PurchaseHistoryPage.tsx` | Create pending and failed test orders, load `/purchase-history`; verify amber "Pending" and red "Failed" badges with disabled course access links. |
 | 111 | AUDIT-112 | Require non-empty `userIds` array in `bulkApproveInstructors` / `bulkRejectInstructors` & disable bulk button in `InstructorReviews.tsx` | Click bulk approve with 0 users selected; verify UI button is disabled and backend returns 400 validation error without modifying unselected users. |
 | 112 | AUDIT-113 | Correct confirmation modal copy in `EnrollmentCard.tsx` to warn about permanent progress reset or preserve progress in `enrollmentController.ts` | Click "Unenroll" on active course; verify modal accurately warns that course progress and lesson completions will be permanently reset. |

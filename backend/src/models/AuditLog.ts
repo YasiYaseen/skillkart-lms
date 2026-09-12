@@ -3,7 +3,7 @@ import { Schema, model, Document, Types } from "mongoose";
 export interface IAuditLog extends Document {
   admin: Types.ObjectId;
   action: string;
-  targetType: "user" | "course" | "enrollment" | "system" | "payout";
+  targetType: "user" | "course" | "enrollment" | "system" | "payout" | "certificate";
   targetId: string;
   targetName?: string;
   details?: Record<string, unknown>;
@@ -28,7 +28,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
     },
     targetType: {
       type: String,
-      enum: ["user", "course", "enrollment", "system", "payout"],
+      enum: ["user", "course", "enrollment", "system", "payout", "certificate"],
       required: true,
       index: true,
     },

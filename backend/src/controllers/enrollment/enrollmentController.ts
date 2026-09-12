@@ -358,19 +358,25 @@ export async function updateProgress(req: Request, res: Response) {
       let certDoc = await Certificate.findOne({ student: req.user.id, course: enrollment.course });
       if (certDoc) {
         if (certDoc.revokedAt) {
-          await Certificate.updateOne(
-            { _id: certDoc._id },
-            {
-              $unset: { revokedAt: 1 },
-              $set: {
-                issuedAt: updated.completedAt,
-                enrollment: updated._id,
-              },
-            }
-          );
-          certDoc.revokedAt = undefined;
-          certDoc.issuedAt = updated.completedAt;
-          certDoc.enrollment = updated._id;
+          // AUDIT-110: Guard against auto-clearing revokedAt if certificate was revoked for disciplinary/administrative reasons.
+          if (!certDoc.isDisciplinaryRevocation) {
+            await Certificate.updateOne(
+              { _id: certDoc._id },
+              {
+                $unset: { revokedAt: 1, revocationReason: 1, isDisciplinaryRevocation: 1, revokedBy: 1 },
+                $set: {
+                  issuedAt: updated.completedAt,
+                  enrollment: updated._id,
+                },
+              }
+            );
+            certDoc.revokedAt = undefined;
+            certDoc.revocationReason = undefined;
+            certDoc.isDisciplinaryRevocation = undefined;
+            certDoc.revokedBy = undefined;
+            certDoc.issuedAt = updated.completedAt;
+            certDoc.enrollment = updated._id;
+          }
         }
       } else {
         certDoc = await Certificate.create({
@@ -381,15 +387,17 @@ export async function updateProgress(req: Request, res: Response) {
         });
       }
 
-      // Notify student of course completion
-      const courseObj = await Course.findById(enrollment.course).select("title");
-      await Notification.create({
-        recipient: req.user.id,
-        title: "Course Completed! 🎉",
-        message: `Congratulations on completing "${courseObj?.title || "your course"}"! Your certificate is ready.`,
-        type: "success",
-        link: `/my-certificates`,
-      });
+      // Notify student of course completion only if certificate is active (not administratively revoked)
+      if (!certDoc.revokedAt) {
+        const courseObj = await Course.findById(enrollment.course).select("title");
+        await Notification.create({
+          recipient: req.user.id,
+          title: "Course Completed! 🎉",
+          message: `Congratulations on completing "${courseObj?.title || "your course"}"! Your certificate is ready.`,
+          type: "success",
+          link: `/my-certificates`,
+        });
+      }
     } else if (!isFullyComplete && updated.status === "completed") {
       // User un-marked a lesson after course was auto-completed — revert to active only if no unrevoked certificate exists
       const hasCertificate = await Certificate.exists({
@@ -437,10 +445,16 @@ export async function cancelEnrollment(req: Request, res: Response) {
           await LessonProgress.deleteMany({ user: enrollment.student, lesson: { $in: lessonIds } });
         }
       }
-      // Revoke certificate if one was issued
+      // Revoke certificate if one was issued (due to enrollment cancellation)
       await Certificate.findOneAndUpdate(
         { student: enrollment.student, course: enrollment.course },
-        { $set: { revokedAt: new Date() } }
+        {
+          $set: {
+            revokedAt: new Date(),
+            revocationReason: "Enrollment cancelled",
+            isDisciplinaryRevocation: false,
+          },
+        }
       );
       // Notify student
       await Notification.create({

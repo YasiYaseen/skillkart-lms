@@ -5,6 +5,16 @@ import { toast } from 'sonner';
 import { Pagination } from "@/components/common";
 import { AcademicCapIcon } from "@heroicons/react/20/solid";
 
+export interface AdminCertificate {
+  _id?: string;
+  certificateId: string;
+  issuedAt: string;
+  revokedAt?: string | null;
+  isRevoked: boolean;
+  revocationReason?: string | null;
+  isDisciplinaryRevocation?: boolean;
+}
+
 export interface AdminEnrollment {
   _id: string;
   course?: {
@@ -21,6 +31,7 @@ export interface AdminEnrollment {
   status: string;
   createdAt: string;
   progressPercentage?: number;
+  certificate?: AdminCertificate | null;
 }
 
 const PAGE_SIZE = 10;
@@ -47,6 +58,32 @@ export function EnrollmentList() {
         toast.error("Failed to load enrollments");
       })
       .finally(() => setLoading(false));
+  };
+
+  const handleRevokeCertificate = async (certificateId: string) => {
+    const reason = window.prompt("Enter disciplinary revocation reason (e.g. academic integrity violation, plagiarism):");
+    if (reason === null) return;
+    try {
+      await api.patch(`/admin/certificates/${certificateId}/revoke`, {
+        reason: reason.trim() || "Academic integrity disciplinary violation",
+        isDisciplinary: true,
+      });
+      toast.success("Certificate revoked successfully");
+      fetchEnrollments();
+    } catch {
+      toast.error("Failed to revoke certificate");
+    }
+  };
+
+  const handleReinstateCertificate = async (certificateId: string) => {
+    if (!window.confirm("Are you sure you want to reinstate this certificate?")) return;
+    try {
+      await api.patch(`/admin/certificates/${certificateId}/reinstate`);
+      toast.success("Certificate reinstated successfully");
+      fetchEnrollments();
+    } catch {
+      toast.error("Failed to reinstate certificate");
+    }
   };
 
   const filteredEnrollments = useMemo(() => {
@@ -131,6 +168,7 @@ export function EnrollmentList() {
                 <th className="px-5 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Course</th>
                 <th className="px-5 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Student</th>
                 <th className="px-5 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Status</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Certificate</th>
                 <th className="px-5 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Enrolled At</th>
               </tr>
             </thead>
@@ -173,6 +211,50 @@ export function EnrollmentList() {
                       {enr.status}
                     </span>
                   </td>
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    {enr.certificate ? (
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
+                            enr.certificate.isRevoked
+                              ? "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                              : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                          }`}
+                          title={enr.certificate.revocationReason || undefined}
+                        >
+                          {enr.certificate.isRevoked ? "Revoked" : "Verified"}
+                        </span>
+                        <Link
+                          to={`/certificates/verify/${enr.certificate.certificateId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] font-mono text-blue-600 dark:text-blue-400 hover:underline"
+                          title={enr.certificate.certificateId}
+                        >
+                          {enr.certificate.certificateId.slice(0, 8)}...
+                        </Link>
+                        {enr.certificate.isRevoked ? (
+                          <button
+                            type="button"
+                            onClick={() => handleReinstateCertificate(enr.certificate!._id || enr.certificate!.certificateId)}
+                            className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium cursor-pointer"
+                          >
+                            Reinstate
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleRevokeCertificate(enr.certificate!._id || enr.certificate!.certificateId)}
+                            className="text-[10px] text-rose-600 dark:text-rose-400 hover:underline font-medium cursor-pointer"
+                          >
+                            Revoke
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400 text-xs">
                     {new Date(enr.createdAt).toLocaleDateString()}
                   </td>
@@ -180,7 +262,7 @@ export function EnrollmentList() {
               ))}
               {paginatedEnrollments.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                     {searchQuery || statusFilter !== "all"
                       ? "No enrollments matching your search criteria."
                       : "No enrollments found."}

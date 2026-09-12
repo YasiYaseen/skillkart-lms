@@ -18,6 +18,8 @@ import {
   getPayoutRequests,
   updatePayoutStatus,
   exportPayoutsCsv,
+  revokeCertificate,
+  reinstateCertificate,
 } from "../controllers/admin/adminController";
 import {
   getAdminSettings,
@@ -65,6 +67,8 @@ router.patch("/courses/:courseId/status", updateCourseStatus);
 router.patch("/courses/:courseId/moderation", updateCourseStatus);
 
 router.get("/enrollments", getEnrollments);
+router.patch("/certificates/:certificateId/revoke", revokeCertificate);
+router.patch("/certificates/:certificateId/reinstate", reinstateCertificate);
 
 router.get("/audit-logs", getAuditLogs);
 

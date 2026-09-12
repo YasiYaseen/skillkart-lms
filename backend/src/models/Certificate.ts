@@ -8,6 +8,9 @@ export interface ICertificate extends Document {
   certificateId: string; // human-readable unique ID for verification
   issuedAt: Date;
   revokedAt?: Date;
+  revocationReason?: string;
+  isDisciplinaryRevocation?: boolean;
+  revokedBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +28,9 @@ const CertificateSchema = new Schema<ICertificate>(
     },
     issuedAt: { type: Date, default: Date.now },
     revokedAt: { type: Date, default: undefined },
+    revocationReason: { type: String, default: undefined },
+    isDisciplinaryRevocation: { type: Boolean, default: false },
+    revokedBy: { type: Schema.Types.ObjectId, ref: "User", default: undefined },
   },
   { timestamps: true }
 );

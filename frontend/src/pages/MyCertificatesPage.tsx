@@ -24,6 +24,8 @@ export interface StudentCertificate {
     issuedAt: string;
     revokedAt?: string | null;
     isRevoked?: boolean;
+    revocationReason?: string | null;
+    isDisciplinaryRevocation?: boolean;
 }
 
 function MyCertificatesPage() {
@@ -105,9 +107,16 @@ function MyCertificatesPage() {
                                 <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                                     <div>
                                         {isRevoked ? (
-                                            <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 font-semibold mb-2">
-                                                <ExclamationTriangleIcon className="w-4 h-4" />
-                                                <span>Revoked Credential</span>
+                                            <div className="flex flex-col gap-0.5 mb-2">
+                                                <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 font-semibold">
+                                                    <ExclamationTriangleIcon className="w-4 h-4" />
+                                                    <span>{cert.isDisciplinaryRevocation ? 'Disciplinary Revocation' : 'Revoked Credential'}</span>
+                                                </div>
+                                                {cert.revocationReason && (
+                                                    <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80 line-clamp-1 italic">
+                                                        {cert.revocationReason}
+                                                    </p>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-2">

@@ -189,19 +189,26 @@ export async function updateLessonProgress(req: Request, res: Response) {
       let certDoc = await Certificate.findOne({ student: req.user.id, course: course._id });
       if (certDoc) {
         if (certDoc.revokedAt) {
-          await Certificate.updateOne(
-            { _id: certDoc._id },
-            {
-              $unset: { revokedAt: 1 },
-              $set: {
-                issuedAt: enrollment.completedAt,
-                enrollment: enrollment._id,
-              },
-            }
-          );
-          certDoc.revokedAt = undefined;
-          certDoc.issuedAt = enrollment.completedAt;
-          certDoc.enrollment = enrollment._id;
+          // AUDIT-110: Guard against auto-clearing revokedAt if certificate was revoked for disciplinary/administrative reasons.
+          // Disciplinary revocations can only be reinstated through explicit administrative review.
+          if (!certDoc.isDisciplinaryRevocation) {
+            await Certificate.updateOne(
+              { _id: certDoc._id },
+              {
+                $unset: { revokedAt: 1, revocationReason: 1, isDisciplinaryRevocation: 1, revokedBy: 1 },
+                $set: {
+                  issuedAt: enrollment.completedAt,
+                  enrollment: enrollment._id,
+                },
+              }
+            );
+            certDoc.revokedAt = undefined;
+            certDoc.revocationReason = undefined;
+            certDoc.isDisciplinaryRevocation = undefined;
+            certDoc.revokedBy = undefined;
+            certDoc.issuedAt = enrollment.completedAt;
+            certDoc.enrollment = enrollment._id;
+          }
         }
       } else {
         certDoc = await Certificate.create({
@@ -212,34 +219,36 @@ export async function updateLessonProgress(req: Request, res: Response) {
         });
       }
 
-      // Notify student of course completion
-      await Notification.create({
-        recipient: req.user.id,
-        title: "Course Completed! 🎉",
-        message: `Congratulations on completing "${course.title}"! Your certificate is ready.`,
-        type: "success",
-        link: `/my-certificates`,
-      });
-
-      // Failsafe certificate completion email
-      User.findById(req.user.id)
-        .select("email name")
-        .lean()
-        .then((studentUser) => {
-          if (studentUser && studentUser.email && certDoc) {
-            sendCertificateEmail(
-              studentUser.email,
-              studentUser.name || "Student",
-              course.title,
-              certDoc.certificateId
-            ).catch((err) => {
-              console.error("[EMAIL] Failed to send course completion email:", err);
-            });
-          }
-        })
-        .catch((err) => {
-          console.error("[EMAIL] Error fetching user for certificate email:", err);
+      // Notify student of course completion only if certificate is active (not administratively revoked)
+      if (!certDoc.revokedAt) {
+        await Notification.create({
+          recipient: req.user.id,
+          title: "Course Completed! 🎉",
+          message: `Congratulations on completing "${course.title}"! Your certificate is ready.`,
+          type: "success",
+          link: `/my-certificates`,
         });
+
+        // Failsafe certificate completion email
+        User.findById(req.user.id)
+          .select("email name")
+          .lean()
+          .then((studentUser) => {
+            if (studentUser && studentUser.email && certDoc) {
+              sendCertificateEmail(
+                studentUser.email,
+                studentUser.name || "Student",
+                course.title,
+                certDoc.certificateId
+              ).catch((err) => {
+                console.error("[EMAIL] Failed to send course completion email:", err);
+              });
+            }
+          })
+          .catch((err) => {
+            console.error("[EMAIL] Error fetching user for certificate email:", err);
+          });
+      }
     } else if (!isFullyComplete && enrollment.status === "completed") {
       // AUDIT-41: Preserve completed status and completedAt milestone if a valid certificate was already issued
       const hasCertificate = await Certificate.exists({

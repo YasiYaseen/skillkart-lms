@@ -23,6 +23,8 @@ export async function getMyCertificates(req: Request, res: Response) {
     const formatted = certificates.map((cert) => ({
       ...cert,
       isRevoked: Boolean(cert.revokedAt),
+      revocationReason: cert.revocationReason || null,
+      isDisciplinaryRevocation: Boolean(cert.isDisciplinaryRevocation),
     }));
 
     return res.json({ certificates: formatted });
@@ -58,9 +60,13 @@ export async function getCertificateById(req: Request, res: Response) {
       certificate: {
         ...certificate,
         isRevoked,
+        revocationReason: certificate.revocationReason || null,
+        isDisciplinaryRevocation: Boolean(certificate.isDisciplinaryRevocation),
       },
       isRevoked,
       revokedAt: certificate.revokedAt || null,
+      revocationReason: certificate.revocationReason || null,
+      isDisciplinaryRevocation: Boolean(certificate.isDisciplinaryRevocation),
     });
   } catch {
     return res.status(500).json({ message: "Server error" });
@@ -102,12 +108,20 @@ export async function claimCertificate(req: Request, res: Response) {
 
     if (existing) {
       if (existing.revokedAt) {
-        // AUDIT-98: Certificate was previously revoked, but student has legitimately completed the course again.
+        // AUDIT-110: Guard against claiming administratively or disciplinarily revoked certificates
+        if (existing.isDisciplinaryRevocation) {
+          return res.status(403).json({
+            message: "This certificate was administratively revoked for disciplinary reasons and cannot be claimed or re-issued.",
+            revocationReason: existing.revocationReason,
+          });
+        }
+
+        // AUDIT-98: Certificate was previously revoked due to cancellation, but student has legitimately completed the course again.
         // Clear revocation, update issuance timestamp & enrollment reference.
         await Certificate.updateOne(
           { _id: existing._id },
           {
-            $unset: { revokedAt: 1 },
+            $unset: { revokedAt: 1, revocationReason: 1, isDisciplinaryRevocation: 1, revokedBy: 1 },
             $set: {
               issuedAt: enrollment.completedAt || new Date(),
               enrollment: enrollment._id,
@@ -115,6 +129,9 @@ export async function claimCertificate(req: Request, res: Response) {
           }
         );
         existing.revokedAt = undefined;
+        existing.revocationReason = undefined;
+        existing.isDisciplinaryRevocation = undefined;
+        existing.revokedBy = undefined;
         existing.issuedAt = enrollment.completedAt || new Date();
         existing.enrollment = enrollment._id;
 

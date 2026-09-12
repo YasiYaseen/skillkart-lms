@@ -7,6 +7,7 @@ import Notification from "../../models/Notification";
 import Order from "../../models/Order";
 import Coupon from "../../models/Coupon";
 import Payout from "../../models/Payout";
+import Certificate from "../../models/Certificate";
 
 import { recordAuditLog } from "../../services/auditService";
 import AuditLog from "../../models/AuditLog";
@@ -454,7 +455,42 @@ export async function getEnrollments(req: Request, res: Response) {
       .populate("course", "title")
       .sort({ createdAt: -1 })
       .lean();
-    return res.json({ enrollments });
+
+    const pairs = enrollments
+      .filter((e) => e.student && e.course)
+      .map((e) => ({
+        student: (e.student as unknown as { _id: Types.ObjectId | string })._id,
+        course: (e.course as unknown as { _id: Types.ObjectId | string })._id,
+      }));
+
+    const certs = pairs.length > 0 ? await Certificate.find({ $or: pairs }).lean() : [];
+    const certMap = new Map<string, (typeof certs)[0]>();
+    certs.forEach((c) => {
+      certMap.set(`${c.student.toString()}_${c.course.toString()}`, c);
+    });
+
+    const enrichedEnrollments = enrollments.map((enr) => {
+      const studentId = (enr.student as unknown as { _id?: Types.ObjectId | string })?._id?.toString();
+      const courseId = (enr.course as unknown as { _id?: Types.ObjectId | string })?._id?.toString();
+      const cert = studentId && courseId ? certMap.get(`${studentId}_${courseId}`) : null;
+
+      return {
+        ...enr,
+        certificate: cert
+          ? {
+              _id: cert._id,
+              certificateId: cert.certificateId,
+              issuedAt: cert.issuedAt,
+              revokedAt: cert.revokedAt,
+              isRevoked: Boolean(cert.revokedAt),
+              revocationReason: cert.revocationReason || null,
+              isDisciplinaryRevocation: Boolean(cert.isDisciplinaryRevocation),
+            }
+          : null,
+      };
+    });
+
+    return res.json({ enrollments: enrichedEnrollments });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
@@ -989,6 +1025,181 @@ export async function exportPayoutsCsv(req: Request, res: Response) {
     return res.status(500).json({ message: "Failed to export payouts CSV" });
   }
 }
+
+/**
+ * PATCH /api/admin/certificates/:certificateId/revoke
+ * Admin revokes a student certificate (e.g. for academic integrity violations, plagiarism, fraud).
+ */
+export async function revokeCertificate(req: Request, res: Response) {
+  try {
+    const { certificateId } = req.params;
+    const { reason, isDisciplinary = true } = req.body;
+
+    const query = isValidObjectId(certificateId)
+      ? { $or: [{ _id: certificateId }, { certificateId }] }
+      : { certificateId };
+
+    const certificate = await Certificate.findOne(query)
+      .populate("student", "name email")
+      .populate("course", "title");
+
+    if (!certificate) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    const previousStatus = {
+      revokedAt: certificate.revokedAt,
+      isDisciplinaryRevocation: certificate.isDisciplinaryRevocation,
+      revocationReason: certificate.revocationReason,
+    };
+
+    certificate.revokedAt = new Date();
+    certificate.isDisciplinaryRevocation = isDisciplinary !== false;
+    certificate.revocationReason =
+      typeof reason === "string" && reason.trim().length > 0
+        ? reason.trim()
+        : isDisciplinary !== false
+        ? "Academic integrity disciplinary violation"
+        : "Administrative revocation";
+    if (req.user) {
+      certificate.revokedBy = new Types.ObjectId(req.user.id);
+    }
+    await certificate.save();
+
+    if (req.user) {
+      await recordAuditLog({
+        adminId: req.user.id,
+        action: "CERTIFICATE_REVOKED",
+        targetType: "certificate",
+        targetId: certificate._id.toString(),
+        targetName: certificate.certificateId,
+        details: {
+          previousStatus,
+          isDisciplinaryRevocation: certificate.isDisciplinaryRevocation,
+          revocationReason: certificate.revocationReason,
+          student: certificate.student,
+          course: certificate.course,
+        },
+        req,
+      });
+    }
+
+    const studentUser = certificate.student as unknown as { _id?: Types.ObjectId; name?: string };
+    const courseDoc = certificate.course as unknown as { _id?: Types.ObjectId; title?: string };
+
+    if (studentUser?._id) {
+      await Notification.create({
+        recipient: studentUser._id,
+        title: "Certificate Revoked",
+        message: `Your certificate for "${courseDoc?.title || "course"}" has been revoked: ${certificate.revocationReason}.`,
+        type: "error",
+        link: `/certificates/verify/${certificate.certificateId}`,
+      }).catch((err) => console.error("Failed to create revocation notification:", err));
+    }
+
+    return res.json({
+      message: "Certificate revoked successfully",
+      certificate: {
+        _id: certificate._id,
+        certificateId: certificate.certificateId,
+        revokedAt: certificate.revokedAt,
+        isRevoked: true,
+        revocationReason: certificate.revocationReason,
+        isDisciplinaryRevocation: certificate.isDisciplinaryRevocation,
+      },
+    });
+  } catch (error) {
+    console.error("revokeCertificate error:", error);
+    return res.status(500).json({ message: "Server error revoking certificate" });
+  }
+}
+
+/**
+ * PATCH /api/admin/certificates/:certificateId/reinstate
+ * Admin explicitly reinstates an administratively revoked credential.
+ */
+export async function reinstateCertificate(req: Request, res: Response) {
+  try {
+    const { certificateId } = req.params;
+
+    const query = isValidObjectId(certificateId)
+      ? { $or: [{ _id: certificateId }, { certificateId }] }
+      : { certificateId };
+
+    const certificate = await Certificate.findOne(query)
+      .populate("student", "name email")
+      .populate("course", "title");
+
+    if (!certificate) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    if (!certificate.revokedAt) {
+      return res.status(400).json({ message: "Certificate is not currently revoked" });
+    }
+
+    const previousStatus = {
+      revokedAt: certificate.revokedAt,
+      isDisciplinaryRevocation: certificate.isDisciplinaryRevocation,
+      revocationReason: certificate.revocationReason,
+    };
+
+    await Certificate.updateOne(
+      { _id: certificate._id },
+      {
+        $unset: {
+          revokedAt: 1,
+          revocationReason: 1,
+          isDisciplinaryRevocation: 1,
+          revokedBy: 1,
+        },
+      }
+    );
+
+    if (req.user) {
+      await recordAuditLog({
+        adminId: req.user.id,
+        action: "CERTIFICATE_REINSTATED",
+        targetType: "certificate",
+        targetId: certificate._id.toString(),
+        targetName: certificate.certificateId,
+        details: {
+          previousStatus,
+          student: certificate.student,
+          course: certificate.course,
+        },
+        req,
+      });
+    }
+
+    const studentUser = certificate.student as unknown as { _id?: Types.ObjectId; name?: string };
+    const courseDoc = certificate.course as unknown as { _id?: Types.ObjectId; title?: string };
+
+    if (studentUser?._id) {
+      await Notification.create({
+        recipient: studentUser._id,
+        title: "Certificate Reinstated! 🎉",
+        message: `Your certificate for "${courseDoc?.title || "course"}" has been reinstated and is active again.`,
+        type: "success",
+        link: `/certificates/verify/${certificate.certificateId}`,
+      }).catch((err) => console.error("Failed to create reinstate notification:", err));
+    }
+
+    return res.json({
+      message: "Certificate reinstated successfully",
+      certificate: {
+        _id: certificate._id,
+        certificateId: certificate.certificateId,
+        revokedAt: undefined,
+        isRevoked: false,
+      },
+    });
+  } catch (error) {
+    console.error("reinstateCertificate error:", error);
+    return res.status(500).json({ message: "Server error reinstating certificate" });
+  }
+}
+
 
 
 
