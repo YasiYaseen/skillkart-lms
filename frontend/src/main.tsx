@@ -6,6 +6,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './features/auth/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { CurrencyProvider } from './context/CurrencyContext';
+import { MaintenanceProvider } from './context/MaintenanceContext';
 import { AppToaster } from './components/common/AppToaster';
 
 createRoot(document.getElementById('root')!).render(
@@ -14,8 +15,10 @@ createRoot(document.getElementById('root')!).render(
             <ThemeProvider>
                 <CurrencyProvider>
                     <AuthProvider>
-                        <App />
-                        <AppToaster />
+                        <MaintenanceProvider>
+                            <App />
+                            <AppToaster />
+                        </MaintenanceProvider>
                     </AuthProvider>
                 </CurrencyProvider>
             </ThemeProvider>

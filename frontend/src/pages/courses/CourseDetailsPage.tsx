@@ -12,6 +12,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { AuthModals } from '@/features/auth';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
+import { useMaintenance } from '@/context/MaintenanceContext';
 import { MarkdownRenderer } from '@/components/common';
 import {
     AcademicCapIcon,
@@ -245,6 +246,7 @@ function CourseDetailsPage() {
     const { isEnrolled, loading: enrollmentLoading } = useEnrollment(courseId);
     const { addToCart, isInCart } = useCart();
     const { formatPrice, formatAmount } = useCurrency();
+    const { isMaintenance, maintenanceMessage } = useMaintenance();
     const [course, setCourse] = useState<DetailedCourseState | null>(null);
     const [reviews, setReviews] = useState<CourseReview[]>([]);
     const [reviewSort, setReviewSort] = useState<'newest' | 'highest' | 'lowest'>('newest');
@@ -442,6 +444,11 @@ function CourseDetailsPage() {
     const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!courseId) return;
+
+        if (isMaintenance) {
+            toast.error(maintenanceMessage || "Reviews cannot be submitted during platform maintenance.");
+            return;
+        }
 
         setSubmittingReview(true);
         try {
@@ -921,10 +928,11 @@ function CourseDetailsSkeleton() {
                                     </div>
                                     <button
                                         type="submit"
-                                        disabled={submittingReview}
+                                        disabled={submittingReview || isMaintenance}
+                                        title={isMaintenance ? (maintenanceMessage || "Review submissions are disabled during maintenance.") : undefined}
                                         className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors shadow-xs"
                                     >
-                                        {submittingReview ? 'Submitting...' : myReview ? 'Update Review' : 'Submit Review'}
+                                        {submittingReview ? 'Submitting...' : isMaintenance ? 'Reviews Disabled (Maintenance)' : myReview ? 'Update Review' : 'Submit Review'}
                                     </button>
                                 </form>
                             ) : !enrollmentLoading && !isEnrolled ? (
@@ -1232,6 +1240,10 @@ function CourseDetailsSkeleton() {
                                                 {courseId && !isEnrolled && course.price > 0 && (
                                                     <button
                                                         onClick={async () => {
+                                                            if (isMaintenance) {
+                                                                toast.error(maintenanceMessage || "Checkout is paused for maintenance.");
+                                                                return;
+                                                            }
                                                             try {
                                                                 if (!isInCart(courseId)) {
                                                                     await addToCart({
@@ -1247,10 +1259,12 @@ function CourseDetailsSkeleton() {
                                                                 // Handled in CartContext
                                                             }
                                                         }}
-                                                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                                        disabled={isMaintenance}
+                                                        title={isMaintenance ? (maintenanceMessage || "Checkout is disabled during maintenance.") : undefined}
+                                                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                                                     >
                                                         <BoltIcon className="w-4 h-4" />
-                                                        <span>Instant Checkout</span>
+                                                        <span>{isMaintenance ? 'Instant Checkout Disabled' : 'Instant Checkout'}</span>
                                                     </button>
                                                 )}
                                                 {courseId && !isEnrolled && (
@@ -1265,6 +1279,10 @@ function CourseDetailsSkeleton() {
                                                     ) : (
                                                         <button
                                                             onClick={async () => {
+                                                                if (isMaintenance) {
+                                                                    toast.error(maintenanceMessage || "Action disabled during maintenance.");
+                                                                    return;
+                                                                }
                                                                 try {
                                                                     await addToCart({
                                                                         courseId,
@@ -1278,7 +1296,9 @@ function CourseDetailsSkeleton() {
                                                                     // Handled in CartContext
                                                                 }
                                                             }}
-                                                            className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                                            disabled={isMaintenance}
+                                                            title={isMaintenance ? (maintenanceMessage || "Action disabled during maintenance.") : undefined}
+                                                            className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                                         >
                                                             <ShoppingCartIcon className="w-4 h-4 text-slate-500" />
                                                             <span>Add to Cart</span>

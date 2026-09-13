@@ -6,13 +6,15 @@ import {
 } from '../api/assignments';
 import FileUpload from '@/components/common/FileUpload';
 import { resolveMediaUrl } from '@/utils/mediaUtils';
-import { FolderIcon, LinkIcon, DocumentTextIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
+import { FolderIcon, LinkIcon, DocumentTextIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/20/solid';
+import { useMaintenance } from '@/context/MaintenanceContext';
 
 interface CourseAssignmentsTabProps {
   courseId: string;
 }
 
 export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabProps) {
+  const { isMaintenance, maintenanceMessage } = useMaintenance();
   const [assignments, setAssignments] = useState<AssignmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<AssignmentItem | null>(null);
@@ -65,6 +67,11 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAssignment) return;
+
+    if (isMaintenance) {
+      setFormError(maintenanceMessage || 'Submissions are temporarily disabled during platform maintenance.');
+      return;
+    }
 
     if (submissionType === 'file' && !fileUrl) {
       setFormError('Please upload a file before submitting.');
@@ -422,6 +429,13 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
                 </div>
               )}
 
+              {isMaintenance && (
+                <div className="p-3 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 flex items-center gap-2">
+                  <ExclamationTriangleIcon className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>{maintenanceMessage || 'Platform maintenance is underway. Assignment submissions are paused.'}</span>
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                 <button
                   type="button"
@@ -432,10 +446,11 @@ export default function CourseAssignmentsTab({ courseId }: CourseAssignmentsTabP
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-xl transition-colors shadow-xs"
+                  disabled={submitting || isMaintenance}
+                  title={isMaintenance ? (maintenanceMessage || "Submissions are paused during maintenance.") : undefined}
+                  className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors shadow-xs"
                 >
-                  {submitting ? 'Submitting...' : 'Submit Project'}
+                  {submitting ? 'Submitting...' : isMaintenance ? 'Submission Disabled' : 'Submit Project'}
                 </button>
               </div>
             </form>

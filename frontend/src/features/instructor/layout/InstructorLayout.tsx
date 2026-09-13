@@ -4,7 +4,8 @@ import { BrandLogo } from '@/components/common/BrandLogo';
 import { useAuth } from '@/features/auth/AuthContext';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import UserDropdown from '@/components/common/UserDropdown';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { useMaintenance } from '@/context/MaintenanceContext';
 
 // Sidebar nav items
 const NAV_ITEMS = [
@@ -95,6 +96,7 @@ export function InstructorLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout } = useAuth();
+    const { maintenanceMode, maintenanceMessage, maintenanceEstimatedEndTime } = useMaintenance();
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
     // Auto close drawer on route change
@@ -138,6 +140,17 @@ export function InstructorLayout() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
+            {maintenanceMode && (
+                <div className="bg-rose-600 text-white px-4 py-1.5 text-xs font-semibold text-center flex items-center justify-center gap-1.5 shadow-xs z-50 print:hidden">
+                    <ExclamationTriangleIcon className="w-4 h-4 text-white shrink-0" />
+                    <span>{maintenanceMessage || 'Platform Maintenance is currently underway. Course editing and grading are temporarily restricted.'}</span>
+                    {maintenanceEstimatedEndTime && (
+                        <span className="opacity-90">
+                            (Expected completion: {new Date(maintenanceEstimatedEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                        </span>
+                    )}
+                </div>
+            )}
             {/* Top Header */}
             <header className="h-16 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 sm:px-6 bg-white dark:bg-gray-900 sticky top-0 z-40 transition-colors">
                 <div className="flex items-center gap-3">

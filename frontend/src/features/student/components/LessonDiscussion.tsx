@@ -7,7 +7,8 @@ import {
   type LessonComment,
 } from '../api/comments';
 import { toast } from 'sonner';
-import { ChatBubbleLeftRightIcon } from '@heroicons/react/20/solid';
+import { ChatBubbleLeftRightIcon, ExclamationTriangleIcon } from '@heroicons/react/20/solid';
+import { useMaintenance } from '@/context/MaintenanceContext';
 
 interface Props {
   lessonId: string;
@@ -32,6 +33,7 @@ function timeAgo(dateStr: string): string {
 
 export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
   const { user } = useAuth();
+  const { isMaintenance, maintenanceMessage } = useMaintenance();
   const [comments, setComments] = useState<LessonComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -61,6 +63,10 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isMaintenance) {
+      toast.error(maintenanceMessage || "Posting comments is disabled during platform maintenance.");
+      return;
+    }
     if (!content.trim()) return;
 
     try {
@@ -78,6 +84,10 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
 
   const handlePostReply = async (parentCommentId: string, e: React.FormEvent) => {
     e.preventDefault();
+    if (isMaintenance) {
+      toast.error(maintenanceMessage || "Posting replies is disabled during platform maintenance.");
+      return;
+    }
     if (!replyContent.trim()) return;
 
     try {
@@ -98,6 +108,10 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
   };
 
   const handleDelete = async (commentId: string) => {
+    if (isMaintenance) {
+      toast.error(maintenanceMessage || "Comment deletion is disabled during platform maintenance.");
+      return;
+    }
     try {
       setDeletingId(commentId);
       await deleteLessonComment(lessonId, commentId);
@@ -134,6 +148,12 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
     <div className="space-y-5">
       {/* Top Question / Comment Form */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-2xs transition-colors">
+        {isMaintenance && (
+          <div className="mb-3.5 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300">
+            <ExclamationTriangleIcon className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>{maintenanceMessage || "Platform is in maintenance mode. Discussion comments and replies are temporarily paused."}</span>
+          </div>
+        )}
         <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
           <span>Ask a Question / Join the Discussion</span>
           <span className="text-xs font-normal text-slate-500 dark:text-slate-400">({comments.length} total)</span>
@@ -145,19 +165,21 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Type your question or thought about this lesson..."
+            disabled={isMaintenance}
+            placeholder={isMaintenance ? "Discussion posting is paused during maintenance..." : "Type your question or thought about this lesson..."}
             rows={3}
             required
             minLength={2}
-            className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white placeholder-slate-400 rounded-lg px-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-sans"
+            className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white placeholder-slate-400 rounded-lg px-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-sans disabled:opacity-60 disabled:cursor-not-allowed"
           />
           <div className="flex justify-end">
             <button
               type="submit"
-              disabled={submitting || !content.trim()}
+              disabled={submitting || !content.trim() || isMaintenance}
+              title={isMaintenance ? (maintenanceMessage || "Posting comments is disabled during maintenance.") : undefined}
               className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
             >
-              {submitting ? 'Posting...' : 'Post Comment'}
+              {submitting ? 'Posting...' : isMaintenance ? 'Posting Disabled' : 'Post Comment'}
             </button>
           </div>
         </form>
@@ -298,10 +320,11 @@ export function LessonDiscussion({ lessonId, courseInstructorId }: Props) {
                       </button>
                       <button
                         type="submit"
-                        disabled={submittingReply || !replyContent.trim()}
-                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-md transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
+                        disabled={submittingReply || !replyContent.trim() || isMaintenance}
+                        title={isMaintenance ? (maintenanceMessage || "Posting replies is disabled during maintenance.") : undefined}
+                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
                       >
-                        {submittingReply ? 'Replying...' : 'Post Reply'}
+                        {submittingReply ? 'Replying...' : isMaintenance ? 'Disabled' : 'Post Reply'}
                       </button>
                     </div>
                   </form>

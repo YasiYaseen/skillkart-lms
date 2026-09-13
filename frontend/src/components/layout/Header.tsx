@@ -9,7 +9,7 @@ import { AuthModals } from '@features/auth';
 import { useAuth } from '@features/auth/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
-import { api } from '@/lib/api';
+import { useMaintenance } from '@/context/MaintenanceContext';
 import {
   ExclamationTriangleIcon,
   Bars3Icon,
@@ -33,13 +33,13 @@ import {
 
 function Header() {
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
-  const [maintenance, setMaintenance] = useState<{ mode: boolean; message: string } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
   const { user, logout } = useAuth();
   const { cart, removeFromCart, cartTotal, cartCount } = useCart();
   const { formatAmount } = useCurrency();
+  const { maintenanceMode, maintenanceMessage, maintenanceEstimatedEndTime } = useMaintenance();
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // Close mobile drawer on route navigation
@@ -76,19 +76,6 @@ function Header() {
     };
   }, []);
 
-  useEffect(() => {
-    api.get('/settings/public')
-      .then((res) => {
-        if (res.data?.maintenanceMode) {
-          setMaintenance({
-            mode: true,
-            message: res.data.maintenanceMessage || 'Platform Maintenance is currently underway.',
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
-
   const handleLoginClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setMobileMenuOpen(false);
@@ -112,10 +99,20 @@ function Header() {
 
   return (
     <>
-      {maintenance?.mode && (
+      {maintenanceMode && (
         <div className="bg-rose-600 text-white px-4 py-1.5 text-xs font-semibold text-center flex items-center justify-center gap-1.5 shadow-xs z-50 print:hidden">
           <ExclamationTriangleIcon className="w-4 h-4 text-white shrink-0" />
-          <span>{maintenance.message}</span>
+          <span>{maintenanceMessage || 'Platform Maintenance is currently underway.'}</span>
+          {maintenanceEstimatedEndTime && (
+            <span className="opacity-90">
+              (Expected completion: {new Date(maintenanceEstimatedEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+            </span>
+          )}
+          {user?.role === 'admin' && (
+            <span className="ml-1.5 bg-rose-700/90 text-rose-100 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+              Admin Mode
+            </span>
+          )}
         </div>
       )}
 

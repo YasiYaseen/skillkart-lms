@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useEnrollment } from '@/features/enrollment/hooks/useEnrollment';
 import { useCart } from '@/context/CartContext';
 import { useCurrency } from '@/context/CurrencyContext';
+import { useMaintenance } from '@/context/MaintenanceContext';
 import { LessonQuiz } from '@/components/LessonQuiz';
 import { CourseAnnouncements } from '@/features/student/components/CourseAnnouncements';
 import { LessonDiscussion } from '@/features/student/components/LessonDiscussion';
@@ -106,6 +107,7 @@ function LessonViewer() {
     const { isEnrolled: isHookEnrolled, loading: enrollmentLoading, enroll, enrolling } = useEnrollment(courseId);
     const { addToCart, isInCart } = useCart();
     const { formatAmount } = useCurrency();
+    const { isMaintenance, maintenanceMessage } = useMaintenance();
     
     const [course, setCourse] = useState<ViewerCourse | null>(null);
     const [sections, setSections] = useState<ViewerSection[]>([]);
@@ -320,6 +322,11 @@ function LessonViewer() {
     const remainingMinutes = remainingLessons.reduce((acc, l) => acc + (l.durationMinutes || 10), 0);
 
     const handleProgress = async () => {
+        if (isMaintenance) {
+            toast.error(maintenanceMessage || "Platform is under maintenance. Progress cannot be saved at this time.");
+            return;
+        }
+
         if (!hasAccess) {
             toast.error('You must be enrolled in this course to mark lessons as completed.', {
                 action: {
@@ -849,8 +856,9 @@ function LessonViewer() {
                                             </span>
                                             <button
                                                 onClick={handleProgress}
-                                                className="bg-white/10 hover:bg-white/20 text-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                                                title="Mark again to refresh progress"
+                                                disabled={isMaintenance}
+                                                className="bg-white/10 hover:bg-white/20 text-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                title={isMaintenance ? (maintenanceMessage || "Progress updates are disabled during maintenance.") : "Mark again to refresh progress"}
                                             >
                                                 Update
                                             </button>
@@ -858,10 +866,11 @@ function LessonViewer() {
                                     ) : (
                                         <button
                                             onClick={handleProgress}
-                                            disabled={!quizPassed && activeLesson.type === 'quiz'}
+                                            disabled={(!quizPassed && activeLesson.type === 'quiz') || isMaintenance}
+                                            title={isMaintenance ? (maintenanceMessage || "Progress saving is disabled during maintenance.") : undefined}
                                             className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
                                         >
-                                            Mark as Complete
+                                            {isMaintenance ? 'Complete (Disabled)' : 'Mark as Complete'}
                                         </button>
                                     )}
                                 </div>

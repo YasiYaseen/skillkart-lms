@@ -460,6 +460,12 @@ function EditCourse() {
         try {
             await api.delete(`/sections/${sectionId}`);
             setSections(sections.filter((s) => s._id !== sectionId));
+            if (activeSectionId === sectionId) {
+                setActiveSectionId(null);
+            }
+            if (editingSectionId === sectionId) {
+                setEditingSectionId(null);
+            }
             toast.success('Section deleted');
         } catch {
             toast.error('Failed to delete section');

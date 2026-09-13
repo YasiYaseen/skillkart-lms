@@ -31,11 +31,16 @@ dotenv.config();
 import { setServers } from "node:dns";
 setServers(["8.8.8.8", "1.1.1.1"]);
 
+import { ensureNotInMaintenance } from "./middleware/maintenanceMiddleware";
+
 const app = express();
 
 // Global middleware
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
 app.use(json());
+
+// AUDIT-48: Site-wide maintenance mode mutation guard for non-admin requests
+app.use("/api", ensureNotInMaintenance);
 
 // Connect to DB
 connectDB();

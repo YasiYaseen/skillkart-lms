@@ -25,13 +25,16 @@ import {
   ShieldCheckIcon,
   ArrowRightIcon,
   BoltIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon, LockClosedIcon, UserIcon } from '@heroicons/react/20/solid';
+import { useMaintenance } from '@/context/MaintenanceContext';
 
 export default function CartPage() {
   const { cart, removeFromCart, clearCart, cartTotal, addToCart, refreshCart } = useCart();
   const { formatAmount, formatPrice } = useCurrency();
   const { user } = useAuth();
+  const { isMaintenance, maintenanceMessage } = useMaintenance();
   const [searchParams] = useSearchParams();
 
   // Auth modal state for unauthenticated guest checkout
@@ -171,6 +174,10 @@ export default function CartPage() {
   };
 
   const handleProceedToPayment = () => {
+    if (isMaintenance) {
+      toast.error(maintenanceMessage || "Checkout is paused while platform maintenance is underway.");
+      return;
+    }
     if (cart.length === 0) {
       toast.warning('Your cart is empty');
       return;
@@ -193,6 +200,11 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
+    if (isMaintenance) {
+      toast.error(maintenanceMessage || "Purchases are temporarily disabled during platform maintenance.");
+      return;
+    }
+
     if (cart.length === 0) {
       toast.warning('Your cart is empty');
       return;
@@ -773,11 +785,23 @@ export default function CartPage() {
               </div>
             </div>
 
+            {isMaintenance && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                <ExclamationTriangleIcon className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Checkout Paused for Maintenance</p>
+                  <p className="text-[11px] mt-0.5 opacity-90">{maintenanceMessage || 'Payment processing and order creation are temporarily disabled.'}</p>
+                </div>
+              </div>
+            )}
+
             {currentStep === 'items' ? (
               <div className="space-y-2">
                 <button
                   onClick={handleProceedToPayment}
-                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                  disabled={isMaintenance}
+                  title={isMaintenance ? (maintenanceMessage || "Checkout is paused for maintenance.") : undefined}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {!user ? (
                     <span className="flex items-center gap-1.5">
@@ -798,10 +822,16 @@ export default function CartPage() {
               <div className="space-y-2">
                 <button
                   onClick={handleCheckout}
-                  disabled={checkingOut}
-                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                  disabled={checkingOut || isMaintenance}
+                  title={isMaintenance ? (maintenanceMessage || "Checkout is paused for maintenance.") : undefined}
+                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {checkingOut ? (
+                  {isMaintenance ? (
+                    <>
+                      <ExclamationTriangleIcon className="w-4 h-4 text-amber-300" />
+                      <span>Checkout Disabled (Maintenance)</span>
+                    </>
+                  ) : checkingOut ? (
                     <span>Authorizing Order...</span>
                   ) : (
                     <span>Authorize & Complete Purchase ({formatAmount(finalTotal)})</span>

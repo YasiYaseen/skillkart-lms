@@ -11,6 +11,7 @@ import QuizAttempt from "../../models/QuizAttempt";
 import Note from "../../models/Note";
 import Bookmark from "../../models/Bookmark";
 import Enrollment from "../../models/Enrollment";
+import Assignment from "../../models/Assignment";
 import { isCourseManager, syncEnrollmentLessonCount } from "./shared";
 import { createSectionSchema } from "../../validators/content.validator";
 
@@ -106,10 +107,41 @@ export async function updateSection(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const allowed = ["title", "order", "isLocked", "prerequisiteSection"];
-    for (const field of allowed) {
-      if (field in req.body) {
-        (section as unknown as Record<string, unknown>)[field] = req.body[field];
+    const { title, order, isLocked, prerequisiteSection } = req.body;
+    if (title !== undefined) {
+      const trimmed = typeof title === "string" ? title.trim() : "";
+      if (trimmed.length < 2 || trimmed.length > 200) {
+        return res.status(400).json({ message: "Title must be between 2 and 200 characters" });
+      }
+      section.title = trimmed;
+    }
+    if (order !== undefined) {
+      const orderNum = Number(order);
+      if (Number.isInteger(orderNum) && orderNum >= 1) {
+        section.order = orderNum;
+      }
+    }
+    if (isLocked !== undefined) {
+      section.isLocked = Boolean(isLocked);
+    }
+    if ("prerequisiteSection" in req.body) {
+      if (prerequisiteSection && prerequisiteSection !== "") {
+        if (!isValidObjectId(prerequisiteSection)) {
+          return res.status(400).json({ message: "Invalid prerequisite section id" });
+        }
+        if (prerequisiteSection.toString() === section._id.toString()) {
+          return res.status(400).json({ message: "Section cannot have itself as a prerequisite" });
+        }
+        const prereqExists = await Section.exists({
+          _id: prerequisiteSection,
+          course: section.course,
+        });
+        if (!prereqExists) {
+          return res.status(400).json({ message: "Prerequisite section must belong to this course" });
+        }
+        section.prerequisiteSection = prerequisiteSection;
+      } else {
+        section.prerequisiteSection = undefined;
       }
     }
 
@@ -158,6 +190,7 @@ export async function deleteSection(req: Request, res: Response) {
       lessonIds.length ? Note.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
       lessonIds.length ? Bookmark.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
       Lesson.deleteMany({ section: section._id }),
+      Assignment.updateMany({ section: section._id }, { $unset: { section: 1 } }),
     ]);
 
     await Section.deleteOne({ _id: section._id });
@@ -168,11 +201,42 @@ export async function deleteSection(req: Request, res: Response) {
       { $unset: { prerequisiteSection: 1 } }
     );
 
-    // Pull deleted lesson IDs from enrolled students' completed list
+    // Pull deleted lesson IDs from enrolled students' completed list and unset lastAccessedLessonId
     if (lessonIds.length > 0) {
-      await Enrollment.updateMany(
-        { course: section.course },
-        { $pull: { completedLessonIds: { $in: lessonIds } } }
+      await Promise.all([
+        Enrollment.updateMany(
+          { course: section.course },
+          { $pull: { completedLessonIds: { $in: lessonIds } } }
+        ),
+        Enrollment.updateMany(
+          { course: section.course, lastAccessedLessonId: { $in: lessonIds } },
+          { $unset: { lastAccessedLessonId: 1 } }
+        ),
+      ]);
+    }
+
+    // Re-index remaining sections to maintain contiguous 1-based order
+    const remainingSections = await Section.find({ course: section.course })
+      .sort({ order: 1 })
+      .select("_id")
+      .lean();
+
+    if (remainingSections.length > 0) {
+      await Section.bulkWrite(
+        remainingSections.map((sec, index) => ({
+          updateOne: {
+            filter: { _id: sec._id, course: section.course },
+            update: { $set: { order: -(index + 1) } },
+          },
+        }))
+      );
+      await Section.bulkWrite(
+        remainingSections.map((sec, index) => ({
+          updateOne: {
+            filter: { _id: sec._id, course: section.course },
+            update: { $set: { order: index + 1 } },
+          },
+        }))
       );
     }
 

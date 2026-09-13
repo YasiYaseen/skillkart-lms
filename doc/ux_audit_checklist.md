@@ -50,8 +50,8 @@ P1 (High):
   [x] AUDIT-38: Wishlist Role Restriction Mismatch & Trapped State on Instructor/Admin Move to Wishlist
   [x] AUDIT-40: Unenrolled Student Lesson Viewer Access Renders Broken Player and Throws 403 API Errors
   [x] AUDIT-41: Mid-Course Lesson Additions Demote Completed Enrollments and Orphan Certificates
-  [ ] AUDIT-47: Incomplete Cascading on Section Deletions Bypasses Lesson Count Sync and Leaves Dangling Prerequisites
-  [ ] AUDIT-48: Platform Maintenance Mode Lacks Non-Checkout Mutation Route Guards (Data Corruption & State Leak)
+  [x] AUDIT-47: Incomplete Cascading on Section Deletions Bypasses Lesson Count Sync and Leaves Dangling Prerequisites
+  [x] AUDIT-48: Platform Maintenance Mode Lacks Non-Checkout Mutation Route Guards (Data Corruption & State Leak)
   [ ] AUDIT-49: Disabled User Registration Lacks UI Indicator in Header & Auth Modals (Raw 403 Rejection)
   [ ] AUDIT-55: Lesson Viewer Last-Accessed Redirect Race Condition Overrides Student Resume Point
   [ ] AUDIT-56: Guest Cart Merging Omits Instructor Self-Course Filter
@@ -1307,15 +1307,17 @@ P3 (Low / Polish):
 
 ---
 
-#### AUDIT-47: Incomplete Cascading on Section Deletions Bypasses Lesson Count Sync and Leaves Dangling Prerequisites
+#### [x] AUDIT-47: Incomplete Cascading on Section Deletions Bypasses Lesson Count Sync and Leaves Dangling Prerequisites
 - **Category**: Cascading Deletion Blind Spots & Invariant Corruption
 - **Priority**: `P1 — High`
 - **Impacted Roles**: Student, Instructor, Admin
+- **Status**: Completed
 - **Affected Files**:
-  - [`backend/src/controllers/course/sectionController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/sectionController.ts#L145-L156)
+  - [`backend/src/controllers/course/sectionController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/sectionController.ts)
   - [`backend/src/models/Section.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Section.ts)
   - [`backend/src/models/Enrollment.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Enrollment.ts)
-  - [`backend/src/controllers/course/shared.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/shared.ts#L48-L56)
+  - [`backend/src/controllers/course/shared.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/shared.ts)
+  - [`frontend/src/features/instructor/pages/EditCourse.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/pages/EditCourse.tsx)
 - **Description**:
   In `sectionController.ts:145-156` (`deleteSection`), deleting a course section executes:
   `await LessonProgress.deleteMany({ lesson: { $in: lessonIds } });`
@@ -1333,26 +1335,41 @@ P3 (Low / Polish):
   3. Instructor deletes Section 1 from the course builder.
   4. Student opens Course B: Section 2 still references deleted Section 1 as its prerequisite.
   5. Enrollment `totalLessonsCount` still says 4 (instead of 2), while student's completed lessons still reference the deleted IDs.
-- **Remediation**:
-  - In `sectionController.ts:deleteSection`, invoke `syncEnrollmentLessonCount(courseId)`.
-  - Execute `$pull: { completedLessonIds: { $in: lessonIds } }` on all `Enrollment` documents for the course.
-  - Delete child `Comment`, `Note`, `Bookmark`, `Quiz`, and `QuizAttempt` documents.
-  - Update any sibling sections: `await Section.updateMany({ course: section.course, prerequisiteSection: section._id }, { $unset: { prerequisiteSection: 1 } })`.
+- **Remediation & Resolution Summary**:
+  - In `backend/src/controllers/course/sectionController.ts`:
+    - In `deleteSection`, executed cascading cleanup across all dependent child entities: `LessonProgress`, `LessonItem`, `Comment`, `Quiz`, `QuizAttempt`, `Note`, `Bookmark`, and `Lesson`.
+    - Unset section association on scoped course assignments (`Assignment.updateMany({ section: section._id }, { $unset: { section: 1 } })`).
+    - Unset dangling prerequisite references on sibling sections (`Section.updateMany({ course: section.course, prerequisiteSection: section._id }, { $unset: { prerequisiteSection: 1 } })`).
+    - Pulled deleted lesson IDs from enrolled students' `Enrollment.completedLessonIds` (`$pull: { completedLessonIds: { $in: lessonIds } }`).
+    - Unset dangling `lastAccessedLessonId` on enrollments that referenced deleted lessons (`$unset: { lastAccessedLessonId: 1 }`).
+    - Re-indexed remaining sibling sections using two-pass `bulkWrite` to preserve contiguous, gapless 1-based order.
+    - Invoked `syncEnrollmentLessonCount(courseId)` to sync `totalLessonsCount` across all course enrollments and auto-complete active enrollments that reach 100%.
+    - In `updateSection`, added prerequisite validation to prevent self-prerequisites, invalid IDs, or cross-course references.
+  - In `frontend/src/features/instructor/pages/EditCourse.tsx`:
+    - In `handleDeleteSection`, cleared `activeSectionId` and `editingSectionId` states upon section deletion to avoid dangling inline add-lesson forms or editor states.
 
 ---
 
-#### AUDIT-48: Platform Maintenance Mode Lacks Non-Checkout Mutation Route Guards (Data Corruption & State Leak)
+#### [x] AUDIT-48: Platform Maintenance Mode Lacks Non-Checkout Mutation Route Guards (Data Corruption & State Leak)
 - **Category**: State Synchronization & Access Control Discrepancy
 - **Priority**: `P1 — High`
 - **Impacted Roles**: Student, Instructor, Admin
 - **Affected Files**:
-  - [`backend/src/controllers/orderController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/orderController.ts#L30)
-  - [`backend/src/models/SystemSettings.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/SystemSettings.ts#L80-L95)
-  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts#L18)
-  - [`backend/src/controllers/course/courseController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/courseController.ts#L100)
-  - [`backend/src/controllers/course/progressController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/progressController.ts#L30)
-  - [`backend/src/controllers/assignmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/assignmentController.ts#L110)
-  - [`frontend/src/components/layout/Header.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/components/layout/Header.tsx#L80-L90,L115-L120)
+  - [`backend/src/middleware/maintenanceMiddleware.ts`](file:///c:/Users/user/projects/skillkart/backend/src/middleware/maintenanceMiddleware.ts)
+  - [`backend/src/middleware/authMiddleware.ts`](file:///c:/Users/user/projects/skillkart/backend/src/middleware/authMiddleware.ts)
+  - [`backend/src/server.ts`](file:///c:/Users/user/projects/skillkart/backend/src/server.ts)
+  - [`backend/src/controllers/orderController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/orderController.ts)
+  - [`frontend/src/context/MaintenanceContext.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/context/MaintenanceContext.tsx)
+  - [`frontend/src/main.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/main.tsx)
+  - [`frontend/src/components/layout/Header.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/components/layout/Header.tsx)
+  - [`frontend/src/features/instructor/layout/InstructorLayout.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/instructor/layout/InstructorLayout.tsx)
+  - [`frontend/src/features/enrollment/components/EnrollButton.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/enrollment/components/EnrollButton.tsx)
+  - [`frontend/src/pages/CartPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/CartPage.tsx)
+  - [`frontend/src/pages/courses/CourseDetailsPage.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/pages/courses/CourseDetailsPage.tsx)
+  - [`frontend/src/features/student/pages/LessonViewer.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/student/pages/LessonViewer.tsx)
+  - [`frontend/src/features/student/components/LessonDiscussion.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/student/components/LessonDiscussion.tsx)
+  - [`frontend/src/components/LessonQuiz.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/components/LessonQuiz.tsx)
+  - [`frontend/src/features/student/components/CourseAssignmentsTab.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/student/components/CourseAssignmentsTab.tsx)
 - **Description**:
   When an administrator toggles **Maintenance Mode** in System Settings (`/admin/settings`), the platform is ostensibly placed in a read-only or maintenance maintenance state. On the frontend, `Header.tsx` renders a red notification banner warning users that *"Platform Maintenance is currently underway"*.
   However, across the entire backend, `SystemSettings.maintenanceMode` is checked **exclusively** within `orderController.ts:30` (checkout). Non-checkout write endpoints—including direct free course enrollment (`enrollmentController.ts`), course creation and updates (`courseController.ts`), lesson progress completion (`progressController.ts`), quiz submissions (`quizController.ts`), assignment submissions and grading (`assignmentController.ts`), and discussion comments (`commentController.ts`)—contain **no maintenance guard**.
@@ -1369,6 +1386,12 @@ P3 (Low / Polish):
   - For any non-GET request (or write routes) initiated by non-admin users (`req.user?.role !== 'admin'`), inspect the singleton `SystemSettings.maintenanceMode`.
   - If enabled, abort the request with `503 Service Unavailable` returning the configured `maintenanceMessage` and `maintenanceEstimatedEndTime`.
   - On the frontend, disable state-modifying action buttons (e.g. Enroll, Submit, Purchase) with a maintenance tooltip when `maintenance.mode` is true.
+- **Resolution Summary**:
+  - Implemented `ensureNotInMaintenance` middleware (`backend/src/middleware/maintenanceMiddleware.ts`) mounted globally across `/api` in `server.ts`. It allows safe read-only requests (`GET`, `HEAD`, `OPTIONS`), admin routes (`/api/admin/*`), settings public config, authentication recovery, and payment provider webhooks, while rejecting non-admin state mutations with `503 Service Unavailable` and structured payload `{ message, maintenanceEstimatedEndTime }`.
+  - Updated `orderController.ts` checkout response to include `maintenanceEstimatedEndTime`.
+  - Created frontend `MaintenanceContext.tsx` providing `useMaintenance()` and wrapped it in `main.tsx`.
+  - Updated `Header.tsx` and `InstructorLayout.tsx` with live maintenance banners indicating completion estimates and admin bypass mode.
+  - Disabled state-mutating UI buttons with maintenance tooltips across `EnrollButton.tsx`, `CartPage.tsx`, `CourseDetailsPage.tsx`, `LessonViewer.tsx`, `LessonDiscussion.tsx`, `LessonQuiz.tsx`, and `CourseAssignmentsTab.tsx`.
 
 ---
 

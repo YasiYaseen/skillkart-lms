@@ -35,6 +35,7 @@ export async function checkout(req: Request, res: Response) {
     if (settings?.maintenanceMode) {
       return res.status(503).json({
         message: settings.maintenanceMessage || "Platform is currently undergoing scheduled maintenance. Please try again shortly.",
+        maintenanceEstimatedEndTime: settings.maintenanceEstimatedEndTime,
       });
     }
 

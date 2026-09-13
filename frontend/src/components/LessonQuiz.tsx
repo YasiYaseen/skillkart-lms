@@ -7,7 +7,9 @@ import {
   XCircleIcon,
   ArrowPathIcon,
   CheckIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/20/solid';
+import { useMaintenance } from '@/context/MaintenanceContext';
 
 interface Question {
   question: string;
@@ -37,6 +39,7 @@ interface LessonQuizProps {
 }
 
 export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
+  const { isMaintenance, maintenanceMessage } = useMaintenance();
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [loading, setLoading] = useState(true);
   const [noQuiz, setNoQuiz] = useState(false);
@@ -84,6 +87,10 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
 
   const handleSubmit = async () => {
     if (!quiz) return;
+    if (isMaintenance) {
+      toast.error(maintenanceMessage || "Assessment submissions are disabled during platform maintenance.");
+      return;
+    }
     if (selectedAnswers.some((a) => a === -1)) {
       toast.warning('Please answer all questions before submitting');
       return;
@@ -263,10 +270,11 @@ export function LessonQuiz({ lessonId, onQuizPassed }: LessonQuizProps) {
           {!result?.passed && (
             <button
               onClick={handleSubmit}
-              disabled={submitting}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold text-xs transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
+              disabled={submitting || isMaintenance}
+              title={isMaintenance ? (maintenanceMessage || "Assessment submissions are disabled during maintenance.") : undefined}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold text-xs transition-colors shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {submitting ? 'Evaluating...' : 'Submit Answers'}
+              {submitting ? 'Evaluating...' : isMaintenance ? 'Submission Disabled (Maintenance)' : 'Submit Answers'}
             </button>
           )}
 
