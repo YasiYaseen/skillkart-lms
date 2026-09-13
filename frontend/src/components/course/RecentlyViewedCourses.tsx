@@ -34,7 +34,7 @@ export default function RecentlyViewedCourses() {
       }
     }
     fetchRecent();
-  }, [user]);
+  }, [user?.id]);
 
   if (!user || loading || courses.length === 0) {
     return null;

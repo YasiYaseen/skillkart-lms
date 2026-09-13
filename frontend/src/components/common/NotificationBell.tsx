@@ -37,6 +37,7 @@ export default function NotificationBell() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const syncedRoleNotificationIdsRef = useRef<Set<string>>(new Set());
 
     const fetchNotifications = async () => {
         if (!user) return;
@@ -47,17 +48,21 @@ export default function NotificationBell() {
             setUnreadCount(data.unreadCount || 0);
 
             // AUDIT-09: Proactively synchronize user auth state if unread notifications indicate role changes
-            const hasRoleUpdate = notifs.some(
-                (n: AppNotification) =>
-                    !n.read &&
-                    (n.title.toLowerCase().includes('instructor') ||
-                     n.title.toLowerCase().includes('role') ||
-                     n.title.toLowerCase().includes('approved') ||
-                     n.link?.startsWith('/instructor') ||
-                     n.link?.startsWith('/admin'))
-            );
-            if (hasRoleUpdate) {
-                refreshUser();
+            if (user.role === 'student') {
+                const pendingRoleNotifs = notifs.filter(
+                    (n: AppNotification) =>
+                        !n.read &&
+                        !syncedRoleNotificationIdsRef.current.has(n._id) &&
+                        (n.title.toLowerCase().includes('instructor') ||
+                         n.title.toLowerCase().includes('role') ||
+                         n.title.toLowerCase().includes('approved') ||
+                         n.link?.startsWith('/instructor') ||
+                         n.link?.startsWith('/admin'))
+                );
+                if (pendingRoleNotifs.length > 0) {
+                    pendingRoleNotifs.forEach((n: AppNotification) => syncedRoleNotificationIdsRef.current.add(n._id));
+                    refreshUser();
+                }
             }
         } catch (error) {
             console.error('Failed to fetch notifications', error);
@@ -68,7 +73,7 @@ export default function NotificationBell() {
         fetchNotifications();
         const interval = setInterval(fetchNotifications, 45000); // Poll every 45s
         return () => clearInterval(interval);
-    }, [user]);
+    }, [user?.id]);
 
     // Close dropdown when clicking outside
     useEffect(() => {

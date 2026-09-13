@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { getMeApi, getOnboardingStatusApi } from './auth.api';
 
 export interface InstructorApplication {
@@ -118,12 +118,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const refreshUser = async (): Promise<User | null> => {
+  const refreshUser = useCallback(async (): Promise<User | null> => {
     try {
       const res = await getMeApi().catch(() => getOnboardingStatusApi());
       const serverUser = res.data?.user as User | undefined;
       if (serverUser) {
-        setUser(serverUser);
+        setUser((prev) => {
+          if (prev && JSON.stringify(prev) === JSON.stringify(serverUser)) {
+            return prev;
+          }
+          return serverUser;
+        });
         localStorage.setItem('user', JSON.stringify(serverUser));
         return serverUser;
       }
@@ -131,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       return null;
     }
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser, refreshUser }}>

@@ -148,7 +148,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const guestItems = readGuestStorage();
       setCart(guestItems);
     }
-  }, [user, token, isAuthLoading]);
+  }, [user?.id, token, isAuthLoading]);
 
   // Persist guest cart when user is NOT logged in
   useEffect(() => {

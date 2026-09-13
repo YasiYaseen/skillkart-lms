@@ -107,7 +107,7 @@ export function LearnerHome() {
         } else {
             setEnrolledCourseIds(new Set());
         }
-    }, [user]);
+    }, [user?.id]);
 
     useEffect(() => {
         api.get<DiscoveryFeedData>('/courses/discovery-feed')

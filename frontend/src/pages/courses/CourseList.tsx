@@ -168,7 +168,7 @@ function CourseList() {
         } else {
             setEnrolledCourseIds(new Set());
         }
-    }, [user]);
+    }, [user?.id]);
 
     // Fetch categories with live stats
     useEffect(() => {
