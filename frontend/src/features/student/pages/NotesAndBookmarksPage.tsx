@@ -87,8 +87,10 @@ export default function NotesAndBookmarksPage() {
     const map = new Map<string, { id: string; title: string; notesCount: number; bookmarksCount: number }>();
 
     bookmarks.forEach((b) => {
+      if (!b.lesson) return;
       const courseObj = typeof b.course === 'object' ? b.course : null;
       const id = courseObj ? courseObj._id : (b.course as string);
+      if (!id) return;
       const title = courseObj ? courseObj.title : 'Course';
       if (!map.has(id)) {
         map.set(id, { id, title, notesCount: 0, bookmarksCount: 0 });
@@ -99,6 +101,7 @@ export default function NotesAndBookmarksPage() {
     notes.forEach((n) => {
       const courseObj = typeof n.course === 'object' ? n.course : null;
       const id = courseObj ? courseObj._id : (n.course as string);
+      if (!id) return;
       const title = courseObj ? courseObj.title : 'Course';
       if (!map.has(id)) {
         map.set(id, { id, title, notesCount: 0, bookmarksCount: 0 });
@@ -112,13 +115,14 @@ export default function NotesAndBookmarksPage() {
   // Filtered bookmarks
   const filteredBookmarks = useMemo(() => {
     return bookmarks.filter((b) => {
+      if (!b.lesson) return false;
       const courseObj = typeof b.course === 'object' ? b.course : null;
       const courseId = courseObj ? courseObj._id : (b.course as string);
       const matchesCourse = selectedCourseId === 'all' || courseId === selectedCourseId;
       const matchesSearch =
         !searchTerm.trim() ||
-        b.lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (courseObj && courseObj.title.toLowerCase().includes(searchTerm.toLowerCase()));
+        (b.lesson.title && b.lesson.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (courseObj && courseObj.title && courseObj.title.toLowerCase().includes(searchTerm.toLowerCase()));
       return matchesCourse && matchesSearch;
     });
   }, [bookmarks, selectedCourseId, searchTerm]);
@@ -145,10 +149,11 @@ export default function NotesAndBookmarksPage() {
   }, [notes, selectedNoteId, filteredNotes]);
 
   // Bookmark handlers
-  const handleRemoveBookmark = async (lessonId: string) => {
+  const handleRemoveBookmark = async (lessonId?: string) => {
+    if (!lessonId) return;
     try {
       await toggleLessonBookmark(lessonId);
-      setBookmarks((prev) => prev.filter((b) => b.lesson._id !== lessonId));
+      setBookmarks((prev) => prev.filter((b) => b.lesson?._id !== lessonId));
       toast.success('Bookmark removed');
     } catch (error: unknown) {
       const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update bookmark';
@@ -372,7 +377,7 @@ export default function NotesAndBookmarksPage() {
                       >
                         <div className="truncate min-w-0">
                           <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
-                            Lesson {b.lesson.order}: {b.lesson.title}
+                            {b.lesson ? `Lesson ${b.lesson.order}: ${b.lesson.title}` : 'Saved Lesson'}
                           </p>
                           <p className="text-[10px] text-slate-400 truncate">{c?.title || 'Course'}</p>
                         </div>
@@ -462,7 +467,7 @@ export default function NotesAndBookmarksPage() {
                               {c?.title || 'Course'}
                             </span>
                             <button
-                              onClick={() => handleRemoveBookmark(b.lesson._id)}
+                              onClick={() => handleRemoveBookmark(b.lesson?._id)}
                               className="text-slate-400 hover:text-rose-500 text-xs p-0.5 cursor-pointer"
                               title="Remove bookmark"
                             >
@@ -470,7 +475,7 @@ export default function NotesAndBookmarksPage() {
                             </button>
                           </div>
                           <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                            Lesson {b.lesson.order}: {b.lesson.title}
+                            {b.lesson ? `Lesson ${b.lesson.order}: ${b.lesson.title}` : 'Saved Lesson'}
                           </h4>
                           <p className="text-[10px] text-slate-400">
                             Bookmarked on {formatDate(b.createdAt)}

@@ -109,6 +109,13 @@ router.patch(
   authorize("instructor", "admin"),
   unarchiveCourse
 );
+router.patch(
+  "/:courseId/unarchive",
+  protect,
+  requireOnboardingCompleted,
+  authorize("instructor", "admin"),
+  unarchiveCourse
+);
 router.delete("/:courseId", protect, requireOnboardingCompleted, authorize("instructor", "admin"), deleteCourse);
 
 router.post(

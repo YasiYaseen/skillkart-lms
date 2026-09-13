@@ -31,7 +31,9 @@ export async function getWishlist(req: Request, res: Response) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const items = await Wishlist.find({ student: req.user.id })
+    const userId = req.user.id;
+
+    const items = await Wishlist.find({ student: userId })
       .populate({
         path: "course",
         populate: { path: "instructor", select: "name email" },
@@ -41,25 +43,41 @@ export async function getWishlist(req: Request, res: Response) {
 
     // Check existing enrollments to exclude any courses the student already owns
     const enrollments = await Enrollment.find({
-      student: req.user.id,
+      student: userId,
       status: { $in: ["active", "completed"] },
     }).select("course").lean();
 
     const enrolledCourseIds = new Set(enrollments.map((e) => e.course.toString()));
 
-    // Filter out deleted courses and already enrolled courses
+    // Helper to identify self-authored courses
+    const isSelfAuthored = (courseObj: any) => {
+      if (!courseObj || !courseObj.instructor) return false;
+      const instId = courseObj.instructor._id
+        ? courseObj.instructor._id.toString()
+        : courseObj.instructor.toString();
+      return instId === userId;
+    };
+
+    // Filter out deleted courses, already enrolled courses, and self-authored courses
     const validItems = items.filter(
-      (item) => item.course != null && !enrolledCourseIds.has(item.course._id.toString())
+      (item) =>
+        item.course != null &&
+        !enrolledCourseIds.has(item.course._id.toString()) &&
+        !isSelfAuthored(item.course)
     );
 
-    // Clean up any stale wishlist entries for enrolled courses
+    // Clean up any stale wishlist entries for enrolled or self-authored courses
     const staleWishlistCourseIds = items
-      .filter((item) => item.course != null && enrolledCourseIds.has(item.course._id.toString()))
+      .filter(
+        (item) =>
+          item.course != null &&
+          (enrolledCourseIds.has(item.course._id.toString()) || isSelfAuthored(item.course))
+      )
       .map((item) => item.course._id);
 
     if (staleWishlistCourseIds.length > 0) {
       Wishlist.deleteMany({
-        student: req.user.id,
+        student: userId,
         course: { $in: staleWishlistCourseIds },
       }).catch(() => {});
     }
@@ -127,6 +145,11 @@ export async function addToWishlist(req: Request, res: Response) {
     const course = await Course.findById(courseId);
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
+    }
+
+    // AUDIT-38 / AUDIT-21: Instructors cannot wishlist their own courses
+    if (course.instructor && course.instructor.toString() === req.user.id) {
+      return res.status(400).json({ message: "Instructors cannot wishlist their own courses." });
     }
 
     const requireApproval = await isCourseApprovalRequired();

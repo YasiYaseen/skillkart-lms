@@ -1,6 +1,6 @@
 import CourseStructure from '@/components/course/CourseStructure';
 import CourseFAQAccordion from '@/components/course/CourseFAQAccordion';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '@/lib/api';
@@ -26,6 +26,11 @@ import {
     SignalIcon,
     SparklesIcon,
     MagnifyingGlassIcon,
+    EyeIcon,
+    ArrowLeftIcon,
+    PencilSquareIcon,
+    XMarkIcon,
+    ExclamationTriangleIcon,
 } from '@heroicons/react/20/solid';
 
 function formatMinutes(totalMins: number) {
@@ -75,7 +80,7 @@ interface RawCourseDetails {
     title: string;
     description?: string;
     level: string;
-    instructor?: { _id?: string; name?: string } | string;
+    instructor?: { _id?: string; name?: string; email?: string } | string;
     averageRating?: number;
     reviewCount?: number;
     studentCount?: number;
@@ -86,6 +91,11 @@ interface RawCourseDetails {
     whatYouWillLearn?: string[];
     prerequisites?: string[];
     updatedAt?: string;
+    status?: string;
+    isApproved?: boolean | null;
+    isActive?: boolean;
+    rejectionReason?: string;
+    isManager?: boolean;
     sections: RawCourseDetailsSection[];
     lessons: RawCourseDetailsLesson[];
     lessonItems?: RawCourseDetailsLessonItem[];
@@ -125,11 +135,84 @@ interface DetailedCourseState {
     prerequisites: string[];
     lastUpdated: string;
     description: string[];
+    status: string;
+    isApproved: boolean | undefined | null;
+    isActive: boolean;
+    rejectionReason?: string;
+    isManager?: boolean;
     structure: {
         totalSections: number;
         totalLectures: number;
         totalDuration: string;
         sections: MappedSection[];
+    };
+}
+
+interface CourseLifecycleInfo {
+    statusKey: 'disabled' | 'rejected-draft' | 'draft' | 'rejected' | 'pending' | 'archived' | 'live';
+    statusLabel: string;
+    statusBadgeClass: string;
+    statusMessage: string;
+}
+
+function getCourseLifecycleInfo(course: {
+    status?: string;
+    isApproved?: boolean | null;
+    isActive?: boolean;
+}): CourseLifecycleInfo {
+    if (course.isActive === false) {
+        return {
+            statusKey: 'disabled',
+            statusLabel: 'Suspended by Admin',
+            statusBadgeClass: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+            statusMessage: 'This course is suspended by an administrator and hidden from the public catalog.',
+        };
+    }
+    if (course.status === 'draft') {
+        if (course.isApproved === false) {
+            return {
+                statusKey: 'rejected-draft',
+                statusLabel: 'Needs Changes (Draft)',
+                statusBadgeClass: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+                statusMessage: 'This course was rejected during moderation and is in draft for revision.',
+            };
+        }
+        return {
+            statusKey: 'draft',
+            statusLabel: 'Draft (Unsubmitted)',
+            statusBadgeClass: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+            statusMessage: 'This course is in draft status and has not been submitted for moderation.',
+        };
+    }
+    if (course.isApproved === false) {
+        return {
+            statusKey: 'rejected',
+            statusLabel: 'Needs Changes (Rejected)',
+            statusBadgeClass: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+            statusMessage: 'This course was rejected during moderation and requires revisions before publication.',
+        };
+    }
+    if (course.status === 'published' && course.isApproved !== true) {
+        return {
+            statusKey: 'pending',
+            statusLabel: 'Pending Moderation',
+            statusBadgeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+            statusMessage: 'This course has been submitted for moderation and is awaiting administrator review.',
+        };
+    }
+    if (course.status === 'archived') {
+        return {
+            statusKey: 'archived',
+            statusLabel: 'Archived',
+            statusBadgeClass: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700',
+            statusMessage: 'This course is archived and no longer accepting new student enrollments.',
+        };
+    }
+    return {
+        statusKey: 'live',
+        statusLabel: 'Live / Approved',
+        statusBadgeClass: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+        statusMessage: 'This course is publicly listed and active on the catalog.',
     };
 }
 
@@ -157,6 +240,7 @@ const BookIcon = () => (
 function CourseDetailsPage() {
     const { courseId } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { user } = useAuth();
     const { isEnrolled, loading: enrollmentLoading } = useEnrollment(courseId);
     const { addToCart, isInCart } = useCart();
@@ -171,6 +255,9 @@ function CourseDetailsPage() {
     const [submittingReview, setSubmittingReview] = useState(false);
     const [loading, setLoading] = useState(true);
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [moderating, setModerating] = useState(false);
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [rejectReason, setRejectReason] = useState('');
 
     const loadReviews = useCallback(async (cId: string, sort: 'newest' | 'highest' | 'lowest', page: number) => {
         try {
@@ -240,6 +327,11 @@ function CourseDetailsPage() {
                     prerequisites: c.prerequisites || [],
                     lastUpdated: c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : '',
                     description: c.description ? [c.description] : [],
+                    status: c.status || 'published',
+                    isApproved: c.isApproved,
+                    isActive: c.isActive !== false,
+                    rejectionReason: c.rejectionReason,
+                    isManager: c.isManager,
                     structure: {
                         totalSections: c.sections.length,
                         totalLectures: c.lessons.length,
@@ -258,6 +350,75 @@ function CourseDetailsPage() {
 
         loadReviews(courseId, reviewSort, reviewPage);
     }, [courseId, reviewSort, reviewPage, loadReviews]);
+
+    const isAdmin = user?.role === 'admin';
+    const isAuthor = Boolean(user?.id && course?.instructorId && (user.id === course.instructorId || user.id === String(course.instructorId)));
+    const isManager = isAdmin || isAuthor || Boolean(course?.isManager);
+    const isExplicitPreview = searchParams.get('preview') === 'true';
+
+    const isLive = Boolean(
+        course &&
+        course.status === 'published' &&
+        course.isApproved === true &&
+        course.isActive !== false
+    );
+
+    const isPreviewMode = Boolean(course && isManager && (!isLive || isExplicitPreview));
+    const lifecycleInfo = course ? getCourseLifecycleInfo(course) : null;
+
+    const handleApproveCourse = async () => {
+        if (!courseId) return;
+        try {
+            setModerating(true);
+            const res = await api.patch<{ message: string; course?: { isApproved?: boolean; status?: string } }>(
+                `/admin/courses/${courseId}/moderation`,
+                { isApproved: true }
+            );
+            toast.success(res.data.message || 'Course approved successfully');
+            setCourse((prev) => prev ? {
+                ...prev,
+                isApproved: true,
+                rejectionReason: undefined,
+            } : prev);
+            window.dispatchEvent(new CustomEvent('admin-badges-refresh'));
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to approve course';
+            toast.error(msg);
+        } finally {
+            setModerating(false);
+        }
+    };
+
+    const handleRejectCourse = async () => {
+        if (!courseId || !rejectReason.trim()) {
+            toast.error('Please provide a reason for rejecting this course.');
+            return;
+        }
+        try {
+            setModerating(true);
+            const res = await api.patch<{ message: string; course?: { isApproved?: boolean; rejectionReason?: string } }>(
+                `/admin/courses/${courseId}/moderation`,
+                {
+                    isApproved: false,
+                    rejectionReason: rejectReason.trim(),
+                }
+            );
+            toast.success(res.data.message || 'Course rejected with feedback');
+            setCourse((prev) => prev ? {
+                ...prev,
+                isApproved: false,
+                rejectionReason: rejectReason.trim(),
+            } : prev);
+            setShowRejectModal(false);
+            setRejectReason('');
+            window.dispatchEvent(new CustomEvent('admin-badges-refresh'));
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to reject course';
+            toast.error(msg);
+        } finally {
+            setModerating(false);
+        }
+    };
 
     const ratingBreakdown = useMemo(() => {
         const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
@@ -425,6 +586,101 @@ function CourseDetailsSkeleton() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 pb-12 transition-colors">
+            {/* Sticky Preview Banner */}
+            {isPreviewMode && lifecycleInfo && (
+                <div className="sticky top-0 z-40 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/15 dark:from-amber-950/80 dark:via-amber-900/60 dark:to-amber-950/80 border-b border-amber-300/80 dark:border-amber-700/60 backdrop-blur-md px-4 py-3 shadow-xs">
+                    <div className="container mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                        <div className="flex items-start md:items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 shrink-0 mt-0.5 md:mt-0">
+                                <EyeIcon className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200">
+                                        Preview Mode
+                                    </span>
+                                    <span className="text-amber-400 dark:text-amber-600">•</span>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${lifecycleInfo.statusBadgeClass}`}>
+                                        Status: {lifecycleInfo.statusLabel}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-amber-900/80 dark:text-amber-200/80 mt-0.5">
+                                    {lifecycleInfo.statusMessage}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Banner Quick Actions */}
+                        <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+                            {isAdmin && (
+                                <>
+                                    <Link
+                                        to="/admin/courses"
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs"
+                                    >
+                                        <ArrowLeftIcon className="w-3.5 h-3.5" />
+                                        <span>Course Moderation</span>
+                                    </Link>
+                                    {course.status === 'published' && course.isApproved !== true && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={handleApproveCourse}
+                                                disabled={moderating}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
+                                            >
+                                                <CheckIcon className="w-3.5 h-3.5" />
+                                                <span>Approve</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setRejectReason(course.rejectionReason || '');
+                                                    setShowRejectModal(true);
+                                                }}
+                                                disabled={moderating}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
+                                            >
+                                                <XMarkIcon className="w-3.5 h-3.5" />
+                                                <span>Reject</span>
+                                            </button>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                            {isAuthor && !isAdmin && (
+                                <>
+                                    <Link
+                                        to={`/instructor/courses/${course.id}/edit`}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-2xs"
+                                    >
+                                        <PencilSquareIcon className="w-3.5 h-3.5" />
+                                        <span>Edit in Studio</span>
+                                    </Link>
+                                    <Link
+                                        to="/instructor/courses"
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs"
+                                    >
+                                        <ArrowLeftIcon className="w-3.5 h-3.5" />
+                                        <span>My Courses</span>
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    {course.rejectionReason && (
+                        <div className="container mx-auto mt-2">
+                            <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-400/40 dark:border-rose-900/40 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-2">
+                                <ExclamationTriangleIcon className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <span className="font-bold block">Moderation Feedback:</span>
+                                    <span>{course.rejectionReason}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
             <div className="container py-10">
 
                 {/* Main Grid Layout */}
@@ -802,7 +1058,21 @@ function CourseDetailsSkeleton() {
                                 <div className="p-5 sm:p-6">
                                     {/* Price / Enrolled Status */}
                                     <div className="flex items-center gap-3 mb-5">
-                                        {isEnrolled ? (
+                                        {isPreviewMode ? (
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+                                                        {course.price === 0 ? 'Free' : formatPrice(course.price)}
+                                                    </span>
+                                                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200">
+                                                        Preview Mode
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                    Checkout & enrollment disabled
+                                                </p>
+                                            </div>
+                                        ) : isEnrolled ? (
                                             <span className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                                                 <CheckCircleIcon className="w-6 h-6" />
                                                 <span>Enrolled</span>
@@ -837,81 +1107,194 @@ function CourseDetailsSkeleton() {
 
                                     {/* Action Buttons */}
                                     <div className="space-y-2.5 mb-5">
-                                        {courseId && (
-                                            <EnrollButton
-                                                courseId={courseId}
-                                                price={course.price}
-                                                isPaid={course.price > 0}
-                                                title={course.title}
-                                                thumbnailUrl={course.thumbnail}
-                                                instructorName={course.instructor}
-                                                onEnrolled={() => navigate(`/learn/${courseId}`)}
-                                            />
-                                        )}
-                                        {courseId && !isEnrolled && course.price > 0 && (
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        if (!isInCart(courseId)) {
-                                                            await addToCart({
-                                                                courseId,
-                                                                title: course.title,
-                                                                price: course.price,
-                                                                thumbnailUrl: course.thumbnail,
-                                                                instructorName: course.instructor,
-                                                            });
-                                                        }
-                                                        navigate('/cart?step=payment');
-                                                    } catch {
-                                                        // Handled in CartContext
-                                                    }
-                                                }}
-                                                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                                            >
-                                                <BoltIcon className="w-4 h-4" />
-                                                <span>Instant Checkout</span>
-                                            </button>
-                                        )}
-                                        {courseId && !isEnrolled && (
-                                            isInCart(courseId) ? (
-                                                <button
-                                                    onClick={() => navigate('/cart')}
-                                                    className="w-full py-2.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg font-medium text-xs hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                                                >
-                                                    <CheckIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                                    <span>In Cart &bull; Go to Cart</span>
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={async () => {
-                                                        try {
-                                                            await addToCart({
-                                                                courseId,
-                                                                title: course.title,
-                                                                price: course.price,
-                                                                thumbnailUrl: course.thumbnail,
-                                                                instructorName: course.instructor,
-                                                            });
-                                                            toast.success('Course added to your cart!');
-                                                        } catch {
-                                                            // Handled in CartContext
-                                                        }
-                                                    }}
-                                                    className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                                                >
-                                                    <ShoppingCartIcon className="w-4 h-4 text-slate-500" />
-                                                    <span>Add to Cart</span>
-                                                </button>
-                                            )
-                                        )}
-                                        {courseId && !isEnrolled && (
-                                            <WishlistButton courseId={courseId} variant="button" />
-                                        )}
+                                        {isPreviewMode && lifecycleInfo ? (
+                                            <div className="space-y-3">
+                                                {/* Moderation / Studio Controls Header */}
+                                                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-2">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                                            {isAdmin ? 'Admin Moderation' : 'Author Studio Preview'}
+                                                        </span>
+                                                        <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-semibold border ${lifecycleInfo.statusBadgeClass}`}>
+                                                            {lifecycleInfo.statusLabel}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                                                        {lifecycleInfo.statusMessage}
+                                                    </p>
+                                                    {course.rejectionReason && (
+                                                        <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-700 dark:text-rose-300">
+                                                            <strong className="block font-semibold mb-0.5">Moderator Feedback:</strong>
+                                                            <span>{course.rejectionReason}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
 
-                                        <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 pt-2">
-                                            <ShieldCheckIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                            <span>{isEnrolled ? 'Lifetime Access & Certificate Included' : '30-Day Money-Back Guarantee • Lifetime Access'}</span>
-                                        </div>
+                                                {/* Intended Price indicator */}
+                                                <div className="p-3 rounded-lg border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-850/60 flex items-center justify-between text-xs">
+                                                    <span className="text-slate-500 dark:text-slate-400 font-medium">Marketplace Price:</span>
+                                                    <span className="font-bold text-slate-900 dark:text-white">
+                                                        {course.price === 0 ? 'Free Course' : formatPrice(course.price)}
+                                                    </span>
+                                                </div>
+
+                                                {/* Admin Moderation Actions */}
+                                                {isAdmin && (
+                                                    <div className="space-y-2 pt-1">
+                                                        {course.status === 'published' && course.isApproved !== true && (
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleApproveCourse}
+                                                                    disabled={moderating}
+                                                                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+                                                                >
+                                                                    <CheckIcon className="w-4 h-4" />
+                                                                    <span>Approve Course</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setRejectReason(course.rejectionReason || '');
+                                                                        setShowRejectModal(true);
+                                                                    }}
+                                                                    disabled={moderating}
+                                                                    className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+                                                                >
+                                                                    <XMarkIcon className="w-4 h-4" />
+                                                                    <span>Reject Course</span>
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        <Link
+                                                            to="/admin/courses"
+                                                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                                        >
+                                                            <ArrowLeftIcon className="w-4 h-4" />
+                                                            <span>Back to Moderation Queue</span>
+                                                        </Link>
+                                                        <Link
+                                                            to={`/learn/${course.id}`}
+                                                            className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <BookOpenIcon className="w-4 h-4 text-slate-500" />
+                                                            <span>Preview Lessons in Viewer</span>
+                                                        </Link>
+                                                    </div>
+                                                )}
+
+                                                {/* Author Studio Actions */}
+                                                {isAuthor && !isAdmin && (
+                                                    <div className="space-y-2 pt-1">
+                                                        <Link
+                                                            to={`/instructor/courses/${course.id}/edit`}
+                                                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                                        >
+                                                            <PencilSquareIcon className="w-4 h-4" />
+                                                            <span>Edit Course in Studio</span>
+                                                        </Link>
+                                                        <Link
+                                                            to="/instructor/courses"
+                                                            className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <ArrowLeftIcon className="w-4 h-4 text-slate-500" />
+                                                            <span>Back to My Courses</span>
+                                                        </Link>
+                                                        <Link
+                                                            to={`/learn/${course.id}`}
+                                                            className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <BookOpenIcon className="w-4 h-4 text-slate-500" />
+                                                            <span>Preview Lessons in Viewer</span>
+                                                        </Link>
+                                                    </div>
+                                                )}
+
+                                                <div className="pt-2 text-center">
+                                                    <p className="text-[11px] text-slate-400 dark:text-slate-500 italic">
+                                                        Student checkout, cart, and enrollment actions are disabled in preview mode.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {courseId && (
+                                                    <EnrollButton
+                                                        courseId={courseId}
+                                                        price={course.price}
+                                                        isPaid={course.price > 0}
+                                                        title={course.title}
+                                                        thumbnailUrl={course.thumbnail}
+                                                        instructorName={course.instructor}
+                                                        onEnrolled={() => navigate(`/learn/${courseId}`)}
+                                                    />
+                                                )}
+                                                {courseId && !isEnrolled && course.price > 0 && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                if (!isInCart(courseId)) {
+                                                                    await addToCart({
+                                                                        courseId,
+                                                                        title: course.title,
+                                                                        price: course.price,
+                                                                        thumbnailUrl: course.thumbnail,
+                                                                        instructorName: course.instructor,
+                                                                    });
+                                                                }
+                                                                navigate('/cart?step=payment');
+                                                            } catch {
+                                                                // Handled in CartContext
+                                                            }
+                                                        }}
+                                                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                                    >
+                                                        <BoltIcon className="w-4 h-4" />
+                                                        <span>Instant Checkout</span>
+                                                    </button>
+                                                )}
+                                                {courseId && !isEnrolled && (
+                                                    isInCart(courseId) ? (
+                                                        <button
+                                                            onClick={() => navigate('/cart')}
+                                                            className="w-full py-2.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg font-medium text-xs hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <CheckIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                            <span>In Cart &bull; Go to Cart</span>
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={async () => {
+                                                                try {
+                                                                    await addToCart({
+                                                                        courseId,
+                                                                        title: course.title,
+                                                                        price: course.price,
+                                                                        thumbnailUrl: course.thumbnail,
+                                                                        instructorName: course.instructor,
+                                                                    });
+                                                                    toast.success('Course added to your cart!');
+                                                                } catch {
+                                                                    // Handled in CartContext
+                                                                }
+                                                            }}
+                                                            className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <ShoppingCartIcon className="w-4 h-4 text-slate-500" />
+                                                            <span>Add to Cart</span>
+                                                        </button>
+                                                    )
+                                                )}
+                                                {courseId && !isEnrolled && (
+                                                    <WishlistButton courseId={courseId} variant="button" />
+                                                )}
+
+                                                <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 pt-2">
+                                                    <ShieldCheckIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                                    <span>{isEnrolled ? 'Lifetime Access & Certificate Included' : '30-Day Money-Back Guarantee • Lifetime Access'}</span>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     {/* Course Quick Stats */}
@@ -947,6 +1330,59 @@ function CourseDetailsSkeleton() {
 
                 </div>
             </div>
+
+            {showRejectModal && (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                Reject Course Submission
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowRejectModal(false);
+                                    setRejectReason('');
+                                }}
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Please provide feedback for the instructor explaining why the course was rejected and what improvements are needed.
+                        </p>
+                        <textarea
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            placeholder="e.g. Please update lesson 2 with practical code examples and clarify prerequisites..."
+                            rows={4}
+                            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowRejectModal(false);
+                                    setRejectReason('');
+                                }}
+                                disabled={moderating}
+                                className="px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleRejectCourse}
+                                disabled={moderating || !rejectReason.trim()}
+                                className="px-3.5 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white rounded-lg transition-colors cursor-pointer shadow-2xs"
+                            >
+                                {moderating ? 'Rejecting...' : 'Confirm Rejection'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showAuthModal && (
                 <AuthModals

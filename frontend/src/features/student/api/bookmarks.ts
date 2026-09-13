@@ -1,10 +1,10 @@
-﻿import { api } from '@/lib/api';
+import { api } from '@/lib/api';
 
 export interface BookmarkItem {
   _id: string;
   user: string;
   course: string | { _id: string; title: string; thumbnail?: string };
-  lesson: {
+  lesson?: {
     _id: string;
     title: string;
     order: number;

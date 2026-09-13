@@ -153,6 +153,18 @@ export async function validateCoupon(req: Request, res: Response) {
           message: "This coupon is only valid for a specific course that is not in your cart.",
         });
       }
+
+      // Defense-in-depth: Ensure instructor-created coupon applies only to instructor's own course
+      if (creatorRole === "instructor" && coupon.instructor) {
+        const cInst = targetCourse.instructor as any;
+        const cInstructorId = String(cInst?._id || cInst || "");
+        if (coupon.instructor && cInstructorId && cInstructorId !== String(coupon.instructor)) {
+          return res.status(400).json({
+            message: "This coupon is only valid for courses created by the publishing instructor.",
+          });
+        }
+      }
+
       applicableItemsCount = 1;
       const coursePrice = typeof targetCourse.price === "number" ? targetCourse.price : 0;
       if (coupon.discountType === "percentage") {
@@ -352,8 +364,26 @@ export async function createCoupon(req: Request, res: Response) {
     const platformCommissionRate = settings?.platformCommissionRate ?? 20;
 
     let courseRef: Types.ObjectId | undefined;
-    if (parsed.data.courseId && isValidObjectId(parsed.data.courseId)) {
-      courseRef = new Types.ObjectId(parsed.data.courseId);
+    if (parsed.data.courseId) {
+      if (!isValidObjectId(parsed.data.courseId)) {
+        return res.status(400).json({ message: "Invalid courseId" });
+      }
+      const course = await Course.findById(parsed.data.courseId);
+      if (!course) {
+        return res.status(404).json({ message: "Referenced course not found" });
+      }
+      if (!isAdmin && course.instructor.toString() !== req.user.id) {
+        return res.status(403).json({
+          message: "You can only create coupons for courses you instruct.",
+        });
+      }
+      courseRef = course._id;
+    }
+
+    if (parsed.data.scope === "single_course" && !courseRef) {
+      return res.status(400).json({
+        message: "A valid courseId is required for single_course coupons.",
+      });
     }
 
     let creatorRole: "admin" | "instructor" = "instructor";
@@ -498,13 +528,46 @@ export async function updateCoupon(req: Request, res: Response) {
     if (parsed.data.title !== undefined) coupon.title = parsed.data.title || undefined;
     if (parsed.data.discountType) coupon.discountType = parsed.data.discountType;
     if (parsed.data.discountValue !== undefined) coupon.discountValue = parsed.data.discountValue;
-    if (parsed.data.scope) coupon.scope = parsed.data.scope;
     if (isAdmin && parsed.data.isPublic !== undefined) coupon.isPublic = parsed.data.isPublic;
     if (parsed.data.courseId !== undefined) {
-      coupon.course = parsed.data.courseId && isValidObjectId(parsed.data.courseId)
-        ? new Types.ObjectId(parsed.data.courseId)
-        : undefined;
-      coupon.scope = coupon.course ? "single_course" : (coupon.creatorRole === "admin" ? "platform_global" : "instructor_all");
+      if (parsed.data.courseId) {
+        if (!isValidObjectId(parsed.data.courseId)) {
+          return res.status(400).json({ message: "Invalid courseId" });
+        }
+        const targetCourse = await Course.findById(parsed.data.courseId);
+        if (!targetCourse) {
+          return res.status(404).json({ message: "Referenced course not found" });
+        }
+        if (!isAdmin && targetCourse.instructor.toString() !== req.user.id) {
+          return res.status(403).json({
+            message: "You can only create coupons for courses you instruct.",
+          });
+        }
+        coupon.course = targetCourse._id;
+        coupon.scope = "single_course";
+      } else {
+        coupon.course = undefined;
+        coupon.scope = coupon.creatorRole === "admin" ? (parsed.data.scope || "platform_global") : "instructor_all";
+      }
+    } else if (parsed.data.scope) {
+      if (!isAdmin && parsed.data.scope === "platform_global") {
+        return res.status(403).json({ message: "Instructors cannot create platform-wide coupons." });
+      }
+      if (parsed.data.scope === "single_course" && !coupon.course) {
+        return res.status(400).json({ message: "A valid courseId is required for single_course coupons." });
+      }
+      if (parsed.data.scope === "single_course" && coupon.course && !isAdmin) {
+        const targetCourse = await Course.findById(coupon.course);
+        if (!targetCourse) {
+          return res.status(404).json({ message: "Referenced course not found" });
+        }
+        if (targetCourse.instructor.toString() !== req.user.id) {
+          return res.status(403).json({
+            message: "You can only create coupons for courses you instruct.",
+          });
+        }
+      }
+      coupon.scope = parsed.data.scope;
     }
     if (parsed.data.minPurchaseAmount !== undefined) coupon.minPurchaseAmount = parsed.data.minPurchaseAmount;
     if (parsed.data.maxDiscountAmount !== undefined) {

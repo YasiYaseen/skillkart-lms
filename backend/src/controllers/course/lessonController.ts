@@ -174,6 +174,10 @@ export async function deleteLesson(req: Request, res: Response) {
         { course: section.course._id },
         { $pull: { completedLessonIds: lessonId } }
       ),
+      Enrollment.updateMany(
+        { course: section.course._id, lastAccessedLessonId: lessonId },
+        { $unset: { lastAccessedLessonId: 1 } }
+      ),
     ]);
 
     void syncEnrollmentLessonCount(section.course._id.toString()).catch((err) =>

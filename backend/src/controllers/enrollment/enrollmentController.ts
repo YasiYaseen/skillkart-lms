@@ -209,7 +209,7 @@ export async function getCourseEnrollment(req: Request, res: Response) {
     if (!isValidObjectId(courseId)) return res.status(400).json({ message: "Invalid course id" });
 
     const enrollment = await Enrollment.findOne({ student: req.user.id, course: courseId });
-    if (!enrollment) return res.status(404).json({ message: "Enrollment not found" });
+    if (!enrollment) return res.status(404).json({ code: "NOT_ENROLLED", message: "Enrollment not found" });
 
     if ((!enrollment.totalLessonsCount || enrollment.totalLessonsCount <= 0) && enrollment.course) {
       const totalLessons = await getCourseLessonCount(enrollment.course);
@@ -279,9 +279,9 @@ export async function updateProgress(req: Request, res: Response) {
     if (!isValidObjectId(lessonId)) return res.status(400).json({ message: "Invalid lesson id" });
 
     const enrollment = await Enrollment.findOne({ _id: id, student: req.user.id });
-    if (!enrollment) return res.status(404).json({ message: "Enrollment not found" });
+    if (!enrollment) return res.status(404).json({ code: "NOT_ENROLLED", message: "Enrollment not found" });
 
-    if (enrollment.status !== "active") return res.status(403).json({ message: "Enrollment is not active" });
+    if (enrollment.status !== "active") return res.status(403).json({ code: "NOT_ENROLLED", message: "Enrollment is not active" });
 
     const lesson = await Lesson.findById(lessonId).populate<{ section: ISection }>({
       path: "section",

@@ -106,7 +106,7 @@ export async function updateLessonProgress(req: Request, res: Response) {
       status: { $in: ["active", "completed"] },
     });
     if (!enrollment) {
-      return res.status(403).json({ message: "Enroll in this course first" });
+      return res.status(403).json({ code: "NOT_ENROLLED", message: "Enroll in this course first to track progress" });
     }
 
     const {
@@ -420,7 +420,7 @@ export async function getMyCourseProgress(req: Request, res: Response) {
       status: { $in: ["active", "completed"] },
     });
     if (!enrollment) {
-      return res.status(403).json({ message: "Enroll in this course first" });
+      return res.status(403).json({ code: "NOT_ENROLLED", message: "Enroll in this course first to view progress" });
     }
 
     const sections = await Section.find({ course: courseId }).sort({ order: 1 }).lean();

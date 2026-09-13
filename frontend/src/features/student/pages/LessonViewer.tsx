@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { useEnrollment } from '@/features/enrollment/hooks/useEnrollment';
+import { useCart } from '@/context/CartContext';
+import { useCurrency } from '@/context/CurrencyContext';
 import { LessonQuiz } from '@/components/LessonQuiz';
 import { CourseAnnouncements } from '@/features/student/components/CourseAnnouncements';
 import { LessonDiscussion } from '@/features/student/components/LessonDiscussion';
@@ -26,6 +29,10 @@ import {
     StarIcon,
     XMarkIcon,
     Bars3Icon,
+    LockClosedIcon,
+    PlayIcon,
+    ChatBubbleLeftRightIcon,
+    SparklesIcon,
 } from '@heroicons/react/20/solid';
 
 function getEmbedVideoUrl(rawUrl: string): string {
@@ -85,11 +92,20 @@ interface ViewerCourse {
     status?: 'draft' | 'published' | 'archived' | string;
     isActive?: boolean;
     isApproved?: boolean;
+    isManager?: boolean;
+    isEnrolled?: boolean;
+    price?: number | null;
+    isPaid?: boolean;
+    thumbnailUrl?: string;
+    description?: string;
 }
 
 function LessonViewer() {
     const { courseId, lessonId } = useParams();
     const navigate = useNavigate();
+    const { isEnrolled: isHookEnrolled, loading: enrollmentLoading, enroll, enrolling } = useEnrollment(courseId);
+    const { addToCart, isInCart } = useCart();
+    const { formatAmount } = useCurrency();
     
     const [course, setCourse] = useState<ViewerCourse | null>(null);
     const [sections, setSections] = useState<ViewerSection[]>([]);
@@ -105,6 +121,7 @@ function LessonViewer() {
     const [activeTab, setActiveTab] = useState<'lesson' | 'notes' | 'discussion' | 'announcements' | 'assignments'>('lesson');
     const [showCompletionModal, setShowCompletionModal] = useState(false);
     const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+    const [addingToCart, setAddingToCart] = useState(false);
 
     // Video watch-time tracking (Guard 1 — 80% watch threshold)
     /** Set when the last lesson completion resulted in a certificate time-lock (Guard 3) */
@@ -114,6 +131,53 @@ function LessonViewer() {
     /** Cumulative watched seconds — use ref (not state) to avoid stale closures in callbacks */
     const watchedSecondsRef = useRef(0);
 
+    const hasAccess = Boolean(course?.isManager || course?.isEnrolled || isHookEnrolled);
+    const isCheckingAccess = loading || (enrollmentLoading && !course?.isManager && !course?.isEnrolled);
+    const isPaidCourse = Boolean(course?.isPaid || (course?.price !== undefined && course?.price !== null && course?.price > 0));
+
+    // Handle free enrollment from paywall
+    const handleEnrollFree = async () => {
+        if (!courseId) return;
+        const success = await enroll();
+        if (success) {
+            setCourse((prev) => (prev ? { ...prev, isEnrolled: true } : null));
+            try {
+                const res = await api.get<{ course: ViewerCourse }>(`/courses/${courseId}`);
+                const c = res.data.course;
+                setCourse(c);
+                setSections(c.sections || []);
+                setLessons(c.lessons || []);
+                setItems(c.lessonItems || []);
+                if (c.lessons && c.lessons.length > 0 && !lessonId) {
+                    navigate(`/learn/${courseId}/${c.lessons[0]._id}`, { replace: true });
+                }
+            } catch {
+                // Enrollment state is already active
+            }
+        }
+    };
+
+    // Handle paid course purchase / checkout redirect from paywall
+    const handlePaidEnroll = async () => {
+        if (!course) return;
+        try {
+            setAddingToCart(true);
+            if (!isInCart(course._id)) {
+                await addToCart({
+                    courseId: course._id,
+                    title: course.title,
+                    price: course.price || 0,
+                    thumbnailUrl: course.thumbnailUrl,
+                    instructorName: typeof course.instructor === 'object' ? course.instructor?.name : undefined,
+                });
+            }
+            navigate('/cart?step=payment');
+        } catch {
+            navigate(`/courses/${course._id}`);
+        } finally {
+            setAddingToCart(false);
+        }
+    };
 
     // Fetch course structure only once per course visit
     useEffect(() => {
@@ -139,9 +203,9 @@ function LessonViewer() {
         fetchCourse();
     }, [courseId]);
 
-    // Fetch course bookmarks
+    // Fetch course bookmarks only when student has access
     const loadCourseBookmarks = useCallback(async () => {
-        if (!courseId) return;
+        if (!courseId || !hasAccess) return;
         try {
             const bookmarks = await fetchCourseBookmarks(courseId);
             setBookmarkedLessonIds(
@@ -150,15 +214,17 @@ function LessonViewer() {
         } catch {
             // Silently fail for non-enrolled
         }
-    }, [courseId]);
+    }, [courseId, hasAccess]);
 
     useEffect(() => {
-        loadCourseBookmarks();
-    }, [loadCourseBookmarks]);
+        if (hasAccess) {
+            loadCourseBookmarks();
+        }
+    }, [hasAccess, loadCourseBookmarks]);
 
-    // Fetch active lesson bookmark status
+    // Fetch active lesson bookmark status only when student has access
     useEffect(() => {
-        if (!lessonId) return;
+        if (!lessonId || !hasAccess) return;
         let isMounted = true;
         fetchLessonBookmarkStatus(lessonId)
             .then((status) => {
@@ -168,11 +234,11 @@ function LessonViewer() {
         return () => {
             isMounted = false;
         };
-    }, [lessonId]);
+    }, [lessonId, hasAccess]);
 
-    // Fetch progress and handle lesson redirect whenever lesson context changes
+    // Fetch progress and handle lesson redirect whenever lesson context changes and user has access
     useEffect(() => {
-        if (!courseId) return;
+        if (!courseId || !hasAccess) return;
 
         const fetchProgress = async () => {
             try {
@@ -192,14 +258,14 @@ function LessonViewer() {
         };
 
         fetchProgress();
-    }, [courseId, lessonId, navigate]);
+    }, [courseId, lessonId, navigate, hasAccess]);
 
-    // Once course loads and no lessonId is set, navigate to the first lesson
+    // Once course loads and no lessonId is set, navigate to the first lesson only if user has access
     useEffect(() => {
-        if (!lessonId && lessons.length > 0) {
+        if (hasAccess && !lessonId && lessons.length > 0) {
             navigate(`/learn/${courseId}/${lessons[0]._id}`, { replace: true });
         }
-    }, [courseId, lessonId, lessons, navigate]);
+    }, [courseId, lessonId, lessons, navigate, hasAccess]);
 
     useEffect(() => {
         setQuizPassed(false);
@@ -250,6 +316,16 @@ function LessonViewer() {
     const remainingMinutes = remainingLessons.reduce((acc, l) => acc + (l.durationMinutes || 10), 0);
 
     const handleProgress = async () => {
+        if (!hasAccess) {
+            toast.error('You must be enrolled in this course to mark lessons as completed.', {
+                action: {
+                    label: 'Enroll Now',
+                    onClick: () => navigate(`/courses/${courseId}`),
+                },
+            });
+            return;
+        }
+
         try {
             const res = await api.post(`/lessons/${lessonId}/progress`, {
                 completed: true,
@@ -277,8 +353,16 @@ function LessonViewer() {
         } catch (error: any) {
             const status = error?.response?.status;
             const message = error?.response?.data?.message;
+            const code = error?.response?.data?.code;
 
-            if (status === 403 && error?.response?.data?.watchThresholdSeconds !== undefined) {
+            if (status === 403 && (code === 'NOT_ENROLLED' || message?.toLowerCase().includes('enroll'))) {
+                toast.error('You are not enrolled in this course. Please enroll to save your progress.', {
+                    action: {
+                        label: 'Enroll Now',
+                        onClick: () => navigate(`/courses/${courseId}`),
+                    },
+                });
+            } else if (status === 403 && error?.response?.data?.watchThresholdSeconds !== undefined) {
                 // Guard 1: video watch threshold — friendly, not alarming
                 const needed = error.response.data.watchThresholdSeconds as number;
                 const have = error.response.data.watchedSeconds as number;
@@ -305,6 +389,15 @@ function LessonViewer() {
 
 
     const handleToggleBookmark = async () => {
+        if (!hasAccess) {
+            toast.error('You must be enrolled in this course to bookmark lessons.', {
+                action: {
+                    label: 'Enroll Now',
+                    onClick: () => navigate(`/courses/${courseId}`),
+                },
+            });
+            return;
+        }
         if (!lessonId || togglingBookmark) return;
         try {
             setTogglingBookmark(true);
@@ -318,13 +411,19 @@ function LessonViewer() {
                 toast.info('Bookmark removed');
             }
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to update bookmark');
+            const code = error?.response?.data?.code;
+            const msg = error?.response?.data?.message;
+            if (code === 'NOT_ENROLLED' || msg?.toLowerCase().includes('enroll')) {
+                toast.error('You must be enrolled in this course to bookmark lessons.');
+            } else {
+                toast.error(msg || 'Failed to update bookmark');
+            }
         } finally {
             setTogglingBookmark(false);
         }
     };
 
-    if (loading) return <div className="text-center py-20 text-xs text-slate-500 dark:text-slate-400">Loading lesson...</div>;
+    if (isCheckingAccess) return <div className="text-center py-20 text-xs text-slate-500 dark:text-slate-400">Loading lesson...</div>;
     if (!course) return <div className="text-center py-20 text-xs text-rose-500">Course not found</div>;
 
     return (
@@ -352,7 +451,7 @@ function LessonViewer() {
                     className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 cursor-pointer"
                 >
                     {showMobileSidebar ? <XMarkIcon className="w-4 h-4" /> : <Bars3Icon className="w-4 h-4" />}
-                    <span>Curriculum ({progressPercentage}%)</span>
+                    <span>Curriculum {hasAccess ? `(${progressPercentage}%)` : '(Locked)'}</span>
                 </button>
                 <Link to={`/courses/${courseId}`} className="text-xs text-slate-500 dark:text-slate-400 hover:underline flex items-center gap-1">
                     <ArrowLeftIcon className="w-3 h-3" />
@@ -378,15 +477,26 @@ function LessonViewer() {
                     
                     {/* Progress Bar UI */}
                     <div className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex justify-between">
-                        <span>{completedLessonIds.length} of {lessons.length} lessons</span>
-                        <span className="font-semibold text-blue-600 dark:text-blue-400">{progressPercentage}%</span>
+                        <span>
+                            {hasAccess
+                                ? `${completedLessonIds.length} of ${lessons.length} lessons`
+                                : `${lessons.length} lessons in curriculum`}
+                        </span>
+                        <span className={`font-semibold ${hasAccess ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                            {hasAccess ? `${progressPercentage}%` : 'Locked'}
+                        </span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-1.5 overflow-hidden">
-                        <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
+                        <div
+                            className={`h-1.5 rounded-full transition-all duration-300 ${hasAccess ? 'bg-blue-600' : 'bg-amber-400/40'}`}
+                            style={{ width: `${hasAccess ? progressPercentage : 0}%` }}
+                        ></div>
                     </div>
-                    {remainingMinutes > 0 && (
+                    {hasAccess && remainingMinutes > 0 ? (
                         <p className="text-[10px] text-slate-400">~{remainingMinutes} min remaining</p>
-                    )}
+                    ) : !hasAccess ? (
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Enrollment required for full access</p>
+                    ) : null}
                 </div>
                 
                 <div className="flex flex-col">
@@ -404,7 +514,7 @@ function LessonViewer() {
                                     </div>
                                     <div className="flex flex-col">
                                         {secLessons.length === 0 ? (
-                                            <p className="px-4 py-2.5 text-[11px] text-slate-400 dark:text-slate-500 italic">No lessons in this section</p>
+                                             <p className="px-4 py-2.5 text-[11px] text-slate-400 dark:text-slate-500 italic">No lessons in this section</p>
                                         ) : (
                                             secLessons.map((les, lIdx) => {
                                                 const isActive = les._id === lessonId;
@@ -431,11 +541,17 @@ function LessonViewer() {
                                                                 {les.durationMinutes && (
                                                                     <span className="text-[10px] text-slate-400">{les.durationMinutes}m</span>
                                                                 )}
-                                                                {isLessonBookmarked && (
-                                                                    <BookmarkIcon className="w-3.5 h-3.5 text-amber-500" />
-                                                                )}
-                                                                {isCompleted && (
-                                                                    <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+                                                                {!hasAccess ? (
+                                                                    <LockClosedIcon className="w-3.5 h-3.5 text-amber-500/80 dark:text-amber-400/80" />
+                                                                ) : (
+                                                                    <>
+                                                                        {isLessonBookmarked && (
+                                                                            <BookmarkIcon className="w-3.5 h-3.5 text-amber-500" />
+                                                                        )}
+                                                                        {isCompleted && (
+                                                                            <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+                                                                        )}
+                                                                    </>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -453,7 +569,103 @@ function LessonViewer() {
 
             {/* Main Content Area */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
-                {lessons.length === 0 ? (
+                {!hasAccess ? (
+                    <div className="flex flex-col items-center justify-center min-h-[65vh] max-w-2xl mx-auto px-4 py-8 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-5 text-amber-600 dark:text-amber-400 shadow-inner">
+                            <LockClosedIcon className="w-8 h-8" />
+                        </div>
+
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800 mb-3">
+                            <SparklesIcon className="w-3.5 h-3.5" />
+                            Enrollment Required
+                        </span>
+
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
+                            Unlock Full Access to {course.title}
+                        </h2>
+
+                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-8 max-w-lg leading-relaxed">
+                            You are not enrolled in this course. Enroll now to access videos, assignments, quizzes, and certificates.
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg text-left mb-8">
+                            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                    <PlayIcon className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Video Lessons &amp; Content</p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Stream all lectures &amp; downloadable resources</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                    <AcademicCapIcon className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Quizzes &amp; Assessments</p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Test skills &amp; complete hands-on projects</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                                    <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Discussion &amp; Q&amp;A</p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Connect with instructors and fellow learners</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                    <CheckBadgeIcon className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Verifiable Certificate</p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Shareable credential upon 100% completion</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md">
+                            {isPaidCourse ? (
+                                <button
+                                    onClick={handlePaidEnroll}
+                                    disabled={addingToCart}
+                                    className="w-full sm:w-auto flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-98 text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                >
+                                    <LockClosedIcon className="w-4 h-4" />
+                                    <span>
+                                        {addingToCart
+                                            ? 'Adding to Cart...'
+                                            : course.price
+                                            ? `Enroll Now — ${formatAmount(course.price)}`
+                                            : 'Enroll Now'}
+                                    </span>
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleEnrollFree}
+                                    disabled={enrolling}
+                                    className="w-full sm:w-auto flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-98 text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                >
+                                    <SparklesIcon className="w-4 h-4" />
+                                    <span>{enrolling ? 'Enrolling...' : 'Enroll Now for Free'}</span>
+                                </button>
+                            )}
+
+                            <Link
+                                to={`/courses/${courseId}`}
+                                className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-colors text-center shrink-0"
+                            >
+                                View Course Overview
+                            </Link>
+                        </div>
+                    </div>
+                ) : lessons.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto py-16">
                         <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-4 shadow-xs">
                             <AcademicCapIcon className="w-8 h-8" />

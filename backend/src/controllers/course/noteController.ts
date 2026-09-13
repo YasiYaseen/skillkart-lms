@@ -67,6 +67,7 @@ export async function getLessonNotes(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
+        code: "NOT_ENROLLED",
         message: "You must be enrolled in this course to access notes.",
       });
     }
@@ -121,6 +122,7 @@ export async function createLessonNote(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
+        code: "NOT_ENROLLED",
         message: "You must be enrolled in this course to create notes.",
       });
     }
@@ -240,7 +242,13 @@ export async function getCourseNotes(req: Request, res: Response) {
       .sort({ createdAt: -1 })
       .lean();
 
-    return res.json({ notes });
+    const validNotes = notes.filter((n) => n.lesson);
+    const orphanedIds = notes.filter((n) => !n.lesson).map((n) => n._id);
+    if (orphanedIds.length > 0) {
+      void Note.deleteMany({ _id: { $in: orphanedIds } }).catch(() => {});
+    }
+
+    return res.json({ notes: validNotes });
   } catch (error) {
     console.error("Error in getCourseNotes:", error);
     return res.status(500).json({ message: "Server error" });
@@ -262,7 +270,13 @@ export async function getAllUserNotes(req: Request, res: Response) {
       .sort({ createdAt: -1 })
       .lean();
 
-    return res.json({ notes });
+    const validNotes = notes.filter((n) => n.course && n.lesson);
+    const orphanedIds = notes.filter((n) => !n.course || !n.lesson).map((n) => n._id);
+    if (orphanedIds.length > 0) {
+      void Note.deleteMany({ _id: { $in: orphanedIds } }).catch(() => {});
+    }
+
+    return res.json({ notes: validNotes });
   } catch (error) {
     console.error("Error in getAllUserNotes:", error);
     return res.status(500).json({ message: "Server error" });

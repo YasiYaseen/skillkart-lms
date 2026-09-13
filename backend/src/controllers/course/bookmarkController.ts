@@ -92,6 +92,7 @@ export async function toggleLessonBookmark(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
+        code: "NOT_ENROLLED",
         message: "You must be enrolled in this course to bookmark lessons.",
       });
     }
@@ -148,7 +149,13 @@ export async function getCourseBookmarks(req: Request, res: Response) {
       .sort({ createdAt: -1 })
       .lean();
 
-    return res.json({ bookmarks });
+    const validBookmarks = bookmarks.filter((b) => b.lesson);
+    const orphanedIds = bookmarks.filter((b) => !b.lesson).map((b) => b._id);
+    if (orphanedIds.length > 0) {
+      void Bookmark.deleteMany({ _id: { $in: orphanedIds } }).catch(() => {});
+    }
+
+    return res.json({ bookmarks: validBookmarks });
   } catch (error) {
     console.error("Error in getCourseBookmarks:", error);
     return res.status(500).json({ message: "Server error" });
@@ -170,7 +177,13 @@ export async function getAllUserBookmarks(req: Request, res: Response) {
       .sort({ createdAt: -1 })
       .lean();
 
-    return res.json({ bookmarks });
+    const validBookmarks = bookmarks.filter((b) => b.lesson && b.course);
+    const orphanedIds = bookmarks.filter((b) => !b.lesson || !b.course).map((b) => b._id);
+    if (orphanedIds.length > 0) {
+      void Bookmark.deleteMany({ _id: { $in: orphanedIds } }).catch(() => {});
+    }
+
+    return res.json({ bookmarks: validBookmarks });
   } catch (error) {
     console.error("Error in getAllUserBookmarks:", error);
     return res.status(500).json({ message: "Server error" });

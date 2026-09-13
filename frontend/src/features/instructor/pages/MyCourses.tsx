@@ -94,6 +94,28 @@ function MyCourses() {
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [restoringId, setRestoringId] = useState<string | null>(null);
+    const [archivingId, setArchivingId] = useState<string | null>(null);
+
+    const handleArchive = async (courseId: string) => {
+        const target = courses.find((c) => c.id === courseId);
+        if (target?.isActive === false) {
+            toast.error('This course has been suspended by an administrator and cannot be modified');
+            return;
+        }
+        setArchivingId(courseId);
+        try {
+            const res = await api.patch<{ message?: string; course?: RawInstructorCourse }>(`/courses/${courseId}/archive`);
+            setCourses((prev) =>
+                prev.map((c) => (c.id === courseId ? { ...c, status: 'archived' } : c))
+            );
+            toast.success(res.data?.message || 'Course archived');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to archive course';
+            toast.error(msg);
+        } finally {
+            setArchivingId(null);
+        }
+    };
 
     const handleRestore = async (courseId: string) => {
         const target = courses.find((c) => c.id === courseId);
@@ -103,13 +125,21 @@ function MyCourses() {
         }
         setRestoringId(courseId);
         try {
-            await api.patch(`/courses/${courseId}/restore`);
+            const res = await api.patch<{ message?: string; course?: RawInstructorCourse }>(`/courses/${courseId}/unarchive`);
+            const updated = res.data?.course;
+            const newStatus = updated?.status || 'draft';
             setCourses((prev) =>
-                prev.map((c) => (c.id === courseId ? { ...c, status: 'draft', isApproved: undefined } : c))
+                prev.map((c) => (c.id === courseId ? {
+                    ...c,
+                    status: newStatus,
+                    isApproved: updated ? updated.isApproved : undefined,
+                    rejectionReason: updated ? updated.rejectionReason : undefined,
+                } : c))
             );
-            toast.success('Course restored to draft');
-        } catch {
-            toast.error('Failed to restore course');
+            toast.success(res.data?.message || (newStatus === 'published' ? 'Course unarchived and published' : 'Course restored to draft'));
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to restore course';
+            toast.error(msg);
         } finally {
             setRestoringId(null);
         }
@@ -404,9 +434,22 @@ function MyCourses() {
                                     )}
 
                                     {course.status === 'archived' && (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                                            Archived
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                                Archived
+                                            </span>
+                                            {course.isActive !== false && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRestore(course.id)}
+                                                    disabled={restoringId === course.id}
+                                                    title="Restore course to active catalog / draft"
+                                                    className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline decoration-dotted cursor-pointer disabled:opacity-50"
+                                                >
+                                                    {restoringId === course.id ? 'Restoring...' : 'Unarchive'}
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
                                 </td>
 
@@ -417,11 +460,43 @@ function MyCourses() {
                                         {course.status === 'archived' && (
                                             <button
                                                 onClick={() => handleRestore(course.id)}
-                                                disabled={restoringId === course.id}
-                                                title="Restore course to draft"
-                                                className="px-2.5 py-1 text-xs font-medium rounded-lg text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                                                disabled={restoringId === course.id || course.isActive === false}
+                                                id={`restore-course-${course.id}`}
+                                                title={course.isActive === false ? 'This course has been suspended by an administrator' : 'Unarchive and restore course'}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
                                             >
-                                                {restoringId === course.id ? 'Restoring...' : 'Restore'}
+                                                {restoringId === course.id ? (
+                                                    <>
+                                                        <span className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin inline-block" />
+                                                        <span>Restoring...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                                                        </svg>
+                                                        <span>Restore</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+
+                                        {/* Archive course */}
+                                        {course.isActive !== false && course.status !== 'archived' && (
+                                            <button
+                                                onClick={() => handleArchive(course.id)}
+                                                disabled={archivingId === course.id}
+                                                id={`archive-course-${course.id}`}
+                                                title="Archive course"
+                                                className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50"
+                                            >
+                                                {archivingId === course.id ? (
+                                                    <span className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin inline-block" />
+                                                ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                                                    </svg>
+                                                )}
                                             </button>
                                         )}
 

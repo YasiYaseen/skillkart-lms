@@ -333,13 +333,76 @@ export async function bulkApproveInstructors(req: Request, res: Response) {
 
 export async function getCourses(req: Request, res: Response) {
   try {
-    const courses = await Course.find()
+    const { status, isApproved, isActive, search, includeDrafts } = req.query;
+
+    const filter: Record<string, unknown> = {};
+
+    // Status filtering
+    if (status === "draft") {
+      filter.status = "draft";
+    } else if (status === "pending") {
+      // Pending review courses are published courses awaiting moderation
+      filter.status = "published";
+      filter.$or = [{ isApproved: { $exists: false } }, { isApproved: null }];
+    } else if (status === "approved") {
+      filter.status = { $in: ["published", "archived"] };
+      filter.isApproved = true;
+    } else if (status === "rejected") {
+      filter.isApproved = false;
+    } else if (status === "published") {
+      filter.status = "published";
+    } else if (status === "archived") {
+      filter.status = "archived";
+    } else if (status === "disabled") {
+      filter.isActive = false;
+      if (includeDrafts !== "true") {
+        filter.status = { $in: ["published", "archived"] };
+      }
+    } else if (status === "all") {
+      if (includeDrafts !== "true") {
+        // By default, only submitted courses (published or archived) are shown in moderation queue
+        filter.status = { $in: ["published", "archived"] };
+      }
+    } else if (!status) {
+      if (includeDrafts !== "true") {
+        // Default moderation queue query: submitted courses only
+        filter.status = { $in: ["published", "archived"] };
+      }
+    }
+
+    // Explicit approval filter (if provided and not already handled by status alias)
+    if (isApproved !== undefined) {
+      if (isApproved === "pending") {
+        filter.$or = [{ isApproved: { $exists: false } }, { isApproved: null }];
+      } else if (isApproved === "true") {
+        filter.isApproved = true;
+      } else if (isApproved === "false") {
+        filter.isApproved = false;
+      }
+    }
+
+    // Explicit active filter (if provided and not already handled by status alias)
+    if (isActive !== undefined) {
+      if (isActive === "true") {
+        filter.isActive = true;
+      } else if (isActive === "false") {
+        filter.isActive = false;
+      }
+    }
+
+    // Optional search filter by title
+    if (typeof search === "string" && search.trim()) {
+      const sanitized = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter.title = { $regex: sanitized, $options: "i" };
+    }
+
+    const courses = await Course.find(filter)
       .populate("instructor", "name email")
       .sort({ createdAt: -1 })
       .lean();
     return res.json({ courses });
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching courses for admin moderation:", error);
     return res.status(500).json({ message: "Server error" });
   }
 }
@@ -356,6 +419,20 @@ export async function updateCourseStatus(req: Request, res: Response) {
     const course = await Course.findById(courseId);
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Guard against enabling or disabling draft or unapproved courses (AUDIT-33 & AUDIT-139)
+    if (isActive !== undefined) {
+      if (course.status === "draft") {
+        return res.status(400).json({
+          message: "Draft courses cannot be enabled or disabled until they are submitted and approved.",
+        });
+      }
+      if (!course.isApproved && isApproved !== true) {
+        return res.status(400).json({
+          message: "Unapproved courses cannot be enabled or disabled.",
+        });
+      }
     }
 
     const previousState = { isActive: course.isActive, isApproved: course.isApproved, rejectionReason: course.rejectionReason };

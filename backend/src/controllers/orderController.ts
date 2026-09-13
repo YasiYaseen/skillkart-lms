@@ -126,13 +126,19 @@ export async function checkout(req: Request, res: Response) {
       status: { $in: ["active", "completed"] },
     }).select("course");
     if (alreadyEnrolledCourses.length > 0) {
+      const enrolledCourseObjectIds = alreadyEnrolledCourses.map((e) => e.course);
+      await Cart.findOneAndUpdate(
+        { student: req.user.id },
+        { $pull: { items: { course: { $in: enrolledCourseObjectIds } } } }
+      ).catch(() => {});
+
       const enrolledIds = new Set(alreadyEnrolledCourses.map((e) => e.course.toString()));
       const enrolledTitles = courses
         .filter((c) => enrolledIds.has(c._id.toString()))
         .map((c) => c.title || "Untitled")
         .join(", ");
       return res.status(400).json({
-        message: `You are already enrolled in: ${enrolledTitles}. Please remove these from your cart.`,
+        message: `You are already enrolled in one or more courses in your cart: ${enrolledTitles}. They have been removed from your cart.`,
         alreadyEnrolledCourses: enrolledTitles.split(", "),
       });
     }
@@ -184,6 +190,17 @@ export async function checkout(req: Request, res: Response) {
               (it) => it.course.toString() === coupon.course?.toString()
             );
             if (targetItem) {
+              // Defense-in-depth: Ensure instructor-created coupon applies only to instructor's own course
+              if (coupon.creatorRole === "instructor" && coupon.instructor) {
+                const targetCourseDoc = courses.find((c) => c._id.toString() === targetItem.course.toString());
+                const courseInstId = (targetCourseDoc?.instructor as any)?._id?.toString() || targetCourseDoc?.instructor?.toString() || "";
+                if (courseInstId && courseInstId !== coupon.instructor.toString()) {
+                  return res.status(400).json({
+                    message: "This coupon is only valid for courses created by the issuing instructor.",
+                  });
+                }
+              }
+
               appliedCoupon = coupon;
               let itemDiscount =
                 coupon.discountType === "percentage"
@@ -426,9 +443,9 @@ export async function activateOrderEnrollments(order: IOrder): Promise<void> {
           paymentStatus: order.totalAmount === 0 ? "none" : "paid",
           paymentId: order.transactionId,
           totalLessonsCount,
-          enrolledAt: new Date(),
         },
         $setOnInsert: {
+          enrolledAt: new Date(),
           completedLessonIds: [],
         },
       },

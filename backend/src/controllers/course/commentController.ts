@@ -68,6 +68,7 @@ export async function getLessonComments(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
+        code: "NOT_ENROLLED",
         message: "You must be enrolled in this course to view discussions.",
       });
     }
@@ -121,6 +122,7 @@ export async function createLessonComment(req: Request, res: Response) {
 
     if (!hasAccess) {
       return res.status(403).json({
+        code: "NOT_ENROLLED",
         message: "You must be enrolled in this course to participate in discussions.",
       });
     }

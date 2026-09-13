@@ -10,6 +10,7 @@ import {
   type InstructorCoupon,
 } from '../api/coupons';
 import { useCurrency } from '@/context/CurrencyContext';
+import { useAuth } from '@/features/auth/AuthContext';
 import {
   TagIcon,
   FireIcon,
@@ -30,9 +31,12 @@ interface Course {
   _id: string;
   id?: string;
   title: string;
+  instructor?: string | { _id?: string; id?: string; name?: string; email?: string };
 }
 
 export function Coupons() {
+  const { user } = useAuth();
+  const currentInstructorId = user?.id || user?._id;
   const [coupons, setCoupons] = useState<InstructorCoupon[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +111,17 @@ export function Coupons() {
       return;
     }
 
+    if (courseId) {
+      const selectedCourse = courses.find((c) => (c._id || c.id) === courseId);
+      if (selectedCourse && selectedCourse.instructor && currentInstructorId) {
+        const instId = typeof selectedCourse.instructor === 'object' ? (selectedCourse.instructor._id || selectedCourse.instructor.id) : selectedCourse.instructor;
+        if (instId !== currentInstructorId) {
+          toast.error('You can only create coupons for courses you instruct.');
+          return;
+        }
+      }
+    }
+
     setSubmitting(true);
     try {
       const payload = {
@@ -171,6 +186,12 @@ export function Coupons() {
 
   const sampleDiscount = discountType === 'percentage' ? (100 * discountValue) / 100 : Math.min(100, discountValue);
   const sampleFinal = Math.max(0, 100 - sampleDiscount);
+
+  const instructorCourses = courses.filter((c) => {
+    if (!c.instructor || !currentInstructorId) return true;
+    const instId = typeof c.instructor === 'object' ? (c.instructor._id || c.instructor.id) : c.instructor;
+    return instId === currentInstructorId;
+  });
 
   const totalRedemptions = coupons.reduce((sum, c) => sum + (c.timesRedeemed || 0), 0);
   const activeCouponsCount = coupons.filter((c) => getCouponStatus(c) === 'active').length;
@@ -473,7 +494,7 @@ export function Coupons() {
                   className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 >
                   <option value="">All My Courses</option>
-                  {courses.map((c) => {
+                  {instructorCourses.map((c) => {
                     const cid = c._id || c.id || '';
                     return (
                       <option key={cid} value={cid}>
@@ -482,6 +503,9 @@ export function Coupons() {
                     );
                   })}
                 </select>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                  Leave as &quot;All My Courses&quot; to apply to your entire catalog, or select a specific course you instruct.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

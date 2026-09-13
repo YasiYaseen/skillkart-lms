@@ -174,13 +174,13 @@ export default function UserDropdown() {
                             </div>
                         )}
 
-                        {/* Student / Learning Links (For both Students and Instructors) */}
-                        {(user.role === 'student' || user.role === 'instructor') && (
+                        {/* Learning Links (For Students, Instructors, and Admins) */}
+                        {(user.role === 'student' || user.role === 'instructor' || user.role === 'admin') && (
                             <>
-                                {user.role === 'instructor' && (
+                                {user.role !== 'student' && (
                                     <div className="px-4 py-1 flex items-center justify-between">
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                            Student Learning
+                                            {user.role === 'instructor' ? 'Student Learning' : 'Personal Learning'}
                                         </span>
                                     </div>
                                 )}

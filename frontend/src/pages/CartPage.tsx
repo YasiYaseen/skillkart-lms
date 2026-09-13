@@ -164,8 +164,9 @@ export default function CartPage() {
       await addToWishlist(item.courseId);
       removeFromCart(item.courseId);
       toast.success(`"${item.title}" moved to your Wishlist!`);
-    } catch {
-      toast.error('Failed to move course to Wishlist');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to move course to Wishlist';
+      toast.error(msg);
     }
   };
 

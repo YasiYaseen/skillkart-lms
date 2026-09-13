@@ -409,6 +409,8 @@ export async function getCourseById(req: Request, res: Response) {
         sections,
         lessons,
         lessonItems,
+        isManager,
+        isEnrolled,
       },
     });
   } catch {
@@ -645,6 +647,14 @@ export async function archiveCourse(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    if (course.isActive === false && req.user.role !== "admin") {
+      return res.status(403).json({ message: "This course has been suspended by an administrator and cannot be modified" });
+    }
+
+    if (course.status === "archived") {
+      return res.status(400).json({ message: "Course is already archived" });
+    }
+
     course.status = "archived";
     await course.save();
 
@@ -674,15 +684,47 @@ export async function unarchiveCourse(req: Request, res: Response) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    if (course.isActive === false && req.user.role !== "admin") {
+      return res.status(403).json({ message: "This course has been suspended by an administrator and cannot be unarchived" });
+    }
+
     if (course.status !== "archived") {
       return res.status(400).json({ message: "Course is not archived" });
     }
 
-    course.status = "draft";
-    course.isApproved = undefined;
+    const requestedStatus = req.body?.status || req.body?.targetStatus;
+    let targetStatus: "draft" | "published" = "draft";
+
+    if (requestedStatus === "draft") {
+      targetStatus = "draft";
+    } else if (course.isApproved === true || requestedStatus === "published") {
+      const sections = await Section.find({ course: course._id }).select("_id").lean();
+      const sectionIds = sections.map((s) => s._id);
+      const hasLessons = sectionIds.length > 0 && (await Lesson.exists({ section: { $in: sectionIds } }));
+      if (hasLessons && (course.isApproved === true || req.user.role === "admin")) {
+        targetStatus = "published";
+      } else {
+        targetStatus = "draft";
+      }
+    }
+
+    if (targetStatus === "published") {
+      course.status = "published";
+      course.publishedAt = course.publishedAt || new Date();
+    } else {
+      course.status = "draft";
+      const settings = await SystemSettings.findOne({ isSingleton: true });
+      const requireCourseApproval = settings?.requireCourseApproval ?? true;
+      if (requireCourseApproval && req.user.role !== "admin" && course.isApproved !== true) {
+        course.isApproved = undefined;
+        course.rejectionReason = undefined;
+      }
+    }
+
     await course.save();
 
-    return res.json({ message: "Course restored to draft", course });
+    const message = course.status === "published" ? "Course unarchived and published" : "Course restored to draft";
+    return res.json({ message, course });
   } catch {
     return res.status(500).json({ message: "Server error" });
   }
@@ -715,6 +757,9 @@ export async function deleteCourse(req: Request, res: Response) {
       : [];
     const lessonIds = lessons.map((lesson) => lesson._id);
 
+    const assignments = await Assignment.find({ course: course._id }).select("_id").lean();
+    const assignmentIds = assignments.map((a) => a._id);
+
     await Promise.all([
       lessonIds.length ? LessonProgress.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
       lessonIds.length ? LessonItem.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
@@ -722,7 +767,11 @@ export async function deleteCourse(req: Request, res: Response) {
       lessonIds.length ? Quiz.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
       lessonIds.length ? QuizAttempt.deleteMany({ lesson: { $in: lessonIds } }) : Promise.resolve(),
       Assignment.deleteMany({ course: course._id }),
-      AssignmentSubmission.deleteMany({ course: course._id }),
+      assignmentIds.length
+        ? AssignmentSubmission.deleteMany({
+            $or: [{ course: course._id }, { assignment: { $in: assignmentIds } }],
+          })
+        : AssignmentSubmission.deleteMany({ course: course._id }),
       Cart.updateMany({}, { $pull: { items: { course: course._id } } }),
       Wishlist.deleteMany({ course: course._id }),
       Note.deleteMany({ course: course._id }),

@@ -23,7 +23,7 @@ export function WishlistButton({
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
-    if (!user || user.role !== "student" || !courseId) return;
+    if (!user || !courseId) return;
 
     let isMounted = true;
     checkWishlistStatus(courseId)
@@ -43,11 +43,6 @@ export function WishlistButton({
 
     if (!user) {
       setShowAuthModal(true);
-      return;
-    }
-
-    if (user.role !== "student") {
-      toast.info("Only students can maintain a wishlist");
       return;
     }
 

@@ -96,10 +96,32 @@ export async function getCart(req: Request, res: Response) {
 
     const requireApproval = await isCourseApprovalRequired();
 
-    // Prune unpurchasable, deleted, or self-authored courses from database cart
+    // Check for courses student is already actively enrolled in
+    const courseIdsInCart = cart.items
+      .map((item) => {
+        const c = (item.course as unknown) as PopulatedCourseDoc | null;
+        return c?._id;
+      })
+      .filter((id): id is Types.ObjectId => id != null);
+
+    let enrolledCourseIds = new Set<string>();
+    if (courseIdsInCart.length > 0) {
+      const activeEnrollments = await Enrollment.find({
+        student: userId,
+        course: { $in: courseIdsInCart },
+        status: { $in: ["active", "completed"] },
+      }).select("course").lean();
+      enrolledCourseIds = new Set(activeEnrollments.map((e) => e.course.toString()));
+    }
+
+    // Prune unpurchasable, deleted, self-authored, or already-enrolled courses from database cart
     const validItems = cart.items.filter((item) => {
       const course = (item.course as unknown) as PopulatedCourseDoc | null;
       if (!course || !course._id || !isCoursePubliclyAccessible(course, requireApproval)) {
+        return false;
+      }
+      const courseIdStr = course._id.toString();
+      if (enrolledCourseIds.has(courseIdStr)) {
         return false;
       }
       const instructorId = course.instructor?._id
@@ -351,6 +373,7 @@ export async function mergeCart(req: Request, res: Response) {
       const enrollments = await Enrollment.find({
         student: req.user.id,
         course: { $in: validCourseIds },
+        status: { $in: ["active", "completed"] },
       }).select("course").lean();
 
       const enrolledCourseIdSet = new Set(

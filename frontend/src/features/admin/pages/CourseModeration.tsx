@@ -22,6 +22,14 @@ export interface ModerationCourse {
 
 const PAGE_SIZE = 10;
 
+const STATUS_TABS = [
+  { id: "all", label: "All Submitted" },
+  { id: "pending", label: "Pending Approval" },
+  { id: "approved", label: "Approved" },
+  { id: "rejected", label: "Rejected" },
+  { id: "draft", label: "Drafts" },
+];
+
 export function CourseModeration() {
   const [courses, setCourses] = useState<ModerationCourse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,10 +46,14 @@ export function CourseModeration() {
     fetchCourses();
   }, []);
 
-  const fetchCourses = async () => {
+  const fetchCourses = async (filter: string = statusFilter) => {
     try {
       setLoading(true);
-      const res = await api.get<{ courses: ModerationCourse[] }>("/admin/courses");
+      const params: Record<string, string> = {};
+      if (filter && filter !== "all") {
+        params.status = filter;
+      }
+      const res = await api.get<{ courses: ModerationCourse[] }>("/admin/courses", { params });
       setCourses(res.data.courses || []);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to load courses";
@@ -134,6 +146,7 @@ export function CourseModeration() {
   const handleStatusChange = (val: string) => {
     setStatusFilter(val);
     setCurrentPage(1);
+    fetchCourses(val);
   };
 
   if (loading) {
@@ -158,27 +171,34 @@ export function CourseModeration() {
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Review, approve, reject, or disable courses across the platform.</p>
         </div>
+      </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+      {/* Filter Tabs & Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleStatusChange(tab.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                statusFilter === tab.id
+                  ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
           <input
             type="text"
             placeholder="Search title or instructor..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full sm:w-64"
           />
-          <select
-            value={statusFilter}
-            onChange={(e) => handleStatusChange(e.target.value)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="all">All Moderation States</option>
-            <option value="pending">Pending Review (Published)</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="draft">Draft / Unsubmitted</option>
-            <option value="disabled">Disabled</option>
-          </select>
         </div>
       </div>
 
@@ -213,7 +233,7 @@ export function CourseModeration() {
                           </span>
                           <span className="text-slate-300 dark:text-slate-600">•</span>
                           <Link
-                            to={`/courses/${course._id}`}
+                            to={`/courses/${course._id}?preview=true`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium inline-flex items-center gap-0.5"
@@ -285,16 +305,34 @@ export function CourseModeration() {
                         Unsubmitted
                       </span>
                     )}
-                    <button
-                      onClick={() => handleUpdateStatus(course._id, { isActive: course.isActive === false })}
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
-                        course.isActive !== false
-                          ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200"
-                          : "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100"
-                      }`}
-                    >
-                      {course.isActive !== false ? "Disable" : "Enable"}
-                    </button>
+                    {(() => {
+                      const isDraft = course.status === 'draft';
+                      const isUnapproved = !course.isApproved;
+                      const isToggleDisabled = isDraft || isUnapproved;
+
+                      return (
+                        <button
+                          disabled={isToggleDisabled}
+                          title={
+                            isDraft
+                              ? "Drafts cannot be disabled; reject the submission instead"
+                              : isUnapproved
+                              ? "Unapproved courses cannot be enabled or disabled"
+                              : undefined
+                          }
+                          onClick={() => !isToggleDisabled && handleUpdateStatus(course._id, { isActive: course.isActive === false })}
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-md border transition-colors ${
+                            isToggleDisabled
+                              ? "opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700"
+                              : course.isActive !== false
+                              ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 cursor-pointer"
+                              : "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100 cursor-pointer"
+                          }`}
+                        >
+                          {course.isActive !== false ? "Disable" : "Enable"}
+                        </button>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}

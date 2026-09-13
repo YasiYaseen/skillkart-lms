@@ -479,7 +479,7 @@ function Header() {
                 )}
 
                 {/* 1. Student / Learner Navigation */}
-                {user && (user.role === 'student' || user.role === 'instructor') && (
+                {user && (user.role === 'student' || user.role === 'instructor' || user.role === 'admin') && (
                   <>
                     <Link
                       to="/"
