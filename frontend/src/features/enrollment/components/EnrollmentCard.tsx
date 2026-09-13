@@ -8,6 +8,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ArrowRightIcon,
+  SparklesIcon,
 } from "@heroicons/react/20/solid";
 
 export interface EnrollmentCardProps {
@@ -28,6 +29,7 @@ export interface EnrollmentCardProps {
     completedAt?: string;
     updatedAt?: string;
     createdAt?: string;
+    hasNewLessons?: boolean;
   };
   onUnenroll?: (enrollmentId: string) => void;
   completed?: boolean;
@@ -37,6 +39,12 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
   const [showUnenrollModal, setShowUnenrollModal] = useState(false);
   const c = enrollment.course;
   const thumbnailUrl = c.thumbnailUrl || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=300&fit=crop';
+
+  const isCompleted = completed || enrollment.status === "completed";
+  const completedLessons = enrollment.completedLessonsCount ?? 0;
+  const totalLessons = enrollment.totalLessonsCount ?? 0;
+  const hasNewLessons = Boolean(enrollment.hasNewLessons || (isCompleted && totalLessons > completedLessons));
+  const newLessonsCount = Math.max(0, totalLessons - completedLessons);
 
   const lessonId = typeof enrollment.lastAccessedLessonId === 'object'
     ? enrollment.lastAccessedLessonId?._id
@@ -53,7 +61,7 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
     <>
       <div className="group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs hover:shadow-xs transition-colors flex flex-col h-full">
         {/* Unenroll / Drop Action */}
-        {onUnenroll && !completed && (
+        {onUnenroll && !isCompleted && (
           <button
             type="button"
             onClick={(e) => {
@@ -82,12 +90,20 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
               className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
             />
             {/* Status Overlay Badge */}
-            <div className="absolute top-2 left-2 flex items-center gap-1.5">
-              {completed ? (
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-600 text-white flex items-center gap-1 shadow-2xs">
-                  <CheckCircleIcon className="w-3 h-3" />
-                  Completed
-                </span>
+            <div className="absolute top-2 left-2 flex flex-wrap items-center gap-1.5">
+              {isCompleted ? (
+                <>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-600 text-white flex items-center gap-1 shadow-2xs">
+                    <CheckCircleIcon className="w-3 h-3" />
+                    Completed
+                  </span>
+                  {hasNewLessons && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-600 text-white flex items-center gap-1 shadow-2xs">
+                      <SparklesIcon className="w-3 h-3" />
+                      New Content
+                    </span>
+                  )}
+                </>
               ) : (
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-900/80 backdrop-blur-xs text-white shadow-2xs">
                   {enrollment.progressPercentage > 0 ? `${enrollment.progressPercentage}% Done` : 'Not Started'}
@@ -98,7 +114,7 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
             {/* Resume / Review prompt hover */}
             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <span className="text-white font-semibold bg-blue-600 px-3 py-1 rounded-lg text-xs shadow-2xs flex items-center gap-1">
-                <span>{completed ? 'Review Course' : 'Resume Learning'}</span>
+                <span>{hasNewLessons ? 'Explore New Lessons' : isCompleted ? 'Review Course' : 'Resume Learning'}</span>
                 <ArrowRightIcon className="w-3 h-3" />
               </span>
             </div>
@@ -114,11 +130,19 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
             </p>
 
             {/* Subtitle: Last lesson or completion date */}
-            {completed && completionDate ? (
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mb-2 font-medium flex items-center gap-1">
-                <CheckCircleIcon className="w-3.5 h-3.5" />
-                <span>Completed on {new Date(completionDate).toLocaleDateString()}</span>
-              </p>
+            {isCompleted && completionDate ? (
+              <div className="mb-2 space-y-0.5">
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                  <CheckCircleIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span>Completed on {new Date(completionDate).toLocaleDateString()}</span>
+                </p>
+                {hasNewLessons && (
+                  <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
+                    <SparklesIcon className="w-3 h-3 shrink-0" />
+                    <span>{newLessonsCount} new lesson{newLessonsCount > 1 ? 's' : ''} added since graduation</span>
+                  </p>
+                )}
+              </div>
             ) : lastLessonTitle ? (
               <p className="text-[11px] text-slate-600 dark:text-slate-300 mb-2 line-clamp-1 flex items-center gap-1">
                 <BookOpenIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -130,22 +154,29 @@ export function EnrollmentCard({ enrollment, onUnenroll, completed }: Enrollment
 
             <div className="mt-auto space-y-2">
               <ProgressBar
-                percentage={enrollment.progressPercentage}
+                percentage={isCompleted && !hasNewLessons ? 100 : enrollment.progressPercentage}
                 size="sm"
-                color={completed ? 'green' : 'blue'}
+                color={isCompleted ? 'green' : 'blue'}
               />
               <div className="text-[11px] text-slate-400 dark:text-slate-500 flex justify-between items-center">
-                <span>{enrollment.completedLessonsCount ?? 0} / {enrollment.totalLessonsCount ?? 0} lessons</span>
-                <span className={`font-semibold ${completed ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                  {enrollment.progressPercentage}%
+                <span>
+                  {completedLessons} / {totalLessons} lessons
+                  {hasNewLessons && (
+                    <span className="ml-1 text-blue-600 dark:text-blue-400 font-medium">
+                      ({newLessonsCount} new)
+                    </span>
+                  )}
+                </span>
+                <span className={`font-semibold ${isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                  {isCompleted && !hasNewLessons ? '100%' : `${enrollment.progressPercentage}%`}
                 </span>
               </div>
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-xs font-medium text-blue-600 dark:text-blue-400 group-hover:underline flex items-center gap-1">
-                  <span>{completed ? 'Review Course' : 'Continue Learning'}</span>
+                  <span>{hasNewLessons ? 'Explore New Lessons' : isCompleted ? 'Review Course' : 'Continue Learning'}</span>
                   <ArrowRightIcon className="w-3 h-3" />
                 </span>
-                {completed && (
+                {isCompleted && (
                   <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                     <AcademicCapIcon className="w-3 h-3" />
                     <span>Certificate</span>

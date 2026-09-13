@@ -336,6 +336,7 @@ export async function updateLessonProgress(req: Request, res: Response) {
           course: course._id,
           enrollment: enrollment._id,
           issuedAt: enrollment.completedAt,
+          totalLessonsAtIssuance: enrollment.totalLessonsCount,
           ...(heldUntilDate ? { heldUntil: heldUntilDate } : {}),
         });
       }
@@ -379,7 +380,7 @@ export async function updateLessonProgress(req: Request, res: Response) {
       });
       if (!hasCertificate) {
         enrollment.status = "active";
-        enrollment.completedAt = undefined;
+        // Never silently wipe completedAt without recording historical completion milestones
       }
       await enrollment.save();
     } else {
@@ -443,12 +444,21 @@ export async function getMyCourseProgress(req: Request, res: Response) {
       await enrollment.save().catch(() => {});
     }
 
+    const hasCertificate = await Certificate.exists({
+      student: req.user.id,
+      course: courseId,
+      $or: [{ revokedAt: { $exists: false } }, { revokedAt: null }],
+    });
+    const hasNewLessons = enrollment.status === "completed" && completedCount < totalLessons;
+
     return res.json({
       completedLessonIds,
       totalLessons,
       completedCount,
       progressPercentage,
       isCompleted: enrollment.status === "completed",
+      hasNewLessons,
+      hasCertificate: Boolean(hasCertificate),
       lastLessonId: enrollment.lastAccessedLessonId,
     });
   } catch (error) {

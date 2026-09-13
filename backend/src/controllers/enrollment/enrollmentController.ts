@@ -191,7 +191,13 @@ export async function getMyEnrollments(req: Request, res: Response) {
             ).catch(() => {});
           }
         }
-        return doc.toJSON({ virtuals: true });
+        const json = doc.toJSON({ virtuals: true });
+        const isCompleted = doc.status === "completed";
+        const hasNewLessons = isCompleted && (doc.totalLessonsCount || 0) > (doc.completedLessonIds?.length || 0);
+        return {
+          ...json,
+          hasNewLessons,
+        };
       })
     );
 
@@ -219,7 +225,13 @@ export async function getCourseEnrollment(req: Request, res: Response) {
       }
     }
 
-    return res.json(enrollment.toJSON({ virtuals: true }));
+    const json = enrollment.toJSON({ virtuals: true });
+    const isCompleted = enrollment.status === "completed";
+    const hasNewLessons = isCompleted && (enrollment.totalLessonsCount || 0) > (enrollment.completedLessonIds?.length || 0);
+    return res.json({
+      ...json,
+      hasNewLessons,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
@@ -384,6 +396,7 @@ export async function updateProgress(req: Request, res: Response) {
           course: enrollment.course,
           enrollment: updated._id,
           issuedAt: updated.completedAt,
+          totalLessonsAtIssuance: updated.totalLessonsCount,
         });
       }
 
@@ -407,12 +420,18 @@ export async function updateProgress(req: Request, res: Response) {
       });
       if (!hasCertificate) {
         updated.status = "active";
-        updated.completedAt = undefined;
+        // Never silently wipe completedAt without recording historical completion milestones
       }
       await updated.save();
     }
 
-    return res.json(updated.toJSON({ virtuals: true }));
+    const json = updated.toJSON({ virtuals: true });
+    const isCompleted = updated.status === "completed";
+    const hasNewLessons = isCompleted && (updated.totalLessonsCount || 0) > (updated.completedLessonIds?.length || 0);
+    return res.json({
+      ...json,
+      hasNewLessons,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });

@@ -49,7 +49,7 @@ P1 (High):
   [x] AUDIT-34: Course Details Preview Renders Student Enrollment Actions Without Draft/Pending Indicator
   [x] AUDIT-38: Wishlist Role Restriction Mismatch & Trapped State on Instructor/Admin Move to Wishlist
   [x] AUDIT-40: Unenrolled Student Lesson Viewer Access Renders Broken Player and Throws 403 API Errors
-  [ ] AUDIT-41: Mid-Course Lesson Additions Demote Completed Enrollments and Orphan Certificates
+  [x] AUDIT-41: Mid-Course Lesson Additions Demote Completed Enrollments and Orphan Certificates
   [ ] AUDIT-47: Incomplete Cascading on Section Deletions Bypasses Lesson Count Sync and Leaves Dangling Prerequisites
   [ ] AUDIT-48: Platform Maintenance Mode Lacks Non-Checkout Mutation Route Guards (Data Corruption & State Leak)
   [ ] AUDIT-49: Disabled User Registration Lacks UI Indicator in Header & Auth Modals (Raw 403 Rejection)
@@ -1134,16 +1134,19 @@ P3 (Low / Polish):
 
 ---
 
-#### AUDIT-41: Mid-Course Lesson Additions Demote Completed Enrollments and Orphan Certificates
+#### [x] AUDIT-41: Mid-Course Lesson Additions Demote Completed Enrollments and Orphan Certificates
 - **Category**: State Invalidation & Multi-Role Lifecycle Desynchronization
 - **Priority**: `P1 — High`
 - **Impacted Roles**: Student, Instructor
+- **Status**: Completed
 - **Affected Files**:
-  - [`backend/src/controllers/course/shared.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/shared.ts#L48-L56)
+  - [`backend/src/controllers/course/shared.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/shared.ts#L48-L67)
   - [`backend/src/controllers/course/bulkLessonController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/bulkLessonController.ts#L88-L94)
-  - [`backend/src/controllers/course/progressController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/progressController.ts#L224-L232)
-  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts#L351-L358)
+  - [`backend/src/controllers/course/progressController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/course/progressController.ts)
+  - [`backend/src/controllers/enrollment/enrollmentController.ts`](file:///c:/Users/user/projects/skillkart/backend/src/controllers/enrollment/enrollmentController.ts)
   - [`backend/src/models/Certificate.ts`](file:///c:/Users/user/projects/skillkart/backend/src/models/Certificate.ts)
+  - [`frontend/src/features/enrollment/components/EnrollmentCard.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/enrollment/components/EnrollmentCard.tsx)
+  - [`frontend/src/features/student/pages/LessonViewer.tsx`](file:///c:/Users/user/projects/skillkart/frontend/src/features/student/pages/LessonViewer.tsx)
 - **Description**:
   When an instructor adds new lessons to an existing course (via manual creation in `lessonController.ts` or bulk upload in `bulkLessonController.ts`), `syncEnrollmentLessonCount` increments `totalLessonsCount` across all student `Enrollment` documents for that course. For students who had already completed the course (`status: "completed"`, certificate issued):
   1. Their UI in `MyLearning.tsx` now displays a conflicting state: a green `"Completed"` badge alongside a progress bar showing less than 100% (e.g. 10/12 lessons = 83%).
@@ -1157,10 +1160,30 @@ P3 (Low / Polish):
   3. Student opens `/my-learning`; course displays "Completed" but shows 5/7 lessons (71%).
   4. Student opens Course A and completes lesson 6; enrollment status reverts to `"active"`, `completedAt` is wiped.
   5. Student checks `/my-certificates`; the Certificate is still listed and verifiable via `/verify/:certificateId`, directly contradicting the `active` (incomplete) enrollment status in the database.
-- **Remediation**:
-  - Decide completion semantics for courses with continuous curriculum updates: retain completed status (e.g., grandfathered completion with a visual indicator: *"New content added since completion"*), or introduce an explicit `status: "reopened"` state.
-  - Never silently wipe `completedAt` without recording historical completion milestones.
-  - Coordinate certificate validity with enrollment status, or mark certificates as tied to a specific curriculum version / date.
+- **Remediation & Resolution Summary**:
+  - In `backend/src/models/Certificate.ts`:
+    - Added `totalLessonsAtIssuance?: number` to `ICertificate` and `CertificateSchema` to record the exact total lessons count at certificate issuance, permanently binding certificates to curriculum scope.
+  - In `backend/src/controllers/course/shared.ts:syncEnrollmentLessonCount`:
+    - Preserved `status = "completed"` for enrollments when curriculum expands so new lesson additions never demote graduates.
+    - Added automatic graduation and certificate issuance for active enrollments that reach 100% completion upon lesson deletions.
+  - In `backend/src/controllers/course/progressController.ts`:
+    - Stamped `totalLessonsAtIssuance: enrollment.totalLessonsCount` when issuing certificates upon completion.
+    - Guarded completion lifecycle: when an enrolled learner with an issued certificate completes newly added lessons, `status = "completed"` is strictly preserved.
+    - Eliminated silent wiping of `enrollment.completedAt` (`completedAt = undefined` removed) to preserve historical completion milestones.
+    - Added `hasNewLessons` and `hasCertificate` flags to `getMyCourseProgress` API response.
+  - In `backend/src/controllers/enrollment/enrollmentController.ts`:
+    - Eliminated `completedAt` erasure in `updateProgress`.
+    - Included `totalLessonsAtIssuance` on certificate creation.
+    - Enriched `getMyEnrollments` and `getCourseEnrollment` responses with computed `hasNewLessons: isCompleted && totalLessonsCount > completedLessonsCount`.
+  - In `frontend/src/features/enrollment/components/EnrollmentCard.tsx`:
+    - Supported `hasNewLessons` property on enrollments.
+    - When `isCompleted` is true and new lessons are available, displayed a prominent blue `"New Content"` pill alongside the green `"Completed"` badge and an explanatory subtitle (`"X new lessons added since graduation"`).
+    - Kept progress bar at 100% for completed courses while clearly distinguishing new lesson counts (`X / Y lessons (Z new)`).
+    - Replaced the primary action with `"Explore New Lessons"`.
+  - In `frontend/src/features/student/pages/LessonViewer.tsx`:
+    - Tracked `isCourseCompleted` and `hasNewLessons`.
+    - Added a friendly non-intrusive status banner for graduate learners: *"You previously completed this course and earned your certificate. The instructor has added X new lessons since graduation. Your certificate remains active and valid."* with a direct link to `/certificates`.
+    - Enhanced curriculum sidebar progress metrics to acknowledge graduate completion status without visual desynchronization.
 
 ---
 

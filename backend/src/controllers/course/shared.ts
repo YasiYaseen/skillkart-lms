@@ -2,6 +2,7 @@ import { type Types } from "mongoose";
 import Section from "../../models/Section";
 import Lesson from "../../models/Lesson";
 import Enrollment from "../../models/Enrollment";
+import Certificate from "../../models/Certificate";
 import SystemSettings from "../../models/SystemSettings";
 
 export function isCourseManager(userId: string, role: string, instructorId: string): boolean {
@@ -58,9 +59,43 @@ export async function getCourseLessonCount(courseId: string | Types.ObjectId): P
 /**
  * Syncs totalLessonsCount on all enrollments for a course.
  * Call this after any lesson is created or deleted for the course.
+ * Protects completed enrollments so curriculum expansions never demote graduates,
+ * and auto-completes active enrollments that reach 100% on lesson deletions.
  */
 export async function syncEnrollmentLessonCount(courseId: string): Promise<void> {
   const totalLessons = await getCourseLessonCount(courseId);
   await Enrollment.updateMany({ course: courseId }, { $set: { totalLessonsCount: totalLessons } });
+
+  if (totalLessons > 0) {
+    // Auto-complete active enrollments that now have all lessons completed due to lesson removal
+    const eligibleEnrollments = await Enrollment.find({
+      course: courseId,
+      status: "active",
+      $expr: { $gte: [{ $size: { $ifNull: ["$completedLessonIds", []] } }, totalLessons] },
+    });
+
+    for (const enrollment of eligibleEnrollments) {
+      enrollment.status = "completed";
+      if (!enrollment.completedAt) {
+        enrollment.completedAt = new Date();
+      }
+      await enrollment.save();
+
+      const certExists = await Certificate.exists({
+        student: enrollment.student,
+        course: enrollment.course,
+        $or: [{ revokedAt: { $exists: false } }, { revokedAt: null }],
+      });
+      if (!certExists) {
+        await Certificate.create({
+          student: enrollment.student,
+          course: enrollment.course,
+          enrollment: enrollment._id,
+          issuedAt: enrollment.completedAt,
+          totalLessonsAtIssuance: totalLessons,
+        }).catch((err) => console.error("Auto-issue certificate error in syncEnrollmentLessonCount:", err));
+      }
+    }
+  }
 }
 
