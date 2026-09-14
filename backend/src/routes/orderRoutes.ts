@@ -6,6 +6,7 @@ import {
   getOrderReceipt,
   handlePaymentWebhook,
 } from "../controllers/orderController";
+import { verifyRazorpayPayment } from "../controllers/verifyRazorpayPayment";
 
 const router = Router();
 
@@ -17,5 +18,7 @@ router.post("/payment-webhook", handlePaymentWebhook);
 router.post("/checkout", protect, checkout);
 router.get("/history", protect, getOrderHistory);
 router.get("/:orderId/receipt", protect, getOrderReceipt);
+
+router.post("/razorpay/verify", protect, verifyRazorpayPayment);
 
 export default router;

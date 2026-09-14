@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import crypto from "crypto";
 import { isValidObjectId, Types } from "mongoose";
 import Order, { type IOrder, type IOrderItem } from "../models/Order";
 import Course from "../models/Course";
@@ -481,6 +482,18 @@ export async function activateOrderEnrollments(order: IOrder): Promise<void> {
 // ---------------------------------------------------------------------------
 export async function handlePaymentWebhook(req: Request, res: Response) {
   try {
+    // Razorpay Webhook Signature Verification
+    const rzpSignature = req.headers["x-razorpay-signature"] as string | undefined;
+    if (rzpSignature && process.env.RAZORPAY_WEBHOOK_SECRET) {
+      const generatedSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+        .update(JSON.stringify(req.body))
+        .digest("hex");
+      if (generatedSignature !== rzpSignature) {
+        return res.status(400).json({ message: "Invalid Razorpay webhook signature" });
+      }
+    }
+
     const {
       event,
       transactionId,
@@ -490,7 +503,10 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
       paymentStatus,
     } = req.body || {};
 
-    const resolvedTxnId = transactionId || req.body?.data?.object?.id || req.body?.id;
+    const rzpOrderId = req.body?.payload?.payment?.entity?.order_id || req.body?.payload?.order?.entity?.id;
+    const rzpPaymentId = req.body?.payload?.payment?.entity?.id;
+
+    const resolvedTxnId = transactionId || rzpPaymentId || req.body?.data?.object?.id || req.body?.id;
     const resolvedOrderNumber = orderNumber || req.body?.data?.object?.metadata?.orderNumber;
     const resolvedOrderId = orderId || req.body?.data?.object?.metadata?.orderId;
     const resolvedStatus = (status || paymentStatus || event || "").toLowerCase();
@@ -502,6 +518,14 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
     }
     if (!order && resolvedOrderNumber) {
       order = await Order.findOne({ orderNumber: resolvedOrderNumber });
+    }
+    if (!order && rzpOrderId) {
+      order = await Order.findOne({
+        $or: [
+          { transactionId: rzpOrderId },
+          { "paymentMetadata.razorpayOrderId": rzpOrderId },
+        ],
+      });
     }
     if (!order && resolvedTxnId) {
       order = await Order.findOne({ transactionId: resolvedTxnId });
@@ -518,6 +542,9 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
       resolvedStatus.includes("success") ||
       resolvedStatus.includes("completed") ||
       resolvedStatus.includes("paid") ||
+      resolvedStatus.includes("captured") ||
+      event === "payment.captured" ||
+      event === "order.paid" ||
       event === "payment_intent.succeeded" ||
       event === "checkout.session.completed";
 
@@ -526,6 +553,7 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
       resolvedStatus.includes("decline") ||
       resolvedStatus.includes("cancel") ||
       resolvedStatus.includes("expired") ||
+      event === "payment.failed" ||
       event === "payment_intent.payment_failed";
 
     if (isSuccessEvent) {

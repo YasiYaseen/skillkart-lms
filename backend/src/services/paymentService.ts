@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import type { PaymentMethod } from "../models/Order";
+import { RazorpayPaymentProvider } from "./RazorpayPaymentProvider";
 
 export interface PaymentIntentResult {
   success: boolean;
@@ -19,7 +20,7 @@ export interface IPaymentProvider {
 /**
  * Default Simulated Payment Provider for frictionless demo/testing
  */
-class SimulatedPaymentProvider implements IPaymentProvider {
+export class SimulatedPaymentProvider implements IPaymentProvider {
   async processPayment(amount: number, currency: string, metadata?: Record<string, any>): Promise<PaymentIntentResult> {
     const transactionId = `txn_sim_${uuidv4().replace(/-/g, "").slice(0, 16)}`;
     const requestedStatus = metadata?.simulateStatus || metadata?.paymentStatus || "completed";
@@ -56,45 +57,6 @@ class SimulatedPaymentProvider implements IPaymentProvider {
   }
 }
 
-/**
- * Extensible Stripe Payment Provider Adapter Template
- * Activate by providing process.env.STRIPE_SECRET_KEY
- */
-class StripePaymentProvider implements IPaymentProvider {
-  private secretKey: string | undefined;
-
-  constructor() {
-    this.secretKey = process.env.STRIPE_SECRET_KEY;
-  }
-
-  async processPayment(amount: number, currency: string, metadata?: Record<string, any>): Promise<PaymentIntentResult> {
-    if (!this.secretKey) {
-      // Graceful fallback to simulation if Stripe key is not configured yet
-      return new SimulatedPaymentProvider().processPayment(amount, currency, {
-        ...metadata,
-        fallbackFrom: "stripe",
-      });
-    }
-
-    // Stripe SDK integration hook point
-    const transactionId = `pi_stripe_${uuidv4().replace(/-/g, "").slice(0, 14)}`;
-    return {
-      success: true,
-      transactionId,
-      paymentStatus: "completed",
-      clientSecret: `${transactionId}_secret_${uuidv4().slice(0, 8)}`,
-      metadata: { provider: "stripe", amount, currency, ...metadata },
-    };
-  }
-
-  async verifyPayment(_transactionId: string): Promise<boolean> {
-    return true;
-  }
-
-  async refundPayment(_transactionId: string, _amount?: number): Promise<boolean> {
-    return true;
-  }
-}
 
 /**
  * Payment Service orchestrator
@@ -103,7 +65,7 @@ export class PaymentService {
   private static providers: Record<string, IPaymentProvider> = {
     simulated: new SimulatedPaymentProvider(),
     free: new SimulatedPaymentProvider(),
-    stripe: new StripePaymentProvider(),
+    razorpay: new RazorpayPaymentProvider(),
   };
 
   public static getProvider(method: PaymentMethod): IPaymentProvider {
