@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import {
   validateCouponCode,
   processCheckout,
+  verifyRazorpayPayment,
   fetchFeaturedCoupons,
   type FeaturedCoupon,
   type OrderRecord,
@@ -13,6 +14,7 @@ import {
 import { addToWishlist } from '@/features/wishlist';
 import { AuthModals } from '@/features/auth';
 import { PaymentCardSimulator, type PaymentFormState } from '@/components/cart/PaymentCardSimulator';
+import { loadRazorpayScript } from '@/utils/loadRazorpay';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/utils/errorUtils';
@@ -27,7 +29,7 @@ import {
   BoltIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
-import { CheckIcon, LockClosedIcon, UserIcon } from '@heroicons/react/20/solid';
+import { LockClosedIcon, UserIcon } from '@heroicons/react/20/solid';
 import { useMaintenance } from '@/context/MaintenanceContext';
 
 export default function CartPage() {
@@ -77,7 +79,7 @@ export default function CartPage() {
 
   // Interactive Payment State
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
-    method: 'card',
+    method: 'razorpay',
     cardNumber: '4242 4242 4242 4242',
     cardHolder: 'JANE DOE',
     expiry: '12/28',
@@ -231,6 +233,72 @@ export default function CartPage() {
       });
 
       const orderData = res.order || (res as unknown as OrderRecord);
+
+      // Handle Razorpay Modal Checkout flow
+      if (paymentForm.method === 'razorpay' && orderData.paymentStatus === 'pending') {
+        const isLoaded = await loadRazorpayScript();
+        if (!isLoaded) {
+          toast.error('Razorpay checkout SDK failed to load. Please check your internet connection.');
+          setCheckingOut(false);
+          return;
+        }
+
+        const rzpMetadata = (orderData as any).paymentMetadata || {};
+        const keyId = rzpMetadata.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+        const options = {
+          key: keyId,
+          amount: rzpMetadata.razorpayAmount || Math.round(orderData.totalAmount * 100),
+          currency: orderData.currency || 'INR',
+          name: 'SkillKart LMS',
+          description: `Order #${orderData.orderNumber}`,
+          order_id: orderData.transactionId,
+          prefill: {
+            name: billingName.trim() || user?.name || '',
+            email: billingEmail.trim() || user?.email || '',
+          },
+          theme: {
+            color: '#2563eb',
+          },
+          handler: async (response: {
+            razorpay_order_id: string;
+            razorpay_payment_id: string;
+            razorpay_signature: string;
+          }) => {
+            try {
+              const verifyRes = await verifyRazorpayPayment({
+                orderId: orderData._id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+
+              setCompletedOrder(verifyRes.order);
+              clearCart();
+              toast.success('Payment verified successfully! Welcome to your courses.');
+            } catch (err: unknown) {
+              toast.error(getErrorMessage(err, 'Payment verification failed. Please contact support.'));
+            } finally {
+              setCheckingOut(false);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              toast.info('Payment was cancelled. Your order remains pending.');
+              setCheckingOut(false);
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (failResp: any) => {
+          toast.error(failResp?.error?.description || 'Payment authorization failed');
+          setCheckingOut(false);
+        });
+        rzp.open();
+        return;
+      }
+
       setCompletedOrder(orderData);
       clearCart();
 
@@ -247,7 +315,9 @@ export default function CartPage() {
       setCouponInput('');
       toast.error(getErrorMessage(err, 'Checkout failed. Please try again.'));
     } finally {
-      setCheckingOut(false);
+      if (paymentForm.method !== 'razorpay') {
+        setCheckingOut(false);
+      }
     }
   };
 

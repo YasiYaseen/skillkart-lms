@@ -5,18 +5,26 @@ import { v4 as uuidv4 } from "uuid"
 export class RazorpayPaymentProvider implements IPaymentProvider {
   private keyId: string | undefined;
   private keySecret: string | undefined;
-  private instance: any;
+  private instance: any = null;
 
-  constructor() {
-    this.keyId = process.env.RAZORPAY_KEY_ID;
-    this.keySecret = process.env.RAZORPAY_KEY_SECRET;
+  private getInstance(): any {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    if (this.keyId && this.keySecret) {
+    if (!keyId || !keySecret) {
+      return null;
+    }
+
+    if (!this.instance || this.keyId !== keyId || this.keySecret !== keySecret) {
+      this.keyId = keyId;
+      this.keySecret = keySecret;
       this.instance = new Razorpay({
-        key_id: this.keyId,
-        key_secret: this.keySecret,
+        key_id: keyId,
+        key_secret: keySecret,
       });
     }
+
+    return this.instance;
   }
 
   async processPayment(
@@ -24,8 +32,11 @@ export class RazorpayPaymentProvider implements IPaymentProvider {
     currency: string,
     metadata?: Record<string, any>
   ): Promise<PaymentIntentResult> {
+    const instance = this.getInstance();
+
     // Graceful fallback to simulation if credentials are not yet configured
-    if (!this.instance || !this.keyId) {
+    if (!instance || !this.keyId) {
+      console.warn("[RazorpayPaymentProvider] RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is not configured. Falling back to simulation.");
       return new SimulatedPaymentProvider().processPayment(amount, currency, {
         ...metadata,
         fallbackFrom: "razorpay",
@@ -46,7 +57,7 @@ export class RazorpayPaymentProvider implements IPaymentProvider {
         },
       };
 
-      const rzpOrder = await this.instance.orders.create(options);
+      const rzpOrder = await instance.orders.create(options);
 
       return {
         success: true,
@@ -64,6 +75,7 @@ export class RazorpayPaymentProvider implements IPaymentProvider {
         message: "Razorpay order initiated. Complete checkout in modal.",
       };
     } catch (error: any) {
+      console.error("[RazorpayPaymentProvider] Order creation failed:", error);
       return {
         success: false,
         transactionId: "",
@@ -74,9 +86,10 @@ export class RazorpayPaymentProvider implements IPaymentProvider {
   }
 
   async verifyPayment(transactionId: string): Promise<boolean> {
-    if (!this.instance) return true;
+    const instance = this.getInstance();
+    if (!instance) return true;
     try {
-      const payment = await this.instance.payments.fetch(transactionId);
+      const payment = await instance.payments.fetch(transactionId);
       return payment.status === "captured";
     } catch {
       return false;
@@ -84,10 +97,11 @@ export class RazorpayPaymentProvider implements IPaymentProvider {
   }
 
   async refundPayment(transactionId: string, amount?: number): Promise<boolean> {
-    if (!this.instance) return true;
+    const instance = this.getInstance();
+    if (!instance) return true;
     try {
       const refundOptions = amount ? { amount: Math.round(amount * 100) } : {};
-      await this.instance.payments.refund(transactionId, refundOptions);
+      await instance.payments.refund(transactionId, refundOptions);
       return true;
     } catch {
       return false;

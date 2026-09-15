@@ -84,6 +84,16 @@ export async function processCheckout(payload: {
   return res.data;
 }
 
+export async function verifyRazorpayPayment(payload: {
+  orderId: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}): Promise<{ success: boolean; message: string; order: OrderRecord }> {
+  const res = await api.post('/orders/razorpay/verify', payload);
+  return res.data;
+}
+
 export async function fetchOrderHistory(): Promise<OrderRecord[]> {
   const res = await api.get('/orders/history');
   return res.data.orders || [];

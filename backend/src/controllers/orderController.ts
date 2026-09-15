@@ -392,11 +392,13 @@ export async function checkout(req: Request, res: Response) {
       });
     }
 
-    // Clear user's shopping cart in database once order is placed
-    await Cart.findOneAndUpdate(
-      { student: userId },
-      { $set: { items: [] } }
-    ).catch(() => {});
+    // Clear user's shopping cart in database only upon confirmed payment
+    if (isConfirmedPayment) {
+      await Cart.findOneAndUpdate(
+        { student: userId },
+        { $set: { items: [] } }
+      ).catch(() => {});
+    }
 
     return res.status(201).json({
       message: isConfirmedPayment
@@ -456,11 +458,16 @@ export async function activateOrderEnrollments(order: IOrder): Promise<void> {
   });
   await Promise.all(enrollmentPromises);
 
-  // Clear purchased courses from user's wishlist in database
+  // Clear purchased courses from user's wishlist and cart in database
   await Wishlist.deleteMany({
     student: order.student,
     course: { $in: courseIds },
   }).catch(() => {});
+
+  await Cart.findOneAndUpdate(
+    { student: order.student },
+    { $set: { items: [] } }
+  ).catch(() => {});
 
   // Trigger confirmation notification
   try {

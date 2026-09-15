@@ -1,4 +1,3 @@
-import React from 'react';
 import { useCurrency } from '@/context/CurrencyContext';
 import {
   CreditCardIcon,
@@ -9,7 +8,7 @@ import {
 } from '@heroicons/react/20/solid';
 
 export interface PaymentFormState {
-  method: 'card' | 'express' | 'paypal' | 'upi';
+  method: 'card' | 'express' | 'paypal' | 'upi' | 'razorpay';
   cardNumber: string;
   cardHolder: string;
   expiry: string;
@@ -67,7 +66,7 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
   return (
     <div className="space-y-6">
       {/* Payment Method Selector Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         <button
           type="button"
           onClick={() => onChange({ method: 'card' })}
@@ -118,6 +117,19 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
         >
           <BuildingLibraryIcon className="w-5 h-5 mb-1 text-slate-500" />
           <span>NetBank / UPI</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onChange({ method: 'razorpay' })}
+          className={`flex flex-col items-center justify-center p-3 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+            formState.method === 'razorpay'
+              ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shadow-2xs'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+          }`}
+        >
+          <span className="text-xs font-black tracking-tight mb-1 text-blue-600 dark:text-blue-400">RZP</span>
+          <span>Razorpay</span>
         </button>
       </div>
 
@@ -319,6 +331,36 @@ export function PaymentCardSimulator({ formState, onChange, totalAmount }: Payme
                 <span className="px-2 py-0.5 bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-medium">Paytm</span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* RAZORPAY VIEW */}
+      {formState.method === 'razorpay' && (
+        <div className="p-6 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900">
+            <LockClosedIcon className="w-6 h-6" />
+          </div>
+
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h4 className="font-semibold text-sm text-slate-900 dark:text-white">
+              Secure Checkout with Razorpay
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              When you click <strong className="text-slate-700 dark:text-slate-200">Authorize & Complete Purchase</strong>, the secure Razorpay payment window will open where you can pay using UPI, Credit or Debit Cards, Net Banking, or Wallets.
+            </p>
+          </div>
+
+          <div className="pt-1 flex items-center justify-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <CheckIcon className="w-4 h-4 text-emerald-600" />
+              <span>Instant Course Access</span>
+            </span>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <span className="flex items-center gap-1.5">
+              <CheckIcon className="w-4 h-4 text-emerald-600" />
+              <span>256-bit Encrypted</span>
+            </span>
           </div>
         </div>
       )}

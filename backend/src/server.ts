@@ -1,6 +1,7 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express, { json } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
 import courseRoutes from "./routes/courseRoutes";
@@ -26,7 +27,6 @@ import cartRoutes from "./routes/cartRoutes";
 
 import path from "path";
 
-dotenv.config();
 // Workaround for Windows DNS SRV resolution issues
 import { setServers } from "node:dns";
 setServers(["8.8.8.8", "1.1.1.1"]);
