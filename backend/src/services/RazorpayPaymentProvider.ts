@@ -47,6 +47,15 @@ export class RazorpayPaymentProvider implements IPaymentProvider {
       // Razorpay accepts amount in the smallest currency sub-unit (paise for INR, cents for USD)
       const amountInSubunits = Math.round(amount * 100);
 
+      if (amountInSubunits < 100) {
+        return {
+          success: false,
+          transactionId: "",
+          paymentStatus: "failed",
+          message: "Transaction amount must be at least 100 paise (₹1.00) for Razorpay checkout.",
+        };
+      }
+
       const options = {
         amount: amountInSubunits,
         currency: (currency || "INR").toUpperCase(),
